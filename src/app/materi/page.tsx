@@ -49,11 +49,23 @@ export default function MateriPage() {
   const [viewingMateri, setViewingMateri] = useState<Material | null>(null);
   const [storedMateri, , isClient] = useLocalStorage<Material[]>("kndi_materi", materiPembelajaran);
 
-  const handleDownload = (fileName: string) => {
-    setToastMessage(`Mensimulasikan unduhan untuk: ${fileName}...`);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 4000);
+  const handleDownload = (materi: Material) => {
+    if (materi.fileDataUrl) {
+      // Execute Real Content Download via Anchor DOM Method
+      const link = document.createElement("a");
+      link.href = materi.fileDataUrl;
+      link.download = materi.fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setToastMessage(`Berhasil mengunduh file: ${materi.fileName}`);
+      setTimeout(() => setToastMessage(null), 4000);
+    } else {
+      // Simulate for mock data and dummy PPTX files
+      setToastMessage(`Mensimulasikan unduhan untuk: ${materi.fileName}... (Data dummy)`);
+      setTimeout(() => setToastMessage(null), 4000);
+    }
   };
 
   if (!isClient) return <div className="p-6 h-screen w-full" />; // Hydration guard
@@ -113,7 +125,7 @@ export default function MateriPage() {
                 <span>Lihat</span>
               </button>
               <button
-                onClick={() => handleDownload(materi.fileName)}
+                onClick={() => handleDownload(materi)}
                 className="w-full flex items-center justify-center space-x-1.5 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-800 font-semibold py-2.5 px-3 rounded-lg transition-colors duration-300 active:scale-95 cursor-pointer text-sm"
               >
                 <Download className="h-4 w-4" />
@@ -192,7 +204,7 @@ export default function MateriPage() {
                <div className="flex space-x-3 w-full sm:w-auto">
                  <button 
                    onClick={() => {
-                     handleDownload(viewingMateri.fileName);
+                     handleDownload(viewingMateri);
                      setViewingMateri(null);
                    }}
                    className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-blue-50 text-blue-700 hover:bg-blue-100 px-5 py-2.5 rounded-lg font-semibold transition-colors active:scale-95"
