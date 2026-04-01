@@ -136,7 +136,7 @@ export default function AdminDashboardPage() {
                 <Target className="w-6 h-6" />
               </div>
             </div>
-            <h3 className="text-slate-500 font-medium text-sm mb-1">Rata-Rata Nilai Platform</h3>
+            <h3 className="text-slate-500 font-medium text-sm mb-1">Rata-Rata Nilai Siswa</h3>
             <div className="flex items-baseline space-x-1">
               <div className="text-3xl font-black text-slate-800">{stats.avgScore}</div>
               <span className="text-sm font-semibold text-slate-400">/ 100</span>
