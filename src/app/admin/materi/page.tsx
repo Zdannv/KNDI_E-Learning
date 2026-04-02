@@ -194,7 +194,7 @@ export default function AdminMateriUploadPage() {
   if (!isClient) return <div className="p-6 h-screen w-full" />;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto min-h-[85vh]">
+    <div className="p-4 md:p-6 max-w-5xl mx-auto min-h-[85vh]">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-800 mb-2">Manajemen Materi</h1>
         <p className="text-slate-600">
@@ -246,7 +246,7 @@ export default function AdminMateriUploadPage() {
               </button>
             )}
           </div>
-          <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6">
+          <form onSubmit={handleSubmit} className="p-4 md:p-8 space-y-6">
             
             <div className="space-y-2">
               <label htmlFor="judul" className="block text-sm font-semibold text-slate-700">

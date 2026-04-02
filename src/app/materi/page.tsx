@@ -71,7 +71,7 @@ export default function MateriPage() {
   if (!isClient) return <div className="p-6 h-screen w-full" />; // Hydration guard
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-800 mb-2">Materi Pembelajaran</h1>
         <p className="text-slate-600">

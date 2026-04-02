@@ -5,37 +5,10 @@ import { Plus, Save, Trash2, CheckCircle2, AlertCircle, Loader2 } from "lucide-r
 import { useSearchParams } from "next/navigation";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 
-// Types
-type QuestionType = "multiple_choice" | "short_answer";
-
-interface QuestionBase {
-  id: string;
-  type: QuestionType;
-  questionText: string;
-}
-
-interface MultipleChoiceQuestion extends QuestionBase {
-  type: "multiple_choice";
-  options: [string, string, string, string];
-  correctOptionIndex: number;
-}
-
-interface ShortAnswerQuestion extends QuestionBase {
-  type: "short_answer";
-  correctAnswerText: string;
-}
-
-type Question = MultipleChoiceQuestion | ShortAnswerQuestion;
+import { QuestionType, QuestionBase, MultipleChoiceQuestion, ShortAnswerQuestion, Question, QuizData, fallbackMockQuizzes } from "@/data/dummyKuis";
 
 interface QuizFormState {
   title: string;
-  questions: Question[];
-}
-
-interface QuizData {
-  id: string;
-  title: string;
-  description: string;
   questions: Question[];
 }
 
@@ -48,7 +21,7 @@ function BuatKuisForm() {
     questions: []
   });
 
-  const [storedQuizzes, setStoredQuizzes, isClient] = useLocalStorage<QuizData[]>("kndi_quizzes", []);
+  const [storedQuizzes, setStoredQuizzes, isClient] = useLocalStorage<QuizData[]>("kndi_quizzes_v2", fallbackMockQuizzes);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastSuccess, setToastSuccess] = useState(false);

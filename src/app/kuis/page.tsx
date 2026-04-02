@@ -5,75 +5,14 @@ import Link from "next/link";
 import { CheckCircle2, XCircle, ArrowLeft, ArrowRight, LayoutList, ClipboardList, PlayCircle, Trophy } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 
+import { QuizData, QuizHistoryRecord, fallbackMockQuizzes } from "@/data/dummyKuis";
+
 // --- TypeScript Definitions ---
-type QuestionType = "multiple_choice" | "short_answer";
-
-interface QuestionBase {
-  id: string;
-  type: QuestionType;
-  questionText: string;
-}
-
-interface MultipleChoiceQuestion extends QuestionBase {
-  type: "multiple_choice";
-  options: [string, string, string, string];
-  correctOptionIndex: number;
-}
-
-interface ShortAnswerQuestion extends QuestionBase {
-  type: "short_answer";
-  correctAnswerText: string;
-}
-
-type Question = MultipleChoiceQuestion | ShortAnswerQuestion;
-
-interface QuizData {
-  id: string;
-  title: string;
-  description: string;
-  questions: Question[];
-}
-
-interface QuizHistoryRecord {
-  id: string;
-  quizId: string;
-  quizTitle: string;
-  score: number;
-  dateStr: string;
-  timeStr: string;
-}
-
-// --- Mock Data Fallback ---
-const fallbackMockQuiz: QuizData = {
-  id: "quiz-1",
-  title: "Kuis Dasar 1: Kosakata Sehari-hari",
-  description: "Uji pemahaman Anda tentang kosakata bahasa Jepang dasar sebelum melanjutkan ke bab berikutnya.",
-  questions: [
-    {
-      id: "q1",
-      type: "multiple_choice",
-      questionText: "Apa arti dari kata 'Arigatou' (ありがとう) dalam bahasa Indonesia?",
-      options: ["Maaf", "Terima Kasih", "Selamat Pagi", "Permisi"],
-      correctOptionIndex: 1, // Terima Kasih
-    },
-    {
-      id: "q2",
-      type: "short_answer",
-      questionText: "Sebutkan terjemahan bahasa Indonesia untuk kata kerja 'Taberu' (食べる).",
-      correctAnswerText: "Makan", 
-    },
-    {
-      id: "q3",
-      type: "multiple_choice",
-      questionText: "Ungkapan manakah yang paling tepat untuk mengucapkan 'Selamat Pagi' dalam bahasa Jepang secara formal?",
-      options: ["Konbanwa", "Konnichiwa", "Ohayou Gozaimasu", "Oyasuminasai"],
-      correctOptionIndex: 2, // Ohayou Gozaimasu
-    }
-  ]
-};
+// The following types (QuestionType, QuestionBase, MultipleChoiceQuestion, ShortAnswerQuestion, Question, QuizData)
+// were moved to @/data/dummyKuis.ts for reusability.
 
 export default function UserKuisPage() {
-  const [storedQuizzes, , isClient] = useLocalStorage<QuizData[]>("kndi_quizzes", [fallbackMockQuiz]);
+  const [storedQuizzes, , isClient] = useLocalStorage<QuizData[]>("kndi_quizzes_v2", fallbackMockQuizzes);
   const [storedHistory, setStoredHistory] = useLocalStorage<QuizHistoryRecord[]>("kndi_history", []);
 
   // --- States ---
@@ -82,6 +21,7 @@ export default function UserKuisPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [score, setScore] = useState(0);
+  const [checkedQuestions, setCheckedQuestions] = useState<string[]>([]);
 
   // --- Hydration Guard ---
   if (!isClient) return <div className="p-6 h-screen w-full" />; 
@@ -89,8 +29,8 @@ export default function UserKuisPage() {
   // --- Main List View Render ---
   if (!selectedQuiz) {
     return (
-      <div className="p-6 max-w-5xl mx-auto">
-         <div className="mb-8 flex items-center justify-between">
+      <div className="p-4 md:p-6 max-w-5xl mx-auto">
+         <div className="mb-6 md:mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
                <h1 className="text-3xl font-bold text-slate-800 mb-2">Daftar Kuis</h1>
                <p className="text-slate-600">Pilih kuis yang tersedia untuk menguji kemampuan bahasa Jepang Anda.</p>
@@ -134,10 +74,16 @@ export default function UserKuisPage() {
   const currentQuestion = selectedQuiz.questions[currentIndex];
 
   const handleAnswerChange = (questionId: string, val: string) => {
+    if (checkedQuestions.includes(questionId)) return;
     setAnswers(prev => ({
       ...prev,
       [questionId]: val
     }));
+  };
+
+  const handleCheckAnswer = () => {
+    if (!isQuestionAnswered()) return;
+    setCheckedQuestions(prev => [...prev, currentQuestion.id]);
   };
 
   const isQuestionAnswered = () => {
@@ -199,13 +145,14 @@ export default function UserKuisPage() {
     setCurrentIndex(0);
     setIsSubmitted(false);
     setScore(0);
+    setCheckedQuestions([]);
   };
 
 
   // ====== RESULT VIEW ======
   if (isSubmitted) {
     return (
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="p-4 md:p-6 max-w-4xl mx-auto">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden text-center mb-8">
           <div className="bg-indigo-600 p-12 text-white">
             <h1 className="text-3xl font-bold mb-4">Hasil Kuis</h1>
@@ -292,7 +239,7 @@ export default function UserKuisPage() {
   const progressPercent = ((currentIndex + 1) / totalQuestions) * 100;
   
   return (
-    <div className="p-6 max-w-3xl mx-auto h-full flex flex-col justify-center min-h-[80vh]">
+    <div className="p-4 md:p-6 max-w-3xl mx-auto h-full flex flex-col justify-center min-h-[80vh]">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-800 mb-1">{selectedQuiz.title}</h1>
         <p className="text-slate-500 text-sm">{selectedQuiz.description}</p>
@@ -320,14 +267,34 @@ export default function UserKuisPage() {
             <div className="space-y-3">
               {currentQuestion.options.map((option, optIdx) => {
                 const isSelected = answers[currentQuestion.id] === String(optIdx);
+                const isChecked = checkedQuestions.includes(currentQuestion.id);
+                const isCorrectOption = currentQuestion.type === "multiple_choice" && optIdx === currentQuestion.correctOptionIndex;
+                
+                let optionStyle = 'border-slate-100 bg-white hover:border-slate-300 hover:bg-slate-50 text-slate-700';
+                let indicatorStyle = 'border-slate-300';
+                
+                if (isChecked) {
+                  if (isSelected && isCorrectOption) {
+                    optionStyle = 'border-green-500 bg-green-50 text-green-900 ring-1 ring-green-500 shadow-sm';
+                    indicatorStyle = 'border-green-600 bg-green-600';
+                  } else if (isSelected && !isCorrectOption) {
+                    optionStyle = 'border-red-500 bg-red-50 text-red-900 ring-1 ring-red-500 shadow-sm';
+                    indicatorStyle = 'border-red-600 bg-red-600';
+                  } else if (!isSelected && isCorrectOption) {
+                    optionStyle = 'border-green-500 bg-green-50 text-green-900 border-dashed';
+                    indicatorStyle = 'border-green-500';
+                  } else {
+                    optionStyle = 'border-slate-100 bg-white opacity-60 grayscale';
+                  }
+                } else if (isSelected) {
+                  optionStyle = 'border-indigo-600 bg-indigo-50/50 text-indigo-900 ring-1 ring-indigo-600';
+                  indicatorStyle = 'border-indigo-600';
+                }
+
                 return (
                   <label 
                     key={optIdx}
-                    className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                      isSelected 
-                        ? 'border-indigo-600 bg-indigo-50/50' 
-                        : 'border-slate-100 bg-white hover:border-slate-300 hover:bg-slate-50'
-                    }`}
+                    className={`flex items-center p-4 rounded-xl border-2 transition-all ${!isChecked ? 'cursor-pointer' : 'cursor-default'} ${optionStyle}`}
                   >
                     <input 
                       type="radio"
@@ -335,14 +302,16 @@ export default function UserKuisPage() {
                       value={String(optIdx)}
                       checked={isSelected}
                       onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
+                      disabled={isChecked}
                       className="hidden" 
                     />
-                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center mr-4 shrink-0 transition-colors ${
-                      isSelected ? 'border-indigo-600' : 'border-slate-300'
-                    }`}>
-                      {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-indigo-600" />}
+                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center mr-4 shrink-0 transition-colors ${indicatorStyle}`}>
+                      {isSelected && !isChecked && <div className="w-2.5 h-2.5 rounded-full bg-indigo-600" />}
+                      {isChecked && isSelected && isCorrectOption && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                      {isChecked && isSelected && !isCorrectOption && <XCircle className="w-3.5 h-3.5 text-white" />}
+                      {isChecked && !isSelected && isCorrectOption && <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />}
                     </div>
-                    <span className={`font-medium ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>
+                    <span className={`font-medium ${isChecked && isSelected && !isCorrectOption ? 'line-through decoration-red-400' : ''}`}>
                       {option}
                     </span>
                   </label>
@@ -361,8 +330,30 @@ export default function UserKuisPage() {
                 placeholder="Contoh: Makan"
                 value={answers[currentQuestion.id] || ""}
                 onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
-                className="w-full px-5 py-4 rounded-xl border-2 border-slate-200 bg-slate-50 focus:bg-white focus:border-indigo-600 focus:outline-none focus:ring-4 focus:ring-indigo-600/10 transition-all font-medium text-slate-800 placeholder:text-slate-400"
+                disabled={checkedQuestions.includes(currentQuestion.id)}
+                className={`w-full px-5 py-4 rounded-xl border-2 transition-all font-medium placeholder:text-slate-400 ${
+                  checkedQuestions.includes(currentQuestion.id) 
+                    ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed'
+                    : 'bg-slate-50 border-slate-200 text-slate-800 focus:bg-white focus:border-indigo-600 focus:outline-none focus:ring-4 focus:ring-indigo-600/10'
+                }`}
               />
+              
+              {checkedQuestions.includes(currentQuestion.id) && currentQuestion.type === "short_answer" && (
+                <div className={`mt-5 p-4 rounded-xl text-sm font-semibold border flex flex-col ${
+                  (answers[currentQuestion.id] || "").trim().toLowerCase() === currentQuestion.correctAnswerText.trim().toLowerCase()
+                    ? 'bg-green-50 border-green-200 text-green-700'
+                    : 'bg-red-50 border-red-200 text-red-700'
+                }`}>
+                  {(answers[currentQuestion.id] || "").trim().toLowerCase() === currentQuestion.correctAnswerText.trim().toLowerCase() ? (
+                    <div className="flex items-center"><CheckCircle2 className="w-5 h-5 mr-2"/> Jawaban Anda Tepat!</div>
+                  ) : (
+                    <>
+                       <div className="flex items-center mb-1"><XCircle className="w-5 h-5 mr-2"/> Jawaban Anda Kurang Tepat.</div>
+                       <span className="text-slate-600 font-medium ml-7 mt-1">Jawaban benar: <span className="font-bold text-green-700">{currentQuestion.correctAnswerText}</span></span>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -383,31 +374,52 @@ export default function UserKuisPage() {
         </button>
 
         {currentIndex === totalQuestions - 1 ? (
-          <button
-            onClick={handleSubmit}
-            disabled={!isQuestionAnswered()}
-            className={`flex items-center px-8 py-3 rounded-xl font-bold shadow-md transition-all ${
-              !isQuestionAnswered()
-                ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-                : 'bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700 hover:shadow-lg active:scale-95'
-            }`}
-          >
-            <CheckCircle2 className="w-5 h-5 mr-2" />
-            <span>Submit Kuis</span>
-          </button>
+          !checkedQuestions.includes(currentQuestion.id) ? (
+            <button
+              onClick={handleCheckAnswer}
+              disabled={!isQuestionAnswered()}
+              className={`flex items-center px-8 py-3 rounded-xl font-bold shadow-md transition-all ${
+                !isQuestionAnswered()
+                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                  : 'bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700 hover:shadow-lg active:scale-95'
+              }`}
+            >
+              <CheckCircle2 className="w-5 h-5 mr-2" />
+              <span>Cek Jawaban</span>
+            </button>
+          ) : (
+            <button
+              onClick={handleSubmit}
+              disabled={!isQuestionAnswered()}
+              className="flex items-center px-8 py-3 rounded-xl font-bold bg-green-600 text-white shadow-md shadow-green-200 hover:bg-green-700 hover:shadow-lg active:scale-95 transition-all"
+            >
+              <CheckCircle2 className="w-5 h-5 mr-2" />
+              <span>Selesai & Lihat Hasil</span>
+            </button>
+          )
         ) : (
-          <button
-            onClick={handleNext}
-            disabled={!isQuestionAnswered()}
-            className={`flex items-center px-8 py-3 rounded-xl font-semibold transition-all ${
-              !isQuestionAnswered()
-                ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200 shadow-none'
-                : 'bg-white border border-slate-200 shadow-sm text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 active:scale-95'
-            }`}
-          >
-            <span>Selanjutnya</span>
-            <ArrowRight className="w-5 h-5 ml-2" />
-          </button>
+          !checkedQuestions.includes(currentQuestion.id) ? (
+            <button
+              onClick={handleCheckAnswer}
+              disabled={!isQuestionAnswered()}
+              className={`flex items-center px-8 py-3 rounded-xl font-semibold transition-all shadow-sm ${
+                !isQuestionAnswered()
+                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200 shadow-none'
+                  : 'bg-indigo-600 border border-indigo-700 text-white hover:bg-indigo-700 active:scale-95'
+              }`}
+            >
+              <span>Cek Jawaban</span>
+            </button>
+          ) : (
+            <button
+              onClick={handleNext}
+              disabled={!isQuestionAnswered()}
+              className="flex items-center px-8 py-3 rounded-xl font-semibold bg-white border border-slate-200 shadow-sm text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 active:scale-95 transition-all"
+            >
+              <span>Selanjutnya</span>
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </button>
+          )
         )}
       </div>
     </div>

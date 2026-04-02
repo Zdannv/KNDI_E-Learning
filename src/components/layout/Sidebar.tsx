@@ -10,7 +10,8 @@ import {
   LayoutDashboard,
   Library,
   FileQuestion,
-  GraduationCap
+  GraduationCap,
+  X
 } from "lucide-react";
 import { useRole } from "@/context/RoleContext";
 
@@ -18,6 +19,11 @@ interface NavItem {
   name: string;
   href: string;
   icon: React.ElementType;
+}
+
+interface SidebarProps {
+  isOpen?: boolean;
+  setIsOpen?: (isOpen: boolean) => void;
 }
 
 const userRoutes: NavItem[] = [
@@ -32,24 +38,41 @@ const senseiRoutes: NavItem[] = [
   { name: "Manajemen Kuis", href: "/admin/kuis", icon: FileQuestion },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen = false, setIsOpen }: SidebarProps) {
   const { currentRole } = useRole();
   const pathname = usePathname();
 
   const routes = currentRole === "sensei" ? [...userRoutes, ...senseiRoutes] : userRoutes;
 
   return (
-    <aside className="w-64 bg-white border-r border-slate-200 h-screen sticky top-0 flex flex-col shadow-sm transition-all duration-300 z-20">
-      <div className="p-6 flex items-center gap-3 border-b border-slate-100">
-        <div className="bg-indigo-600 p-2 rounded-lg text-white">
-          <GraduationCap size={24} />
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 z-20 md:hidden transition-opacity" 
+          onClick={() => setIsOpen?.(false)} 
+        />
+      )}
+      
+      <aside className={`fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-slate-200 h-screen flex flex-col shadow-sm transform transition-transform duration-300 md:sticky md:top-0 md:translate-x-0 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="p-6 flex items-center justify-between gap-3 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+          <div className="bg-indigo-600 p-2 rounded-lg text-white">
+            <GraduationCap size={24} />
+          </div>
+          <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-800 bg-clip-text text-transparent">
+            KNDI Learning
+          </span>
+          </div>
+          <button 
+            onClick={() => setIsOpen?.(false)}
+            className="md:hidden p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"
+          >
+            <X size={20} />
+          </button>
         </div>
-        <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-800 bg-clip-text text-transparent">
-          KNDI Learning
-        </span>
-      </div>
 
-      <div className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
+        <div className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
         <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-3">
           Menu Utama
         </div>
@@ -77,12 +100,13 @@ export default function Sidebar() {
         })}
       </div>
 
-      <div className="p-4 border-t border-slate-100">
-        <div className="bg-slate-50 rounded-xl p-4 text-sm text-center text-slate-500">
-          <p className="font-medium text-slate-700 mb-1">Butuh Bantuan?</p>
-          <a href="#" className="text-indigo-600 hover:underline">Hubungi Support</a>
+        <div className="p-4 border-t border-slate-100">
+          <div className="bg-slate-50 rounded-xl p-4 text-sm text-center text-slate-500">
+            <p className="font-medium text-slate-700 mb-1">Butuh Bantuan?</p>
+            <a href="#" className="text-indigo-600 hover:underline">Hubungi Support</a>
+          </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }

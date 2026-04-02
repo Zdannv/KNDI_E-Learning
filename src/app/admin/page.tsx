@@ -26,7 +26,7 @@ interface QuizHistoryRecord {
 
 export default function AdminDashboardPage() {
   const [storedMateri, , isClientMateri] = useLocalStorage<any[]>("kndi_materi", []);
-  const [storedQuizzes, , isClientQuizzes] = useLocalStorage<any[]>("kndi_quizzes", []);
+  const [storedQuizzes, , isClientQuizzes] = useLocalStorage<any[]>("kndi_quizzes_v2", []);
   const [storedHistory, , isClientHistory] = useLocalStorage<QuizHistoryRecord[]>("kndi_history", []);
 
   const isClient = isClientMateri && isClientQuizzes && isClientHistory;
@@ -72,7 +72,7 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6 md:space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-slate-800 mb-2">Dashboard Analitik</h1>
