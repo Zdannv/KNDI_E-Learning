@@ -4,9 +4,10 @@ import Link from "next/link";
 import { Plus, ClipboardList, BookOpen, Trash2, Edit2, CheckCircle2 } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useState } from "react";
+import { QuizData, fallbackMockQuizzes } from "@/data/dummyKuis";
 
 export default function AdminKuisPage() {
-  const [storedQuizzes, setStoredQuizzes, isClient] = useLocalStorage<any[]>("kndi_quizzes", []);
+  const [storedQuizzes, setStoredQuizzes, isClient] = useLocalStorage<QuizData[]>("kndi_quizzes_v2", fallbackMockQuizzes);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   if (!isClient) return <div className="p-6 h-screen w-full" />;
@@ -20,7 +21,7 @@ export default function AdminKuisPage() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto">
       {/* Header and Action Button */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>

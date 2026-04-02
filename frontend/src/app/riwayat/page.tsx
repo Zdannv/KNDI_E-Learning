@@ -4,14 +4,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Trophy, CalendarClock, BookOpen, AlertCircle, RefreshCw } from "lucide-react";
 import Link from "next/link";
 
-interface QuizHistoryRecord {
-  id: string;
-  quizId: string;
-  quizTitle: string;
-  score: number;
-  dateStr: string;
-  timeStr: string;
-}
+import { QuizHistoryRecord } from "@/data/dummyKuis";
 
 export default function RiwayatPage() {
   const [storedHistory, , isClient] = useLocalStorage<QuizHistoryRecord[]>("kndi_history", []);
@@ -19,8 +12,8 @@ export default function RiwayatPage() {
   if (!isClient) return <div className="p-6 h-screen w-full" />; // Hydration guard
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="mb-8 flex items-center justify-between">
+    <div className="p-4 md:p-6 max-w-5xl mx-auto">
+      <div className="mb-6 md:mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-800 mb-2">Riwayat Nilai</h1>
           <p className="text-slate-600">
