@@ -9,13 +9,13 @@ import (
 type QuestionType string
 
 const (
-	QuestionTypeMultipleChoise QuestionType = "multiple_choice"
+	QuestionTypeMultipleChoice QuestionType = "multiple_choice"
 	QuestionTypeShortAnswer QuestionType = "short_answer"
 )
 
 func (qt QuestionType) Validate() error {
 	switch qt {
-	case QuestionTypeMultipleChoise, QuestionTypeShortAnswer:
+	case QuestionTypeMultipleChoice, QuestionTypeShortAnswer:
 		return nil
 	default:
 		return errors.New("Question type must be multiple_choice or short_answer!")
@@ -26,12 +26,12 @@ type Question struct {
 	Base
 	QuizID			uuid.UUID			`gorm:"type:uuid;not null;index" json:"quiz_id"`
 	QuestionType	QuestionType		`gorm:"type:varchar(20);not null;check:chk_qtype,question_type IN ('multiple_choice','short_answer')" json:"question_type"`
-	QuestionText	string				`gorm:"type:text" json:"question_text"`
+	QuestionText	string				`gorm:"type:text;not nulll" json:"question_text"`
 	OrderNumber		int					`gorm:"not null;default:0;index" json:"order_number"`
 	Points			int					`gorm:"not null;default:1" json:"points"`
 
-	Options			[]QuestionOptions	`gorm:"foreignKey:QuestionID;constraint;OnDelete;CASCADE" json:"options,omitempty"`
-	ShortAnswer		*ShorAnswerQuestion	`gorm:"foreignKey:QuestionID;constraint;OnDelete;CASCADE" json:"short_answer,omitempty"`
+	Options			[]QuestionOptions	`gorm:"foreignKey:QuestionID;constraint:OnDelete:CASCADE" json:"options,omitempty"`
+	ShortAnswer		*ShorAnswerQuestion	`gorm:"foreignKey:QuestionID;constraint:OnDelete:CASCADE" json:"short_answer,omitempty"`
 }
 
 func (Question) TableName() string {
@@ -39,7 +39,7 @@ func (Question) TableName() string {
 }
 
 func (q *Question) IsMultipleChoice() bool {
-	return q.QuestionType == QuestionTypeMultipleChoise
+	return q.QuestionType == QuestionTypeMultipleChoice
 }
 
 func (q *Question) IsShortAnswer() bool {
