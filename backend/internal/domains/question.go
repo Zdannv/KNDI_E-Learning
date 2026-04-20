@@ -1,5 +1,17 @@
 package domains
 
+const (
+	QuestionTypeMultipleChoice	= 1
+	QuestionTypeShortAnswer		= 2
+	QuestionTypeMatchingCard	= 3
+)
+
+type QuestionType struct {
+	ID			int		`json:"id"`
+	Name		string	`json:"name"`
+}
+
+
 type Question struct {
 	ID				int					`json:"id"`
 	QuizID			int					`json:"quiz_id"`

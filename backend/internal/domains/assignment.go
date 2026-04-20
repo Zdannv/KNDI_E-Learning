@@ -2,7 +2,18 @@ package domains
 
 import "time"
 
-type assignment struct {
+const (
+	StatusNotStarted	= 1
+	StatusInProgres		= 2
+	StatusCompleted		= 3
+)
+
+type AssignmentStatus struct {
+	ID		int		`json:"id"`
+	Name	string	`json:"name"`
+}
+
+type Assignment struct {
 	ID				int						`json:"id"`
 	StudentID		string					`json:"student_id"`
 	QuizID			int						`json:"quiz_id"`
@@ -12,11 +23,11 @@ type assignment struct {
 	StartedAt		time.Time				`json:"started_at"`
 	CompletedAt		*time.Time				`json:"completed_at"`
 
-	History			[]assignmentHistory		`json:"history,omitempty"`
+	History			[]AssignmentHistory		`json:"history,omitempty"`
 	Quiz			*Quiz					`json:"quiz,omitempty"`
 }
 
-type assignmentHistory struct {
+type AssignmentHistory struct {
 	ID					int					`json:"id"`
 	AssignmentID		int					`json:"assignment_id"`
 	QuestionID			int					`json:"question_id"`
