@@ -2,9 +2,9 @@ package domains
 
 import "time"
 
-type material struct {
+type Material struct {
 	ID				string		`json:"id"`
-	QuizID			string		`json:"user_id"`
+	UserID			string		`json:"user_id"`
 	Name			string		`json:"name"`
 	Description		*string		`json:"description"`
 	FilePath		*string		`json:"file_path"`
