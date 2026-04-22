@@ -1,25 +1,23 @@
 package dto
 
 type RegisterRequest struct {
-	Name		string		`json:"name" binding:"required,min=6,max=64"`
-	Email		string		`json:"email" binding:"required,email"`
-	Password	string		`json:"password" binding:"required,min=8"`
-	Role		string		`json:"role" binding:"required,oneof=sensei student"`
+	Username	string		`json:"username"`
+	Password	string		`json:"password"`
+	Role		string		`json:"role"`
 }
 
 type LoginRequest struct {
-	Email		string		`json:"email" binding:"required,email"`
-	Name		string		`json:"name" binding:"required"`
+	Username	string		`json:"username"`
+	Password	string		`json:"password"`
 }
 
 type AuthResponse struct {
-	Token		string		`json:"token"`
-	User		string		`json:"user"`
+	Token		string			`json:"token"`
+	UserInfo	UserResponse	`json:"user"`
 }
 
 type UserResponse struct {
 	ID			string		`json:"ID"`
-	Name		string		`json:"name"`
-	Email		string		`json:"email"`
+	Username	string		`json:"username"`
 	Role		string		`json:"role"`
 }
