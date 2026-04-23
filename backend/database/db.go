@@ -1,7 +1,7 @@
 package database
 
 import (
-	"KNDI_E-LEARNING/config"
+	"KNDI_E-LEARNING/internal/config"
 	"context"
 	"fmt"
 	"log"
