@@ -27,6 +27,7 @@ CREATE TABLE quizzes {
     sensei_id           UUID            NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title               VARCHAR(225)    NOT NULL,
     description         VARCHAR(225),
+    is_published        BOOLEAN         DEFAULT false,
     created_at          TIMESTAMP       DEFAULT NOW(),
     updated_at          TIMESTAMP       DEFAULT NOW(),
 }
