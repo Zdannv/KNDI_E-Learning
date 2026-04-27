@@ -32,7 +32,7 @@ type Config struct {
 
 func Load() *Config {
 	return &Config{
-		AppPort: 		getEnv("DB_PORT"),
+		AppPort: 		getEnv("APP_PORT"),
 		AppEnv: 		getEnv("APP_ENV"),
 
 		DBHost: 		getEnv("DB_HOST"),
@@ -48,7 +48,7 @@ func Load() *Config {
 		DBMaxLifeTime: 	time.Duration(getEnvInt("DB_MAX_LIFE_TIME")) * time.Hour,
 
 		JWTSecret: 		getEnv("JWT_SECRET"),
-		JWTExpiry: 		time.Duration(getEnvInt("JWT_EXPIRY")) * time.Hour,
+		JWTExpiry: 		time.Duration(getEnvInt("JWT_EXPIRY_HOURS")) * time.Hour,
 
 		AllowedOrigins: getEnv("ALLOWED_ORIGINS"),
 	}
@@ -66,20 +66,20 @@ func (c *Config) IsProduction() bool {
 }
 
 func getEnv(key string) string {
-	v, ok := os.LookupEnv(key)
-	if !ok || v == "" {
-		log.Fatalf("[config] Requirement environment variable: %q is not set", key)
+	v := os.Getenv(key)
+	if v == "" {
+		log.Fatalf("[Config] Requirement environment variable: %q is not set", key)
 	}
 
 	return v
 }
 
 func getEnvInt(key string) int {
-	s, _ := os.LookupEnv(key)
+	s := getEnv(key)
 
 	n, err := strconv.Atoi(s)
 	if err != nil {
-		log.Fatalf("[config] Requirement environment variable: %q is not set", key)
+		log.Fatalf("[Config] Requirement environment variable: %q is not set", key)
 	}
 	
 	return n
