@@ -1,5 +1,9 @@
 package dto
 
+type StartAssignment struct {
+	QuizID			int					`json:"quiz_id"`
+}
+
 type SubmitAssignmentRequest struct {
 	Answer			[]SubmitAnswerRequest		`json:"answer"`
 }
@@ -7,7 +11,7 @@ type SubmitAssignmentRequest struct {
 type SubmitAnswerRequest struct {
 	QuestionID			int				`json:"question_id"`
 	QuestionOptionID	*int			`json:"question_option_id"`
-	QuestionCardID		*int			`json:"question_card_id"`
+	MatchingCardID		*int			`json:"question_card_id"`
 	SelectedCard		*int			`json:"selected_card"`
 	AnswerText			*string			`json:"answer_text"`
 }
