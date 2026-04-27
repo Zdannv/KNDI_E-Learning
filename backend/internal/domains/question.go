@@ -16,7 +16,7 @@ type Question struct {
 	ID				int					`json:"id"`
 	QuizID			int					`json:"quiz_id"`
 	QuestionText	string				`json:"question_text"`
-	QuestionType	string				`json:"question_type"`
+	QuestionType	int					`json:"question_type"`
 	CorrectAnswer	*string				`json:"correct_answer"`
 	URL				*string				`json:"url"`
 	Point			float64				`json:"point"`
