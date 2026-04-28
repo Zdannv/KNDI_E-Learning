@@ -19,7 +19,7 @@ const (
 	
 	selectAssignmentByID = `
 		SELECT a.id, a.student_id, a.quiz_id, a.total_point, a.status,
-			   s.name AS status_name, a.started_at, a.completed_at
+			   s.name AS status_name, a.started_at, a.completed_at,
 			   q.title AS quiz_title
 		FROM assignments a
 		JOIN assignment_status s ON s.id = a.status
@@ -27,13 +27,13 @@ const (
 		WHERE a.id = $1`
 
 	selectHistoryByStudentID = `
-		SELECT a.id, a.student_id, a.quiz_id, a.total_point, a.status
-			   s.name AS status_name, a.started_at, a.completed_at
+		SELECT a.id, a.student_id, a.quiz_id, a.total_point, a.status,
+			   s.name AS status_name, a.started_at, a.completed_at,
 			   q.title AS quiz_title
 		FROM assignments a
 		JOIN assignment_status s ON s.id = a.status
 		JOIN quizzes q ON q.id = a.quiz_id
-		WHERE a.student = $1 AND a.status = $2
+		WHERE a.student_id = $1 AND a.status = $2
 		ORDER BY a.completed_at DESC`
 
 	finaliseAssignment = `
@@ -105,7 +105,7 @@ func (r *assignmentRepository) FindByID(ctx context.Context, id int) (*domains.A
 }
 
 func (r *assignmentRepository) Finalise(ctx context.Context, id int, totalPoint float64, completedAt time.Time) error {
-	_, err := r.pool.Exec(ctx, finaliseAssignment, id, totalPoint, completedAt)
+	_, err := r.pool.Exec(ctx, finaliseAssignment, totalPoint, domains.StatusCompleted, completedAt, id)
 	if err != nil {
 		return fmt.Errorf("AssignmentRepo.Finalise: %w", err)
 	}
@@ -181,7 +181,7 @@ func (r *assignmentRepository) FindHistoryByStudentID(ctx context.Context, stude
 		a := domains.Assignment{Quiz: &domains.Quiz{}}
 		var quizTitle string
 		if err := rows.Scan(
-			&a.ID, &a.StudentID, &a.Quiz, &a.TotalPoint, &a.Status,
+			&a.ID, &a.StudentID, &a.QuizID, &a.TotalPoint, &a.Status,
 			&a.StatusName, &a.StartedAt, &a.CompletedAt, &quizTitle,
 		); err != nil {
 			return nil, fmt.Errorf("AssignmentRepo.FindHistoryStudent scan: %w", err)
