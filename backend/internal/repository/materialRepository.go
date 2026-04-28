@@ -13,7 +13,7 @@ import (
 const (
 	insertMaterial = `
 		INSERT INTO materials (user_id, name, description, file_path)
-		VALUES ($1, $2, $3 $4)
+		VALUES ($1, $2, $3, $4)
 		RETURNING id, created_at, updated_at`
 
 	selectMaterialByID = `
@@ -23,12 +23,12 @@ const (
 
 	selectAllMaterial = `
 		SELECT id, user_id, name, description, file_path, created_at, updated_at
-		FROM material
+		FROM materials
 		ORDER BY created_at DESC`
 
 	selectMaterialByUserID = `
 		SELECT id, user_id, name, description, file_path, created_at, updated_at
-		FROM material
+		FROM materials
 		WHERE user_id = $1
 		ORDER BY created_at DESC`
 
@@ -39,7 +39,7 @@ const (
 		RETURNING updated_at`
 
 	deleteMaterial = `
-		DELETE materials WHERE id = $1 AND user_id = $2`
+		DELETE FROM materials WHERE id = $1 AND user_id = $2`
 )
 
 type MaterialRepository interface {
