@@ -26,6 +26,7 @@ func Authentication(authSvc services.AuthService) func(http.Handler) http.Handle
 			claims, err := authSvc.ParseToken(parts[1])
 			if err != nil {
 				response.Unauthorized(w, "Invalid or expired token!")
+				return
 			}
 
 			ctx := context.WithValue(r.Context(), services.ContextKeyUserId, claims.UserID)
