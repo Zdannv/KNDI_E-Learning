@@ -3,20 +3,21 @@
 --  ==========================
 
 /* ==== ENUM LOOKUP TABLES ==== */
-CREATE TABLE IF NOT EXISTS question_type (
+CREATE TABLE IF NOT EXISTS question_types (
     id                 SERIAL           PRIMARY KEY,
-    name               VARCHAR(225)     NOT NULL
+    name               VARCHAR(225)     NOT NULL UNIQUE
 );
 
-CREATE TABLE IF NOT EXISTS assignment_status (
+CREATE TABLE IF NOT EXISTS assignment_statuses (
     id                  SERIAL          PRIMARY KEY,
-    name                VARCHAR(225)    NOT NULL
+    name                VARCHAR(225)    NOT NULL UNIQUE
 );
 
 /* ==== CORE TABLE ==== */
 CREATE TABLE IF NOT EXISTS users (
     id                  UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     username            VARCHAR(225)    UNIQUE,
+    email               VARCHAR(225)    UNIQUE,
     password            VARCHAR(225),
     role                VARCHAR(8)      NOT NULL DEFAULT 'student',
     created_at          TIMESTAMP       DEFAULT NOW(),
@@ -47,7 +48,7 @@ CREATE TABLE IF NOT EXISTS questions (
     id                  SERIAL          PRIMARY KEY,
     quiz_id             INTEGER         NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
     question_text       VARCHAR(225)    NOT NULL,
-    question_type       INTEGER         NOT NULL REFERENCES question_type(id),
+    question_type       INTEGER         NOT NULL REFERENCES question_types(id),
     correct_answer      VARCHAR(225),
     url                 VARCHAR(511),
     point               FLOAT           DEFAULT 1,
@@ -76,7 +77,7 @@ CREATE TABLE IF NOT EXISTS assignments (
     student_id          UUID            NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     quiz_id             INTEGER         NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
     total_point         FLOAT,
-    status              INTEGER         REFERENCES assignment_status(id),
+    status              INTEGER         REFERENCES assignment_statuses(id),
     started_at          TIMESTAMP       DEFAULT NOW(),
     completed_at        TIMESTAMP       DEFAULT NOW()
 );
@@ -94,15 +95,15 @@ CREATE TABLE IF NOT EXISTS assignment_history (
 );
 
 /* SEEDER LOOKUP TABLES */
-INSERT INTO question_type (name) VALUES
+INSERT INTO question_types (name) VALUES
     ('multiple_choice'),
     ('short_answer'),
     ('matching_card')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO assignment_status (name) VALUES
+INSERT INTO assignment_statuses (name) VALUES
     ('not_started'),
-    ('in_progres'),
+    ('in_progress'),
     ('completed')
 ON CONFLICT DO NOTHING;
 
