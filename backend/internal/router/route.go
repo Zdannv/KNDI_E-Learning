@@ -13,58 +13,40 @@ import (
 	"github.com/rs/cors"
 )
 
-func NewRoute(
+func Route(
 	cfg *config.Config,
 	authSvc services.AuthService,
 	materialSvc services.MaterialService,
 	quizSvc services.QuizService,
 	assmignmentSvc services.AssignmentService,
 ) http.Handler {
-	route := chi.NewRouter()
+	r := chi.NewRouter()
 
-	route.Use(chiMiddleware.RequestID)
-	route.Use(chiMiddleware.RealIP)
-	route.Use(chiMiddleware.Logger)
-	route.Use(chiMiddleware.Recoverer)
+	r.Use(chiMiddleware.RequestID)
+	r.Use(chiMiddleware.RealIP)
+	r.Use(chiMiddleware.Logger)
+	r.Use(chiMiddleware.Recoverer)
 
-	allowedOrigins := strings.Split(cfg.AllowedOrigins, ",")
-	corsHandler := cors.New(cors.Options{
-		AllowedOrigins: allowedOrigins,
-		AllowedMethods: []string{
-			http.MethodGet,
-			http.MethodPost,
-			http.MethodPut,
-			http.MethodPatch,
-			http.MethodDelete,
-			http.MethodOptions,
-		},
-		AllowedHeaders: []string{
-			"Authorization",
-			"Content-Type",
-			"X-Request-ID",
-		},
-		AllowCredentials: true,		// Allow cookies / credential
-		MaxAge: 300,		// Cache preflight for 5 minutes
+	authHandler			:= handler.NewAuthHandler(authSvc)
+	materialHandler		:= handler.NewMaterialHandler(materialSvc)
+	quizHandler			:= handler.NewQuizHandler(quizSvc)
+	assignmentHandler	:= handler.NewAssignmentHandler(assmignmentSvc)
+
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status": "ok"}`))
 	})
 
-	route.Use(corsHandler.Handler)
-
-	authHandler 		:= handler.NewAuthHandler(authSvc)
-	materialHandler 	:= handler.NewMaterialHandler(materialSvc)
-	quizHandler 		:= handler.NewQuizHandler(quizSvc)
-	assignmentHandler 	:= handler.NewAssignmentHandler(assmignmentSvc)
-
-	route.Route("/api/v1", func(r chi.Router) {
-		/* Public - No token required */
+	r.Route("/api", func(r chi.Router) {
 		r.Route("/auth", func(r chi.Router) {
-			route.Post("/register", authHandler.Register)
-			route.Post("/login", authHandler.Login)
+			r.Post("/register", authHandler.Register)
+			r.Post("/login", authHandler.Login)
 		})
 
-		/* Authenticated - Any Role */
 		r.Group(func(r chi.Router) {
 			r.Use(appMiddleware.Authentication(authSvc))
-			
+
 			r.Get("/materials", materialHandler.FindAll)
 			r.Get("/materials/{id}", materialHandler.FindByID)
 
@@ -72,7 +54,6 @@ func NewRoute(
 			r.Get("/quizzes/{id}", quizHandler.FindByID)
 		})
 
-		/* Authenticated - Sensei Only */
 		r.Group(func(r chi.Router) {
 			r.Use(appMiddleware.Authentication(authSvc))
 			r.Use(appMiddleware.RequireRole("sensei"))
@@ -89,17 +70,37 @@ func NewRoute(
 			r.Delete("/questions/{id}", quizHandler.DeleteQuestion)
 		})
 
-		/* Authenticated - Student Only */
 		r.Group(func(r chi.Router) {
 			r.Use(appMiddleware.Authentication(authSvc))
 			r.Use(appMiddleware.RequireRole("student"))
 
 			r.Get("/assignments/history", assignmentHandler.GetHistory)
-			r.Get("/assignments/{id}", assignmentHandler.GetResult)
-			r.Post("/assignments", assignmentHandler.Start)
+
+			r.Post("/assignment", assignmentHandler.Start)
 			r.Post("/assignments/{id}/submit", assignmentHandler.Submit)
+			r.Get("/assignments/{id}", assignmentHandler.GetResult)
 		})
 	})
 
-	return route
+	allowedOrigins := strings.Split(cfg.AllowedOrigins, ",")
+	corsHandler := cors.New(cors.Options{
+		AllowedOrigins: allowedOrigins,
+		AllowedMethods: []string{
+			http.MethodGet,
+			http.MethodPost,
+			http.MethodPut,
+			http.MethodDelete,
+			http.MethodPatch,
+			http.MethodOptions,
+		},
+		AllowedHeaders: []string{
+			"Authorization",
+			"Content-Type",
+			"X-Request-ID",
+		},
+		AllowCredentials: true,
+		MaxAge: 300,	// 5 Minutes
+	})
+
+	return corsHandler.Handler(r)
 }
