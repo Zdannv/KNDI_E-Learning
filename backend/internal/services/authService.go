@@ -31,6 +31,7 @@ const (
 var (
 	ErrorInvalidCredentials	= errors.New("Invalid username or password")
 	ErrorUsernameTaken		= errors.New("Username is already taken")
+	ErrorEmailTaken			=errors.New("Email is already taken")
 	ErrorInvalidToken		= errors.New("Invalid or expired token")
 	ErrorForbidden			= errors.New("You do not have permission to perform this action")
 )
@@ -63,13 +64,19 @@ func (s *authService) Register(ctx context.Context, req dto.RegisterRequest) (*d
 		return nil, errors.New("User role must be sensei or student!")
 	}
 
-	exists, err := s.userRepo.UsernameExists(ctx, req.Username)
+	usernameExists, err := s.userRepo.UsernameExists(ctx, req.Username)
 	if err != nil {
 		return nil, fmt.Errorf("AuthService.Register check: %w", err)
 	}
-	
-	if exists {
+
+	if usernameExists {
 		return nil, ErrorUsernameTaken
+	}
+
+	emailExists, err := s.userRepo.EmailExists(ctx, req.Email)
+
+	if emailExists {
+		return nil, ErrorEmailTaken
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
@@ -153,7 +160,7 @@ func (s *authService) signToken(u *domains.User) (string, error) {
 		},
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signed, err := token.SignedString([]byte(s.cfg.JWTSecret))
 	if err != nil {
 		return "", fmt.Errorf("AuthService.SignToken: %w", err)
