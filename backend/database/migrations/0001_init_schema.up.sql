@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS assignment_statuses (
 /* ==== CORE TABLE ==== */
 CREATE TABLE IF NOT EXISTS users (
     id                  UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
-    username            VARCHAR(225)    UNIQUE,
+    username            VARCHAR(225)    UNIQUE NOT NULL,
     email               VARCHAR(225)    UNIQUE,
     password            VARCHAR(225),
     role                VARCHAR(8)      NOT NULL DEFAULT 'student',
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS assignments (
     total_point         FLOAT,
     status              INTEGER         REFERENCES assignment_statuses(id),
     started_at          TIMESTAMP       DEFAULT NOW(),
-    completed_at        TIMESTAMP       DEFAULT NOW()
+    completed_at        TIMESTAMP       DEFAULT NULL
 );
 
 CREATE TABLE IF NOT EXISTS assignment_history (
