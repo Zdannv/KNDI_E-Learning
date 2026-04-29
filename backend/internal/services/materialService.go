@@ -59,8 +59,6 @@ func (s *materialService) FindByID(ctx context.Context, id int) (*domains.Materi
 	return m, nil
 }
 
-var ErrorNotFound = errors.New("Not found")
-
 
 func (s *materialService) Update(ctx context.Context, id int, userID string, req dto.UpdateMaterialRequest) (*domains.Material, error) {
 	if req.Name == "" {
