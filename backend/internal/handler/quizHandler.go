@@ -124,6 +124,7 @@ func (h *QuizHandler) DeleteQuestion(w http.ResponseWriter, r *http.Request) {
 	id, err := parseIntParam(r, "id")
 	if err != nil {
 		response.BadRequest(w, "Invalid quiz id")
+		return
 	}
 
 	if err := h.service.DeleteQuestion(r.Context(), id); err != nil {

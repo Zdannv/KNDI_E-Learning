@@ -141,7 +141,7 @@ func (s *quizService) AddQuestion(ctx context.Context, quizID int, senseiID stri
 	for _, o := range req.Options {
 		q.Options = append(q.Options, domains.QuestionOptions{
 			OptionText: o.OptionText,
-			URL: 		*o.URL,
+			URL: 		o.URL,
 			IsCorrect: 	o.IsCorrect,
 		})
 	}
