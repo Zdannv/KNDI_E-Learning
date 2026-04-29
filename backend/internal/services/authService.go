@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -29,9 +30,10 @@ const (
 )
 
 var (
+	ErrorNotFound			= errors.New("Resource not found")
 	ErrorInvalidCredentials	= errors.New("Invalid username or password")
 	ErrorUsernameTaken		= errors.New("Username is already taken")
-	ErrorEmailTaken			=errors.New("Email is already taken")
+	ErrorEmailTaken			= errors.New("Email is already registered")
 	ErrorInvalidToken		= errors.New("Invalid or expired token")
 	ErrorForbidden			= errors.New("You do not have permission to perform this action")
 )
@@ -64,6 +66,21 @@ func (s *authService) Register(ctx context.Context, req dto.RegisterRequest) (*d
 		return nil, errors.New("User role must be sensei or student!")
 	}
 
+	if req.Email == "" {
+		if !isValidEmail(req.Email) {
+			return nil, errors.New("Invalid email format")
+		}
+
+		emailTaken, err := s.userRepo.EmailExists(ctx, req.Email)
+		if err != nil {
+			return nil, fmt.Errorf("AuthService.Register email check: %w", err)
+		}
+
+		if emailTaken {
+			return nil, ErrorEmailTaken
+		}
+	}
+
 	usernameExists, err := s.userRepo.UsernameExists(ctx, req.Username)
 	if err != nil {
 		return nil, fmt.Errorf("AuthService.Register check: %w", err)
@@ -86,6 +103,7 @@ func (s *authService) Register(ctx context.Context, req dto.RegisterRequest) (*d
 
 	user := &domains.User{
 		Username: 	req.Username,
+		Email: 		req.Email,
 		Password: 	string(hash),
 		Role: 		req.Role,
 	}
@@ -169,12 +187,23 @@ func (s *authService) signToken(u *domains.User) (string, error) {
 	return signed, nil
 }
 
+func isValidEmail(email string) bool {
+	at := strings.Index(email, "@")
+	if at < 1 {
+		return false
+	}
+
+	dot := strings.LastIndex(email[:at], ".")
+	return dot > 1 && at+dot < len(email) - 1
+}
+
 func buildAuthResponse(u *domains.User, token string) *dto.AuthResponse {
 	return &dto.AuthResponse{
 		Token: 		token,
 		UserInfo: 	dto.UserResponse{
 			ID: 		u.ID,
 			Username: 	u.Username,
+			Email: 		u.Email,
 			Role: 		u.Role,
 		},
 	}

@@ -37,6 +37,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req dto.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.BadRequest(w, "Invalid request body")
+		return
 	}
 
 	resp, err := h.service.Login(r.Context(), req)
