@@ -61,7 +61,7 @@ const (
 type AssignmentRepository interface {
 	Create(ctx context.Context, a *domains.Assignment) error
 	FindByID(ctx context.Context, id int) (*domains.Assignment, error)
-	Finalise(ctx context.Context, id int, totalPoint float64, completedAt time.Time) error
+	Finalise(ctx context.Context, id int, totalPoint float64, completedAt time.Time, status int) error
 	SaveHistory(ctx context.Context, items []domains.AssignmentHistory) error
 	FindHistoryByAssignmentID(ctx context.Context, assignmentID int) ([]domains.AssignmentHistory, error)
 	FindHistoryByStudentID(ctx context.Context, studentID string) ([]domains.Assignment, error)
@@ -104,8 +104,8 @@ func (r *assignmentRepository) FindByID(ctx context.Context, id int) (*domains.A
 	return a, nil
 }
 
-func (r *assignmentRepository) Finalise(ctx context.Context, id int, totalPoint float64, completedAt time.Time) error {
-	_, err := r.pool.Exec(ctx, finaliseAssignment, totalPoint, domains.StatusCompleted, completedAt, id)
+func (r *assignmentRepository) Finalise(ctx context.Context, id int, totalPoint float64, completedAt time.Time, status int) error {
+	_, err := r.pool.Exec(ctx, finaliseAssignment, totalPoint, status, completedAt, id)
 	if err != nil {
 		return fmt.Errorf("AssignmentRepo.Finalise: %w", err)
 	}

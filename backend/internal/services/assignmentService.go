@@ -133,7 +133,7 @@ func (s *assignmentService) Submit(
 			}
 
 		case domains.QuestionTypeMatchingCard:
-			if submitted.MatchingCardID != nil {
+			if submitted.MatchingCardID != nil && submitted.SelectedCard != nil {
 				h.ScoreEarned = gradeMatchingCard(q.MatchingCards, *submitted.MatchingCardID, *submitted.SelectedCard, q.Point)
 			}
 		}
@@ -148,7 +148,7 @@ func (s *assignmentService) Submit(
 	}
 
 	now := time.Now().UTC()
-	if err := s.assignmentRepo.Finalise(ctx, assignmentID, totalEarned, now); err != nil {
+	if err := s.assignmentRepo.Finalise(ctx, assignmentID, totalEarned, now, domains.StatusCompleted); err != nil {
 		return nil, fmt.Errorf("AssignmentService.Submit Finalise: %w", err)
 	}
 	
