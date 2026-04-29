@@ -24,13 +24,9 @@ const (
 		FROM users 
 		WHERE username = $1`
 	usernameExist        = `
-		SELECT COUNT(*) > 0 
-		FROM users 
-		WHERE username = $1`
+		SELECT EXISTS(SELECT 1 FROM  users WHERE username = $1)`
 	emailExist           = `
-		SELECT COUNT(*) > 0 
-		FROM users 
-		WHERE email = $1`
+		SELECT EXISTS(SELECT 1 FROM  users WHERE email = $1)`
 )
 
 type UserRepository interface {
