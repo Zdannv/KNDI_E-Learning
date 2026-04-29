@@ -30,7 +30,7 @@ type QuestionOptions struct {
 	ID				int					`json:"id"`
 	QuestionID		int					`json:"question_id"`
 	OptionText		string				`json:"option_text"`
-	URL				string				`json:"url"`
+	URL				*string				`json:"url"`
 	IsCorrect		bool				`json:"is_correct"`
 }
 
