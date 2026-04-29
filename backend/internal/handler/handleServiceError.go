@@ -22,6 +22,9 @@ func handleServiceError(w http.ResponseWriter, err error) {
 	case errors.Is(err, services.ErrorInvalidCredentials):
 		response.Unauthorized(w, err.Error())
 
+	case errors.Is(err, services.ErrorInvalidToken):
+		response.Unauthorized(w, err.Error())
+
 	case errors.Is(err, services.ErrorUsernameTaken):
 		response.BadRequest(w, err.Error())
 
