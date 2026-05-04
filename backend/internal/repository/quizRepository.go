@@ -48,16 +48,16 @@ const (
 const (
 	insertQuestion = `
 		INSERT INTO questions (quiz_id, question_text, question_type, correct_answer, url, point, order_number)
-		VALUES ($1, $2, $3, $4, $5)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id`
 
 	insertOption = `
-		INSERT INTO question_options (question_id, question_text, url, is_correct)
+		INSERT INTO question_options (question_id, option_text, url, is_correct)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id`
 
 	insertMatchingCard = `
-		INSERT INTO matching_cards (question_id, left_text, left_url, right_text, right_url
+		INSERT INTO matching_cards (question_id, left_text, left_url, right_text, right_url)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id`
 
@@ -76,7 +76,7 @@ const (
 		FROM matching_cards WHERE question_id = $1
 		ORDER BY id ASC`
 
-	deleteQuestion = `DELETE FROM quizzes WHERE id = $1 AND`
+	deleteQuestion = `DELETE FROM questions WHERE id = $1`
 )
 
 type QuizRepository interface {
@@ -164,7 +164,7 @@ func (r *quizRepository) AddQuestion(ctx context.Context, q *domains.Question) e
 	defer tx.Rollback(ctx)
 
 	err = tx.QueryRow(ctx, insertQuestion,
-		q.ID, q.QuestionText, q.QuestionType,
+		q.QuizID, q.QuestionText, q.QuestionType,
 		q.CorrectAnswer, q.URL, q.Point, q.OrderNumber,
 	).Scan(&q.ID)
 	if err != nil {
@@ -190,7 +190,7 @@ func (r *quizRepository) AddQuestion(ctx context.Context, q *domains.Question) e
 				q.ID,
 				q.MatchingCards[i].LeftText, q.MatchingCards[i].LeftURL,
 				q.MatchingCards[i].RightText, q.MatchingCards[i].RightURL,
-			).Scan(&q.Options[i].ID)
+			).Scan(&q.MatchingCards[i].ID)
 			if err != nil {
 				return fmt.Errorf("QuizRepo.AddQuestion matching card: %w", err)
 			}

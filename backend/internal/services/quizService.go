@@ -151,7 +151,7 @@ func (s *quizService) AddQuestion(ctx context.Context, quizID int, senseiID stri
 			LeftText: 	c.LeftText,
 			LeftURL: 	c.LeftURL,
 			RightText: 	c.RightText,
-			RightURL: 	&c.RightText,
+			RightURL: 	c.RightUrl,
 		})
 	}
 
