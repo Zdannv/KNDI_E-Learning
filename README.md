@@ -9,8 +9,8 @@ Built with **Next.js** (frontend), **Go** (backend), and **PostgreSQL** (databas
 ### 1. Clone the repository
 
 ```bash
-git clone <repository-url>
-cd <repository-folder>
+git clone https://github.com/Zdannv/KNDI_E-Learning.git
+cd KNDI_E-Learning
 ```
 
 ### 2. Set up environment variables
