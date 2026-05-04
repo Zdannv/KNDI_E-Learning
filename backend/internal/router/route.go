@@ -38,7 +38,7 @@ func Route(
 		_, _ = w.Write([]byte(`{"status": "ok"}`))
 	})
 
-	r.Route("/api", func(r chi.Router) {
+	r.Route("/", func(r chi.Router) {
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/register", authHandler.Register)
 			r.Post("/login", authHandler.Login)
@@ -76,7 +76,7 @@ func Route(
 
 			r.Get("/assignments/history", assignmentHandler.GetHistory)
 
-			r.Post("/assignment", assignmentHandler.Start)
+			r.Post("/assignments", assignmentHandler.Start)
 			r.Post("/assignments/{id}/submit", assignmentHandler.Submit)
 			r.Get("/assignments/{id}", assignmentHandler.GetResult)
 		})
