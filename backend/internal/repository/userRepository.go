@@ -58,7 +58,7 @@ func (r *userRepository) Create(ctx context.Context, u *domains.User) error {
 func (r *userRepository) FindByID(ctx context.Context, id string) (*domains.User, error) {
 	u := &domains.User{}
 	err := r.pool.QueryRow(ctx, selectUserByID, id).
-		Scan(&u.ID, &u.Username, &u.Password, &u.Role, &u.CreatedAt, &u.UpdatedAt)
+		Scan(&u.ID, &u.Username, &u.Email, &u.Password, &u.Role, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrorNotFound
@@ -72,7 +72,7 @@ func (r *userRepository) FindByID(ctx context.Context, id string) (*domains.User
 func (r *userRepository) FindByUsername(ctx context.Context, username string) (*domains.User, error) {
 	u := &domains.User{}
 	err := r.pool.QueryRow(ctx, selectUserByUsername, username).
-		Scan(&u.ID, &u.Username, &u.Password, &u.Role, &u.CreatedAt, &u.UpdatedAt)
+		Scan(&u.ID, &u.Username, &u.Email, &u.Password, &u.Role, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrorNotFound
