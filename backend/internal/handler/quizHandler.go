@@ -105,19 +105,26 @@ func (h *QuizHandler) AddQuestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req dto.CreateQuestionRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var reqs []dto.CreateQuestionRequest
+	if err := json.NewDecoder(r.Body).Decode(&reqs); err != nil {
 		response.BadRequest(w, "Invalid request body")
 		return
 	}
 
+	var createdQuestions []any
+
 	senseiID := middleware.GetUserID(r)
-	q, err := h.service.AddQuestion(r.Context(), quizID, senseiID, req)
-	if err != nil {
-		handleServiceError(w, err)
-		return
+	for _, req := range reqs {
+		q, err := h.service.AddQuestion(r.Context(), quizID, senseiID, req)
+		if err != nil {
+			handleServiceError(w, err)
+			return
+		}
+		createdQuestions = append(createdQuestions, q)
 	}
-	response.Created(w, q)
+	
+	
+	response.Created(w, createdQuestions)
 }
 
 func (h *QuizHandler) DeleteQuestion(w http.ResponseWriter, r *http.Request) {
