@@ -66,20 +66,22 @@ func (s *authService) Register(ctx context.Context, req dto.RegisterRequest) (*d
 		return nil, errors.New("User role must be sensei or student!")
 	}
 
-	if req.Email == "" {
-		if !isValidEmail(req.Email) {
-			return nil, errors.New("Invalid email format")
-		}
+	// if req.Email == "" {
+	// 	return nil, fmt.Errorf("Email is required!")
+	// }
 
-		emailTaken, err := s.userRepo.EmailExists(ctx, req.Email)
-		if err != nil {
-			return nil, fmt.Errorf("AuthService.Register email check: %w", err)
-		}
-
-		if emailTaken {
-			return nil, ErrorEmailTaken
-		}
-	}
+	// if !isValidEmail(req.Email) {
+	// 	return nil, errors.New("Invalid email format")
+	// }
+	
+	// emailTaken, err := s.userRepo.EmailExists(ctx, req.Email)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("AuthService.Register email check: %w", err)
+	// }
+	
+	// if emailTaken {
+	// 	return nil, ErrorEmailTaken
+	// }
 
 	usernameExists, err := s.userRepo.UsernameExists(ctx, req.Username)
 	if err != nil {
