@@ -45,7 +45,7 @@ func main() {
 	httpHandler := router.Route(cfg, authSvc, materialSvc, quizSvc, assignmentSvc)
 
 	srv := &http.Server{
-		Addr: 		fmt.Sprintf(": %s", cfg.AppPort),
+		Addr: 		fmt.Sprintf(":%s", cfg.AppPort),
 		Handler: 	httpHandler,
 		
 		ReadTimeout: 		10 * time.Second,
@@ -56,7 +56,7 @@ func main() {
 
 	serverErr := make(chan error, 1)
 	go func() {
-		log.Printf("[Main] Server listening on : %s", srv.Addr)
+		log.Printf("[Main] Server listening on port %s", srv.Addr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErr <- err
 		}
