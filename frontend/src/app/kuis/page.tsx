@@ -10,8 +10,28 @@ import QuizResultView from "@/components/kuis/QuizResultView";
 import QuestionCard from "@/components/kuis/QuestionCard";
 import { MatchingStateEntry } from "@/components/kuis/MatchingCard";
 
+// Normalisasi data quiz dari localStorage yang mungkin masih menyimpan options
+// dalam format lama (array of string) bukan format baru (array of object { text: string })
+function normalizeQuizzes(quizzes: QuizData[]): QuizData[] {
+  return quizzes.map((quiz) => ({
+    ...quiz,
+    questions: quiz.questions.map((q) => {
+      if (q.type === "multiple_choice") {
+        return {
+          ...q,
+          options: (q.options as unknown[]).map((opt) =>
+            typeof opt === "string" ? { text: opt } : opt
+          ) as [any, any, any, any],
+        };
+      }
+      return q;
+    }),
+  }));
+}
+
 export default function UserKuisPage() {
-  const [storedQuizzes, , isClient] = useLocalStorage<QuizData[]>("kndi_quizzes_v2", fallbackMockQuizzes);
+  const [rawStoredQuizzes, , isClient] = useLocalStorage<QuizData[]>("kndi_quizzes_v2", fallbackMockQuizzes);
+  const storedQuizzes = normalizeQuizzes(rawStoredQuizzes);
   const [storedHistory, setStoredHistory] = useLocalStorage<QuizHistoryRecord[]>("kndi_history", []);
 
   const [selectedQuiz, setSelectedQuiz] = useState<QuizData | null>(null);
