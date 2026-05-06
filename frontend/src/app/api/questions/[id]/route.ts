@@ -80,8 +80,8 @@ export async function DELETE(
         }
 
         const data = await apiRequest(`/questions/${questionId}`, {
-        method: "DELETE",
-        token,
+            method: "DELETE",
+            token
         })
 
         return ok(data)
