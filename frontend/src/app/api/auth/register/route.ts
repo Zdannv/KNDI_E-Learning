@@ -1,38 +1,39 @@
+import { apiRequest } from "@/app/lib/api-client";
+import { badRequest, created, handleRouteError } from "@/app/lib/route-helper";
 import { NextRequest, NextResponse } from "next/server";
+
+interface RegisterRequestBody {
+    username: string
+    email: string
+    password: string
+    role: string
+}
 
 export async function POST(req: NextRequest) {
     try {
-        const body = await req.json()
+        const body: RegisterRequestBody = await req.json()
+        const missing: string[] = []
 
-        const { username, email, password, role } = body;
-        
-        if (!username || !email || !password || !role) {
-            return NextResponse.json(
-                {
-                    status: "error",
-                    error: "username, email, password, role are required!"
-                },
-                {
-                    status: 400
-                }
-            );
+        if (!body.username) missing.push("username")
+        if (!body.email) missing.push("email")
+        if (!body.password) missing.push("password")
+        if (!body.role) missing.push("role")
+
+        if (missing.length > 0) {
+            return badRequest(`Missing required fields: ${missing.join(", ")}`)
         }
 
-        console.log("INTERNAL_API_URL:", process.env.INTERNAL_API_URL)
+        if (body.role !== "sensei" && body.role !== "student") {
+            return badRequest("User role must be 'sensei' or 'student'")
+        }
 
-        const res = await fetch(`${process.env.INTERNAL_API_URL}/auth/register`, {
+        const data = await apiRequest("/auth/register", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, email, password, role })
-        });
+            body
+        })
 
-        const data = await res.json()
-
-        return NextResponse.json(data, { status: res.status })
-    } catch (error) {
-        return NextResponse.json(
-            { status: "error", error: "Internal Server Error" },
-            { status: 500 }
-        )
+        return created(data)
+    } catch (err) {
+        return handleRouteError(err, "POST /api/auth/register")
     }
 }
