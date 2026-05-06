@@ -17,7 +17,11 @@ interface OptionsBody {
 
 interface QuestionRequestBody {
     question_text: string
+<<<<<<< HEAD
     question_type: 1 | 2 | 3 | 4
+=======
+    question_type: 1 | 2 | 3
+>>>>>>> 9f8d6d7 (feat: Added quizzes route)
     correct_answer?: string
     url?: string
     point: number

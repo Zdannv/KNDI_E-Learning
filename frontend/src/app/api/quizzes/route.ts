@@ -1,5 +1,10 @@
 import { apiRequest, extractBearerToken } from "@/app/lib/api-client";
+<<<<<<< HEAD
 import { badRequest, created, handleRouteError, ok, unauthorized } from "@/app/lib/route-helper";
+=======
+import { badRequest, created, handleRouteError, ok } from "@/app/lib/route-helper";
+import { unauthorized } from "next/navigation";
+>>>>>>> 9f8d6d7 (feat: Added quizzes route)
 import { NextRequest } from "next/server";
 
 interface CreateRequestBody {
