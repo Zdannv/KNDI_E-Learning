@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ApiError } from "./api-client";
 
 export function ok<T>(data: T, status = 200): NextResponse {
-    return NextResponse.json({ status: "success", data, "error": null })
+    return NextResponse.json({ status: "success", data, "error": null }, { status })
 }
 
 export function created<T>(data: T): NextResponse {
