@@ -22,26 +22,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     try {
         const token = extractBearerToken(req.headers.get('authorization'))
         if (!token) {
-<<<<<<< HEAD
             return unauthorized()
         }
 
         const id = await getQuizId(params)
-=======
-            return unauthorized
-        }
-
-        const id = getQuizId(params)
->>>>>>> 9f8d6d7 (feat: Added quizzes route)
         if (!id) {
             return badRequest("Invalid quiz id!")
         }
 
-<<<<<<< HEAD
         const data = await apiRequest(`/quizzes/${id}`, { token })
-=======
-        const data = await apiRequest(`/quizzes${id}`, { token })
->>>>>>> 9f8d6d7 (feat: Added quizzes route)
 
         return ok(data)
     } catch (err) {
@@ -65,12 +54,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
         const data = await apiRequest(`/quizzes/${id}`, {
             method: "PUT",
-<<<<<<< HEAD
             body,
             token
-=======
-            body
->>>>>>> 9f8d6d7 (feat: Added quizzes route)
         })
 
         return ok(data)
