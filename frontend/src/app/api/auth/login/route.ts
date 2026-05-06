@@ -1,19 +1,27 @@
-import { NextRequest, NextResponse } from "next/server"
+import { apiRequest } from "@/app/lib/api-client"
+import { badRequest, ok, handleRouteError } from "@/app/lib/route-helper"
+import { NextRequest } from "next/server"
+
+interface LoginRequestBody {
+    username: string
+    password: string
+}
 
 export async function POST(req: NextRequest) {
-    const body = await req.json();
+    try {
+        const body: LoginRequestBody = await req.json()
 
-    const res = await fetch(`${process.env.INTERNAL_API_URL}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-    })
+        if (!body.username || !body.password) {
+            return badRequest("Username and password is required!")
+        }
 
-    const data = await res.json()
+        const data = await apiRequest("/auth/login", {
+            method: "POST",
+            body
+        })
 
-    if (!res.ok) {
-        return NextResponse.json(data, { status: res.status })
+        return ok(data)
+    } catch (err) {
+        return handleRouteError(err, "POST /api/auth/login")
     }
-
-    return NextResponse.json(data);
 }
