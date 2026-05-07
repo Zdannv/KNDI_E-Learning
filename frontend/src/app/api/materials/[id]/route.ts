@@ -41,7 +41,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const token = extractBearerToken(req.headers.get('authoization'))
+        const token = extractBearerToken(req.headers.get('authorization'))
         if (!token) {
             return unauthorized()
         }
@@ -58,7 +58,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
         const data = await apiRequest(`/materials/${id}`, {
             method: "PUT",
-            body
+            body,
+            token
         })
 
         return ok(data)
@@ -81,6 +82,7 @@ export async function DELETE(req:NextRequest, { params }: { params: Promise<{ id
 
         const data = await apiRequest(`/materials/${id}`, {
             method: "DELETE",
+            token
         })
 
         return ok(data)
