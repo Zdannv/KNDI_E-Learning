@@ -38,7 +38,8 @@ export async function POST(req: NextRequest) {
 
         const data = await apiRequest("/materials", {
             method: "POST",
-            body
+            body,
+            token
         })
 
         return created(data)
