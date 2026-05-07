@@ -1,6 +1,5 @@
 import { apiRequest, extractBearerToken } from "@/app/lib/api-client";
-import { badRequest, created, handleRouteError } from "@/app/lib/route-helper";
-import { unauthorized } from "next/navigation";
+import { badRequest, created, handleRouteError, unauthorized } from "@/app/lib/route-helper";
 import { NextRequest } from "next/server";
 
 interface StartAssignmentBody {
