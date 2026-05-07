@@ -1,6 +1,5 @@
 import { apiRequest, extractBearerToken } from "@/app/lib/api-client";
-import { handleRouteError, ok } from "@/app/lib/route-helper";
-import { unauthorized } from "next/navigation";
+import { handleRouteError, ok, unauthorized } from "@/app/lib/route-helper";
 import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
@@ -10,10 +9,7 @@ export async function GET(req: NextRequest) {
             return unauthorized()
         }
 
-        const data = await apiRequest("/assignments/history", {
-            method: "POST",
-            token
-        })
+        const data = await apiRequest("/assignments/history", { token })
 
         return ok(data)
     } catch (err) {
