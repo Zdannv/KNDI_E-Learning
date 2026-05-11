@@ -5,7 +5,7 @@ import (
 	"KNDI_E-LEARNING/internal/middleware"
 	"KNDI_E-LEARNING/internal/services"
 	"KNDI_E-LEARNING/package/response"
-	"encoding/json"
+	"KNDI_E-LEARNING/package/utils"
 	"log"
 	"net/http"
 )
@@ -44,10 +44,29 @@ func (h *MaterialHandler) FindByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MaterialHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var req dto.CreateMaterialRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.BadRequest(w, "Invalid body request")
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		response.BadRequest(w, "Failed to processing form data")
 		return
+	}
+
+	name := r.FormValue("name")
+	desc := r.FormValue("description")
+
+	var descriptionPtr *string
+	if desc != "" {
+		descriptionPtr = &desc
+	}
+
+	filePath, err := utils.UploadFile(r, "file_path", "./storage/materials")
+	if err != nil {
+		response.BadRequest(w, err.Error())
+		return
+	}
+
+	req := dto.CreateMaterialRequest{
+		Name: 			name,
+		Description: 	descriptionPtr,
+		FilePath: 		filePath,
 	}
 
 	senseiID := middleware.GetUserID(r)
@@ -67,14 +86,32 @@ func (h *MaterialHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req dto.UpdateMaterialRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.BadRequest(w, "Invalid body request")
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		response.BadRequest(w, "Failed to process form data")
+	}
+
+	name := r.FormValue("name")
+	desc := r.FormValue("description")
+
+	var descriptionPtr *string
+	if desc != "" {
+		descriptionPtr = &desc
+	}
+
+	filePath, err := utils.UploadFile(r, "file_path", "./storage/materials")
+	if err != nil {
+		response.BadRequest(w, err.Error())
 		return
 	}
 
-	userID := middleware.GetUserID(r)
-	m, err := h.service.Update(r.Context(), id, userID, req)
+	req := dto.UpdateMaterialRequest{
+		Name: 			name,
+		Description: 	descriptionPtr,
+		FilePath: 		filePath,
+	}
+
+	senseiID := middleware.GetUserID(r)
+	m, err := h.service.Update(r.Context(), id, senseiID, req)
 	if err != nil {
 		handleServiceError(w, err)
 		return
