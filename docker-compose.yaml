@@ -11,6 +11,10 @@ services:
       - INTERNAL_API_URL=http://backend:8080
     ports:
       - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
     networks:
       - app_network
 
@@ -40,6 +44,8 @@ services:
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
     ports:
       - "${APP_PORT}:${APP_PORT}"
+    volumes:
+      - ./backend/storage:/app/storage
     networks:
       - app_network
 
