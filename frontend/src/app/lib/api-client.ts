@@ -43,15 +43,19 @@ function getBaseURL(): string {
 export async function apiRequest<T = unknown>(
     path: string,
     opts: ApiRequestOptions = {}
-): Promise<BackendResponse<T>> {
+): Promise<T> {
     const { method = "GET", body, token, headers: extractHeaders = {} } = opts
     
     const baseUrl = getBaseURL();
     const url = `${baseUrl}${path}`
+    const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
 
     const headers: Record<string, string> = {
-        "Content-Type": "application/json",
         ...extractHeaders,
+    }
+
+    if (!isFormData) {
+        headers["Content-Type"] = "application/json"
     }
 
     if (token) {
@@ -64,7 +68,7 @@ export async function apiRequest<T = unknown>(
     }
 
     if (body != undefined) {
-        init.body = JSON.stringify(body);
+        init.body = isFormData ? (body as FormData) : JSON.stringify(body)
     }
 
     let response: Response;
@@ -90,7 +94,7 @@ export async function apiRequest<T = unknown>(
         throw new ApiError(response.status, message)
     }
 
-    return json
+    return (json as BackendSuccessResponse<T>).data
 }
 
 export function extractBearerToken(
