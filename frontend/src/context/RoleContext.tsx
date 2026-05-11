@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {
   createContext,
@@ -15,7 +15,7 @@ interface RoleContextType {
   currentRole: UserRole;
 }
 
-const RoleContext = createContext<RoleContextType | undefined>(undefined);
+const RoleContext = createContext<RoleContextType | undefined>(undefined)
 
 export function RoleProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -33,7 +33,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     <RoleContext.Provider value={{ currentRole }}>
       {children}
     </RoleContext.Provider>
-  );
+  )
 }
 
 export function useRole(): RoleContextType {
