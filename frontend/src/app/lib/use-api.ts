@@ -22,7 +22,7 @@ export const tokenStorage = {
         return localStorage.getItem(TOKEN_KEY)
     },
     set(token: string): void {
-        localStorage.setItemItem(TOKEN_KEY, token)
+        localStorage.setItem(TOKEN_KEY, token)
     },
     clear(): void {
         localStorage.removeItem(TOKEN_KEY)
@@ -37,8 +37,11 @@ interface FetchOptions {
 
 async function apiFetch<T>(path: string, opts: FetchOptions = {}): Promise<T> {
     const { method = "GET", body, authenticated = true } = opts
-    const headers: Record<string, string> = {
-        "Content-Type": "application/json"
+    const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
+    const headers: Record<string, string> = {}
+
+    if (!isFormData) {
+        headers["Content-Type"] = "application/json"
     }
 
     if (authenticated) {
@@ -49,8 +52,8 @@ async function apiFetch<T>(path: string, opts: FetchOptions = {}): Promise<T> {
     }
 
     const init: RequestInit = { method, headers }
-    if (body !== 'undefined') {
-        init.body = JSON.stringify(body)
+    if (body !== undefined) {
+        init.body = isFormData ? (body as FormData) : JSON.stringify(body)
     }
 
     const response = await fetch(path, init)
@@ -74,12 +77,18 @@ export interface AuthResponse {
 }
 
 export const authApi = {
-    async login(username: string, password: string): Promise<AuthResponse> {
-        const result = await apiFetch<{ data: AuthResponse }>("/auth/login", {
-            method: "POST",
-            body: { username, password },
-            authenticated: false
-        })
+    async login(
+        username: string, 
+        password: string
+    ): Promise<AuthResponse> {
+        const result = await apiFetch<{ data: AuthResponse }>(
+            "/api/auth/login", 
+            {
+                method: "POST",
+                body: { username, password },
+                authenticated: false
+            }
+        )
 
         const auth = (result as unknown as ApiEnvelop<AuthResponse>).data ?? (result as unknown as AuthResponse)
         tokenStorage.set(auth.token)
@@ -93,7 +102,7 @@ export const authApi = {
         role: "sensei" | "student"
     ): Promise<AuthResponse> {
         const result = await apiFetch<ApiEnvelop<AuthResponse>>(
-            "/auth/register",
+            "/api/auth/register",
             {
                 method: "POST",
                 body: { username, email, password, role },
@@ -121,18 +130,11 @@ export interface Material {
     updated_at: string
 }
 
-export const materiaApi = {
+export const materialApi = {
     list: () => apiFetch<Material[]>("/api/materials"),
     getById: (id: number) => apiFetch<Material>(`/api/materials/${id}`),
-    create: (payload: { 
-        name: string, 
-        description?: string, 
-        file_path?: string 
-    }) => apiFetch<Material>("/api/materials", { method: "POST", body: payload }),
-    update: (
-        id: number,
-        payload: { name: string, description?: string, file_path?: string }
-    ) => apiFetch<Material>(`/api/materials/${id}`, { method: "PUT", body: payload }),
+    create: (payload: FormData) => apiFetch<Material>("/api/materials", { method: "POST", body: payload }),
+    update: (id: number, payload: FormData) => apiFetch<Material>(`/api/materials/${id}`, { method: "PUT", body: payload }),
     delete: (id: number) => apiFetch<Material>(`/api/materials/${id}`, { method: "POST" })
 }
 
@@ -191,7 +193,7 @@ export const quizApi = {
 
     addQuestions: (quizId: number, question: unknown) => 
         apiFetch<Question>(`/api/quizzes/${quizId}/questions`, { method: "POST", body: question }),
-    deleteQuestions: (questionId: number) => apiFetch<Question>(`/pi/questions/${questionId}`)
+    deleteQuestions: (questionId: number) => apiFetch<Question>(`/api/questions/${questionId}`)
 }
 
 export interface AssignmentResult {
@@ -234,7 +236,7 @@ export const assignmentApi = {
     start: (quizId: number) => apiFetch<{
         id: number, student_id: number, quiz_id: number,
         status: string, started_at: string
-    }>(`/api/assignment`, { method: "POST", body: { quiz_id: quizId } }),
+    }>(`/api/assignments`, { method: "POST", body: { quiz_id: quizId } }),
     submit: (assignmentId: number, answers: SubmitAnswer[]) => 
         apiFetch<AssignmentResult>(`/api/assignments/${assignmentId}/submit`, { method: "POST", body: { answer: answers } }),
     getResult: (assignmentId: number) => apiFetch<AssignmentResult>(`/api/assignments/${assignmentId}`),
