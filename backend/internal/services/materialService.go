@@ -4,9 +4,11 @@ import (
 	"KNDI_E-LEARNING/internal/domains"
 	"KNDI_E-LEARNING/internal/dto"
 	"KNDI_E-LEARNING/internal/repository"
+	"KNDI_E-LEARNING/package/utils"
 	"context"
 	"errors"
 	"fmt"
+	"log"
 )
 
 type MaterialService interface {
@@ -83,11 +85,26 @@ func (s *materialService) Update(ctx context.Context, id int, userID string, req
 }
 
 func (s *materialService) Delete(ctx context.Context, id int, userID string) error {
+	m, err := s.repo.FindByID(ctx, id)
+	if err  != nil {
+		if errors.Is(err, repository.ErrorNotFound) {
+			return repository.ErrorNotFound
+		}
+		return fmt.Errorf("MaterialService.Delete FindByID: %w", err)
+	}
+
 	if err := s.repo.DeleteMaterial(ctx, id, userID); err != nil {
 		if errors.Is(err, repository.ErrorNotFound) {
 			return ErrorNotFound
 		}
 		return fmt.Errorf("MaterialService.Delete: %w", err)
 	}
+
+	if m.FilePath != nil && *m.FilePath != "" {
+		if err := utils.DeleteFile(*m.FilePath); err != nil {
+			log.Printf("Failed to delete file %s: %v", *m.FilePath, err)
+		}
+	}
+
 	return nil
 } 

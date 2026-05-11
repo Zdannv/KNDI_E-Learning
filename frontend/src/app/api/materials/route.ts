@@ -30,15 +30,16 @@ export async function POST(req: NextRequest) {
             return unauthorized()
         }
 
-        const body: CreateMaterialBody = await req.json()
+        const formData =  await req.formData()
+        const name = formData.get("name") as string | null
 
-        if (!body.name?.trim()) {
+        if (!name?.trim()) {
             return badRequest("Material name is required!")
         }
 
         const data = await apiRequest("/materials", {
             method: "POST",
-            body,
+            body: formData,
             token
         })
 
