@@ -131,7 +131,7 @@ export interface Material {
 }
 
 export const materialApi = {
-    list: () => apiFetch<Material[]>("/api/materials"),
+    getAll: () => apiFetch<Material[]>("/api/materials"),
     getById: (id: number) => apiFetch<Material>(`/api/materials/${id}`),
     create: (payload: FormData) => apiFetch<Material>("/api/materials", { method: "POST", body: payload }),
     update: (id: number, payload: FormData) => apiFetch<Material>(`/api/materials/${id}`, { method: "PUT", body: payload }),
