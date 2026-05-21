@@ -117,13 +117,15 @@ export default function Sidebar({ isOpen = false, setIsOpen }: SidebarProps) {
         `}
       >
         <div className="p-6 flex items-center justify-between gap-3 border-b border-slate-100 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="bg-indigo-600 p-2 rounded-lg text-white shrink-0">
-              <GraduationCap size={24} />
-            </div>
-            <span className="text-xl font-bold bg-linear-to-r from-indigo-600 to-indigo-800 bg-clip-text text-transparent">
-              KNDI Learning
-            </span>
+          <div>
+            <a href="/dashboard" className="flex items-center gap-3">
+              <div className="bg-indigo-600 p-2 rounded-lg text-white shrink-0">
+                <GraduationCap size={24} />
+              </div>
+              <span className="text-xl font-bold bg-linear-to-r from-indigo-600 to-indigo-800 bg-clip-text text-transparent">
+                KNDI Learning
+              </span>
+            </a>
           </div>
           <button
             onClick={closeMenu}
