@@ -81,7 +81,7 @@ function LoginForm() {
 
       {/* Login Card */}
       <div className="bg-white rounded-3xl shadow-xl shadow-slate-100 border border-slate-200/80 p-8 relative overflow-hidden">
-        <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-indigo-500 to-rose-500" />
+        <div className="absolute top-0 inset-x-0 h-1.5 bg-linear-to-r from-indigo-500 to-rose-500" />
         
         <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
           <Lock className="w-5 h-5 text-indigo-500" />
