@@ -1,5 +1,5 @@
+import { AuthProvider } from "@/context/AuthContext";
 import { RoleProvider } from "@/context/RoleContext";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -13,15 +13,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="id">
       <body className={`${inter.className} antialiased bg-slate-50`}>
-        <RoleProvider>
-          <DashboardLayout>{children}</DashboardLayout>
-        </RoleProvider>
+        <AuthProvider>
+          <RoleProvider>{children}</RoleProvider>
+        </AuthProvider>
       </body>
     </html>
   );
