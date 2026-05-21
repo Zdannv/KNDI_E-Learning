@@ -14,7 +14,10 @@ export class ClientApiError extends Error {
     }
 }
 
-const TOKEN_KEY = "token_storage"
+const TOKEN_KEY = "app_token"
+const USER_KEY = "app_token_user"
+const COOKIE_SESSION = "app_session"
+const COOKIE_ROLE = "app_role"
 
 export const tokenStorage = {
     get(): string | null {
@@ -26,6 +29,7 @@ export const tokenStorage = {
     },
     clear(): void {
         localStorage.removeItem(TOKEN_KEY)
+        localStorage.removeItem(USER_KEY)
     }
 }
 
@@ -118,6 +122,9 @@ export const authApi = {
 
     logout(): void {
         tokenStorage.clear()
+        document.cookie = `${COOKIE_SESSION}=; path=/; max-age=0; SameSite=Lax`
+        document.cookie = `${COOKIE_ROLE}=; path=/; max-age=0; SameSite=Lax`
+        window.location.href = "/login"
     }
 }
 

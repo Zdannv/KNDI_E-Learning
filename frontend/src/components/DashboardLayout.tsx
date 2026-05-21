@@ -1,6 +1,6 @@
 "use client";
 
-import React, { ReactNode, useState } from "react";
+import { ReactNode, useState } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 
