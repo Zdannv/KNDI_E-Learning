@@ -1,160 +1,178 @@
 "use client";
 
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react"
-
-const TOKEN_KEY = "kndi_token"
+import {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 export interface AuthUser {
-    ID: string
-    username: string
-    email: string
-    role: "sensei" | "student"
+  ID: string;
+  username: string;
+  email: string;
+  role: "sensei" | "student";
 }
 
 interface AuthContextValue {
-    user: AuthUser | null
-    token: string | null
-    isLoading: boolean
-    login: ( username: string, password: string ) => Promise<void>
-    register: (
-        username: string,
-        email: string,
-        password: string,
-        role: "sensei" | "student"
-    ) => Promise<void>
-    logout: () => void
+  user: AuthUser | null;
+  token: string | null;
+  isLoading: boolean;
+  login: (username: string, password: string) => Promise<void>;
+  register: (
+    username: string,
+    email: string,
+    password: string,
+    role: "sensei" | "student"
+  ) => Promise<void>;
+  logout: () => void;
 }
 
 export class AuthError extends Error {
-    constructor(
-        public readonly httpStatus: number,
-        message: string
-    ) {
-        super(message)
-        this.name = "AuthError"
-    }
+  constructor(
+    public readonly httpStatus: number,
+    message: string
+  ) {
+    super(message);
+    this.name = "AuthError";
+  }
 }
 
-interface ApiEnvelop<T = unknown> {
-    status: "success" | "error"
-    data: T | null
-    error: string | null
-    message?: string
+interface ApiEnvelope<T = unknown> {
+  status: "success" | "error";
+  data: T | null;
+  error: string | null;
+  message?: string;
 }
 
 interface AuthResponseData {
-    token: string
-    user: AuthUser
+  token: string;
+  user: AuthUser;
 }
 
-async function postJson<T>(
-    path: string, 
-    body: unknown
-): Promise<ApiEnvelop<T>> {
-    const response = await fetch(path, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-    })
+const LS_TOKEN = "app_token";
+const LS_USER = "app_token_user";
+const COOKIE_SESSION = "app_session";
+const COOKIE_ROLE = "app_role";
 
-    const json: ApiEnvelop<T> = await response.json()
-
-    if (!response.ok) {
-        const message = json.message ?? json.error ?? `Request failed (${response.status})`
-        throw new AuthError(response.status, message)
-    }
-
-    return json
+function setCookie(name: string, value: string, days: number) {
+  const expires = new Date();
+  expires.setDate(expires.getDate() + days);
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; expires=${expires.toUTCString()}; SameSite=Lax`;
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined)
+function deleteCookie(name: string) {
+  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
+}
+
+async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  const json: ApiEnvelope<T> = await response.json();
+
+  if (!response.ok) {
+    const message =
+      json.message ?? json.error ?? `Request failed (${response.status})`;
+    throw new AuthError(response.status, message);
+  }
+
+  return json.data as T;
+}
+
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<AuthUser | null>(null)
-    const [token, setToken] = useState<string | null>(null)
-    const [isLoading, setIsLoading] = useState(true)
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        try {
-            const storedToken = localStorage.getItem(TOKEN_KEY)
-            const storedUser = localStorage.getItem(`${TOKEN_KEY}_user`)
+  useEffect(() => {
+    try {
+      const storedToken = localStorage.getItem(LS_TOKEN);
+      const storedUser = localStorage.getItem(LS_USER);
+      if (storedToken && storedUser) {
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser) as AuthUser);
+      }
+    } catch {
+      localStorage.removeItem(LS_TOKEN);
+      localStorage.removeItem(LS_USER);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-            if (storedToken && storedUser) {
-                setToken(storedToken)
-                setUser(JSON.parse(storedUser) as AuthUser)
-            }
-        } catch (err) {
-            localStorage.removeItem(TOKEN_KEY)
-            localStorage.removeItem(`${TOKEN_KEY}_user`)
-        } finally {
-            setIsLoading(false)
-        }
-    }, [])
+  const persistSession = useCallback((newToken: string, newUser: AuthUser) => {
+    localStorage.setItem(LS_TOKEN, newToken);
+    localStorage.setItem(LS_USER, JSON.stringify(newUser));
 
-    // PERSIST HELPER
-    const persistSession = useCallback((newToken: string, newUser: AuthUser) => {
-        localStorage.setItem(TOKEN_KEY, newToken)
-        localStorage.setItem(`${TOKEN_KEY}_user`, JSON.stringify(newUser))
-        setToken(newToken)
-        setUser(newUser)
-    }, [])
+    setCookie(COOKIE_SESSION, newToken, 1);
+    setCookie(COOKIE_ROLE, newUser.role, 1);
 
-    const clearSession = useCallback(() => {
-        localStorage.removeItem(TOKEN_KEY)
-        localStorage.removeItem(`${TOKEN_KEY}_user`)
-        setToken(null)
-        setUser(null)
-    }, [])
+    setToken(newToken);
+    setUser(newUser);
+  }, []);
 
-    const login = useCallback(
-        async (username: string, password: string) => {
-            const envelop = await postJson<AuthResponseData>("/api/auth/login", {
-                username,
-                password
-            })
+  const clearSession = useCallback(() => {
+    localStorage.removeItem(LS_TOKEN);
+    localStorage.removeItem(LS_USER);
+    deleteCookie(COOKIE_SESSION);
+    deleteCookie(COOKIE_ROLE);
+    setToken(null);
+    setUser(null);
+  }, []);
 
-            const { token: newToken, user: newUser } = envelop.data!
-            persistSession(newToken, newUser)
-        },
-        [persistSession]
-    )
+  const login = useCallback(
+    async (username: string, password: string) => {
+      const data = await postJson<AuthResponseData>("/api/auth/login", {
+        username,
+        password,
+      });
+      persistSession(data.token, data.user);
+    },
+    [persistSession]
+  );
 
-    const register = useCallback(
-        async (
-            username: string,
-            email: string,
-            password: string,
-            role: "sensei" | "student"
-        ) => {
-            const envelop = await postJson<AuthResponseData>(
-                "/api/auth/register",
-                { username, email, password, role }
-            )
+  const register = useCallback(
+    async (
+      username: string,
+      email: string,
+      password: string,
+      role: "sensei" | "student"
+    ) => {
+      const data = await postJson<AuthResponseData>("/api/auth/register", {
+        username,
+        email,
+        password,
+        role,
+      });
+      persistSession(data.token, data.user);
+    },
+    [persistSession]
+  );
 
-            const { token: newToken, user: newUser } = envelop.data!
-            persistSession(newToken, newUser)
-        },
-        [persistSession]
-    )
+  const logout = useCallback(() => {
+    clearSession();
+    window.location.href = "/login";
+  }, [clearSession]);
 
-    const logout = useCallback(() => {
-        clearSession()
-        document.cookie = "kndi_session=; path=/; max-age=0; SameSite=Lax"
-        window.location.href = "/login"
-    }, [clearSession])
+  const value = useMemo<AuthContextValue>(
+    () => ({ user, token, isLoading, login, register, logout }),
+    [user, token, isLoading, login, register, logout]
+  );
 
-    const value = useMemo<AuthContextValue>(
-        () => ({ user, token, isLoading, login, register, logout }),
-        [user, token, isLoading, login, register, logout]
-    )
-
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextValue {
-    const ctx = useContext(AuthContext);
-    if (!ctx) {
-        throw new Error("useAuth must be used inside <AuthProvider>");
-    }
-    return ctx;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
+  return ctx;
 }
