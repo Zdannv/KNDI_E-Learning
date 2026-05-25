@@ -10,8 +10,28 @@ import QuizResultView from "@/components/kuis/QuizResultView";
 import QuestionCard from "@/components/kuis/QuestionCard";
 import { MatchingStateEntry } from "@/components/kuis/MatchingCard";
 
+// Normalisasi data quiz dari localStorage yang mungkin masih menyimpan options
+// dalam format lama (array of string) bukan format baru (array of object { text: string })
+function normalizeQuizzes(quizzes: QuizData[]): QuizData[] {
+  return quizzes.map((quiz) => ({
+    ...quiz,
+    questions: quiz.questions.map((q) => {
+      if (q.type === "multiple_choice") {
+        return {
+          ...q,
+          options: (q.options as unknown[]).map((opt) =>
+            typeof opt === "string" ? { text: opt } : opt
+          ) as [any, any, any, any],
+        };
+      }
+      return q;
+    }),
+  }));
+}
+
 export default function UserKuisPage() {
-  const [storedQuizzes, , isClient] = useLocalStorage<QuizData[]>("kndi_quizzes_v2", fallbackMockQuizzes);
+  const [rawStoredQuizzes, , isClient] = useLocalStorage<QuizData[]>("kndi_quizzes_v2", fallbackMockQuizzes);
+  const storedQuizzes = normalizeQuizzes(rawStoredQuizzes);
   const [storedHistory, setStoredHistory] = useLocalStorage<QuizHistoryRecord[]>("kndi_history", []);
 
   const [selectedQuiz, setSelectedQuiz] = useState<QuizData | null>(null);
@@ -106,16 +126,42 @@ export default function UserKuisPage() {
 
   const handleSubmit = () => {
     if (!isAnswered) return;
-    let correctCount = 0;
+    
+    // Calculate total weight
+    const totalWeight = selectedQuiz.questions.reduce((sum, q) => sum + q.weight, 0);
+    
+    let weightedScore = 0;
+    
     selectedQuiz.questions.forEach((q) => {
       const ua = answers[q.id] || "";
-      if (q.type === "multiple_choice" && parseInt(ua, 10) === q.correctOptionIndex) correctCount++;
-      else if (q.type === "short_answer" && ua.trim().toLowerCase() === q.correctAnswerText.trim().toLowerCase()) correctCount++;
-      else if (q.type === "matching" && ua === "MATCHED_ALL") correctCount++;
+      
+      // Skip essay questions in auto-grading (they contribute 0 for now)
+      if (q.type === "essay") {
+        return;
+      }
+      
+      // Calculate max score contribution for this question
+      const maxScoreContribution = (q.weight / totalWeight) * 100;
+      
+      // Determine correctness (0.0 to 1.0)
+      let correctness = 0;
+      
+      if (q.type === "multiple_choice") {
+        correctness = parseInt(ua, 10) === q.correctOptionIndex ? 1 : 0;
+      } else if (q.type === "short_answer") {
+        correctness = ua.trim().toLowerCase() === q.correctAnswerText.trim().toLowerCase() ? 1 : 0;
+      } else if (q.type === "matching") {
+        correctness = ua === "MATCHED_ALL" ? 1 : 0;
+      }
+      
+      // Add weighted score
+      weightedScore += correctness * maxScoreContribution;
     });
-    const calculatedScore = Math.round((correctCount / totalQuestions) * 100);
+    
+    const calculatedScore = Math.round(weightedScore);
     setScore(calculatedScore);
     setIsSubmitted(true);
+    
     const now = new Date();
     setStoredHistory((prev) => [
       {

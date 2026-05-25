@@ -145,6 +145,31 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Link href="/admin/materi" className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white hover:shadow-lg transition-all active:scale-95 group">
+          <div className="flex items-center justify-between mb-3">
+            <div className="p-3 bg-white/20 rounded-lg">
+              <FileText className="w-6 h-6" />
+            </div>
+            <ArrowUpRight className="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <h3 className="text-lg font-bold mb-1">Kelola Materi</h3>
+          <p className="text-sm text-blue-100">Buat dan edit materi pembelajaran</p>
+        </Link>
+
+        <Link href="/admin/kuis" className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-6 text-white hover:shadow-lg transition-all active:scale-95 group">
+          <div className="flex items-center justify-between mb-3">
+            <div className="p-3 bg-white/20 rounded-lg">
+              <BookOpen className="w-6 h-6" />
+            </div>
+            <ArrowUpRight className="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <h3 className="text-lg font-bold mb-1">Kelola Kuis & Penilaian</h3>
+          <p className="text-sm text-indigo-100">Buat kuis dan nilai jawaban esai</p>
+        </Link>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content: Leaderboard */}
         <div className="lg:col-span-2 bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden flex flex-col">

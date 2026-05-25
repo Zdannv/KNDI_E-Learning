@@ -5,7 +5,7 @@ import { Plus, Save, Trash2, CheckCircle2, AlertCircle, Loader2, Image as ImageI
 import { useSearchParams } from "next/navigation";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 
-import { QuestionType, QuestionBase, MultipleChoiceQuestion, ShortAnswerQuestion, Question, QuizData, fallbackMockQuizzes, MultipleChoiceOption, MatchingPair, MatchingContent } from "@/data/dummyKuis";
+import { QuestionType, QuestionWeight, QuestionBase, MultipleChoiceQuestion, ShortAnswerQuestion, EssayQuestion, Question, QuizData, fallbackMockQuizzes, MultipleChoiceOption, MatchingPair, MatchingContent } from "@/data/dummyKuis";
 
 interface QuizFormState {
   title: string;
@@ -48,6 +48,7 @@ function BuatKuisForm() {
       id: generateId(),
       type: "multiple_choice",
       questionText: "",
+      weight: 1,
       options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
       correctOptionIndex: 0,
     };
@@ -88,6 +89,7 @@ function BuatKuisForm() {
               id: q.id,
               type: "multiple_choice",
               questionText: q.questionText,
+              weight: q.weight,
               options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
               correctOptionIndex: 0,
               imageUrl: q.imageUrl,
@@ -98,10 +100,20 @@ function BuatKuisForm() {
               id: q.id,
               type: "matching",
               questionText: q.questionText,
+              weight: q.weight,
               pairs: [
                 { id: generateId(), leftContent: { text: "" }, rightContent: { text: "" } },
                 { id: generateId(), leftContent: { text: "" }, rightContent: { text: "" } }
               ],
+              imageUrl: q.imageUrl,
+              audioUrl: q.audioUrl
+            } as Question;
+          } else if (newType === "essay") {
+            return {
+              id: q.id,
+              type: "essay",
+              questionText: q.questionText,
+              weight: q.weight,
               imageUrl: q.imageUrl,
               audioUrl: q.audioUrl
             } as Question;
@@ -110,6 +122,7 @@ function BuatKuisForm() {
               id: q.id,
               type: "short_answer",
               questionText: q.questionText,
+              weight: q.weight,
               correctAnswerText: "",
               imageUrl: q.imageUrl,
               audioUrl: q.audioUrl
@@ -227,15 +240,23 @@ function BuatKuisForm() {
 
     for (let i = 0; i < formState.questions.length; i++) {
       const q = formState.questions[i];
-      if (q.questionText.trim() === "") {
-        setErrorMsg(`Teks pertanyaan pada soal #${i + 1} tidak boleh kosong.`);
+      
+      // Validasi pertanyaan: minimal harus ada teks ATAU gambar ATAU audio
+      const hasQuestionContent = q.questionText.trim() !== "" || q.imageUrl || q.audioUrl;
+      if (!hasQuestionContent) {
+        setErrorMsg(`Soal #${i + 1} harus memiliki minimal teks pertanyaan, gambar, atau audio.`);
         return false;
       }
       
       if (q.type === "multiple_choice") {
-        if (q.options.some(opt => opt.text.trim() === "")) {
-          setErrorMsg(`Pilihan ganda pada soal #${i + 1} tidak boleh ada opsi yang kosong.`);
-          return false;
+        // Validasi opsi: setiap opsi harus punya teks ATAU gambar ATAU audio
+        for (let optIdx = 0; optIdx < q.options.length; optIdx++) {
+          const opt = q.options[optIdx];
+          const hasOptionContent = opt.text.trim() !== "" || opt.imageUrl || opt.audioUrl;
+          if (!hasOptionContent) {
+            setErrorMsg(`Opsi ${String.fromCharCode(65 + optIdx)} pada soal #${i + 1} harus memiliki minimal teks, gambar, atau audio.`);
+            return false;
+          }
         }
       } else if (q.type === "short_answer") {
         if (q.correctAnswerText.trim() === "") {
@@ -248,12 +269,18 @@ function BuatKuisForm() {
           return false;
         }
         for (const pair of q.pairs) {
-          if (pair.leftContent.text.trim() === "" || pair.rightContent.text.trim() === "") {
-            setErrorMsg(`Pasangan menjodohkan pada soal #${i + 1} tidak boleh ada opsi yang kosong (pasangan kiri dan kanan harus terisi).`);
+          // Validasi pasangan kiri: harus ada teks ATAU gambar ATAU audio
+          const hasLeftContent = pair.leftContent.text.trim() !== "" || pair.leftContent.imageUrl || pair.leftContent.audioUrl;
+          // Validasi pasangan kanan: harus ada teks ATAU gambar ATAU audio
+          const hasRightContent = pair.rightContent.text.trim() !== "" || pair.rightContent.imageUrl || pair.rightContent.audioUrl;
+          
+          if (!hasLeftContent || !hasRightContent) {
+            setErrorMsg(`Pasangan menjodohkan pada soal #${i + 1} harus memiliki konten (teks/gambar/audio) di kedua sisi.`);
             return false;
           }
         }
       }
+      // Essay questions don't need validation for correct answers
     }
 
     setErrorMsg(null);
@@ -420,24 +447,49 @@ function BuatKuisForm() {
                     </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-slate-700">Tipe Soal</label>
-                    <div className="relative">
-                      <select
-                        value={q.type}
-                        onChange={(e) => handleTypeSwitch(q.id, e.target.value as QuestionType)}
-                        disabled={isSubmitting}
-                        className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer pr-10"
-                      >
-                        <option value="multiple_choice">Pilihan Ganda</option>
-                        <option value="short_answer">Isian Singkat</option>
-                        <option value="matching">Menjodohkan (Matching)</option>
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-                        <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                          <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                        </svg>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="block text-sm font-semibold text-slate-700">Tipe Soal</label>
+                      <div className="relative">
+                        <select
+                          value={q.type}
+                          onChange={(e) => handleTypeSwitch(q.id, e.target.value as QuestionType)}
+                          disabled={isSubmitting}
+                          className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer pr-10"
+                        >
+                          <option value="multiple_choice">Pilihan Ganda</option>
+                          <option value="short_answer">Isian Singkat</option>
+                          <option value="matching">Menjodohkan (Matching)</option>
+                          <option value="essay">Esai / Jawaban Terbuka</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                          <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                            <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                          </svg>
+                        </div>
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-sm font-semibold text-slate-700">Bobot Soal</label>
+                      <div className="relative">
+                        <select
+                          value={q.weight}
+                          onChange={(e) => handleQuestionChange(q.id, { weight: parseInt(e.target.value) as QuestionWeight })}
+                          disabled={isSubmitting}
+                          className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer pr-10"
+                        >
+                          <option value={1}>1 - Rendah</option>
+                          <option value={2}>2 - Sedang</option>
+                          <option value={3}>3 - Tinggi</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                          <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                            <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                          </svg>
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">Bobot menentukan kontribusi soal terhadap nilai total.</p>
                     </div>
                   </div>
                 </div>
@@ -613,7 +665,15 @@ function BuatKuisForm() {
                         ))}
                       </div>
                     </div>
-                  ) : (
+                  ) : q.type === "essay" ? (
+                    <div className="space-y-4">
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                        <p className="text-sm text-amber-800 font-medium">
+                          <span className="font-bold">Catatan:</span> Tipe soal ini tidak dinilai otomatis dan memerlukan penilaian manual dari Sensei. Bobot soal sudah diatur di selector "Bobot Soal" di atas.
+                        </p>
+                      </div>
+                    </div>
+                  ) : q.type === "short_answer" ? (
                     <div className="space-y-2">
                       <label className="block text-sm font-semibold text-slate-700">Kunci Jawaban</label>
                       <input
@@ -625,7 +685,7 @@ function BuatKuisForm() {
                         placeholder="Ketik jawaban yang tepat di sini..."
                       />
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             ))}
