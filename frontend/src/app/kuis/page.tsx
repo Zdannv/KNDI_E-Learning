@@ -126,16 +126,42 @@ export default function UserKuisPage() {
 
   const handleSubmit = () => {
     if (!isAnswered) return;
-    let correctCount = 0;
+    
+    // Calculate total weight
+    const totalWeight = selectedQuiz.questions.reduce((sum, q) => sum + q.weight, 0);
+    
+    let weightedScore = 0;
+    
     selectedQuiz.questions.forEach((q) => {
       const ua = answers[q.id] || "";
-      if (q.type === "multiple_choice" && parseInt(ua, 10) === q.correctOptionIndex) correctCount++;
-      else if (q.type === "short_answer" && ua.trim().toLowerCase() === q.correctAnswerText.trim().toLowerCase()) correctCount++;
-      else if (q.type === "matching" && ua === "MATCHED_ALL") correctCount++;
+      
+      // Skip essay questions in auto-grading (they contribute 0 for now)
+      if (q.type === "essay") {
+        return;
+      }
+      
+      // Calculate max score contribution for this question
+      const maxScoreContribution = (q.weight / totalWeight) * 100;
+      
+      // Determine correctness (0.0 to 1.0)
+      let correctness = 0;
+      
+      if (q.type === "multiple_choice") {
+        correctness = parseInt(ua, 10) === q.correctOptionIndex ? 1 : 0;
+      } else if (q.type === "short_answer") {
+        correctness = ua.trim().toLowerCase() === q.correctAnswerText.trim().toLowerCase() ? 1 : 0;
+      } else if (q.type === "matching") {
+        correctness = ua === "MATCHED_ALL" ? 1 : 0;
+      }
+      
+      // Add weighted score
+      weightedScore += correctness * maxScoreContribution;
     });
-    const calculatedScore = Math.round((correctCount / totalQuestions) * 100);
+    
+    const calculatedScore = Math.round(weightedScore);
     setScore(calculatedScore);
     setIsSubmitted(true);
+    
     const now = new Date();
     setStoredHistory((prev) => [
       {

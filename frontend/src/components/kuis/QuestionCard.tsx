@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import { Question, MatchingPair } from "@/data/dummyKuis";
 import MatchingCard, { MatchingStateEntry } from "./MatchingCard";
 
@@ -157,6 +157,36 @@ export default function QuestionCard({
                     </span>
                   </>
                 )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========== ESSAY ========== */}
+        {question.type === "essay" && (
+          <div className="space-y-3 animate-in fade-in">
+            <label htmlFor={`essay-${question.id}`} className="block text-sm font-semibold text-slate-600 mb-2">
+              Tulis Jawaban Esai Anda:
+            </label>
+            <textarea
+              id={`essay-${question.id}`}
+              rows={8}
+              autoComplete="off"
+              placeholder="Ketik jawaban esai Anda di sini..."
+              value={answer}
+              onChange={(e) => onAnswerChange(e.target.value)}
+              disabled={isChecked}
+              className={`w-full px-5 py-4 rounded-xl border-2 transition-all font-medium placeholder:text-slate-400 resize-none ${
+                isChecked
+                  ? "bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed"
+                  : "bg-slate-50 border-slate-200 text-slate-800 focus:bg-white focus:border-indigo-600 focus:outline-none focus:ring-4 focus:ring-indigo-600/10"
+              }`}
+            />
+            {isChecked && (
+              <div className="mt-5 p-4 rounded-xl text-sm font-semibold border bg-amber-50 border-amber-200 text-amber-800">
+                <div className="flex items-center">
+                  <AlertCircle className="w-5 h-5 mr-2" /> Jawaban Anda telah disimpan dan menunggu penilaian manual dari Sensei.
+                </div>
               </div>
             )}
           </div>
