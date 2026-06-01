@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
@@ -7,6 +9,11 @@ export default function Home() {
       <p className="text-slate-500 max-w-xl text-lg mb-8">
         Platform pelatihan bahasa Jepang internal untuk karyawan PT Kyodo News Digital Indonesia. Silakan pilih menu di sidebar untuk memulai.
       </p>
+      <div className="">
+        <button>
+          <Link href={"/login"}>Login</Link>
+        </button>
+      </div>
     </div>
   );
 }
