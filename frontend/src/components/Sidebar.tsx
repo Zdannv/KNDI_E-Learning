@@ -29,18 +29,18 @@ interface NavSection {
 const studentSection: NavSection = {
   label: "Main Menu",
   items: [
-    { name: "Materi Pembelajaran", href: "/courses", icon: BookOpen },
-    { name: "Kuis", href: "/kuis", icon: ClipboardList },
-    { name: "Riwayat Nilai", href: "/riwayat", icon: History },
+    { name: "Courses", href: "/courses", icon: BookOpen },
+    { name: "Quizzes", href: "/quizzes", icon: ClipboardList },
+    { name: "Score History", href: "/history", icon: History },
   ],
 };
 
 const senseiSection: NavSection = {
   label: "Management",
   items: [
-    { name: "Dashboard Admin", href: "/admin", icon: LayoutDashboard },
-    { name: "Manajemen Materi", href: "/admin/courses", icon: Library },
-    { name: "Manajemen Kuis", href: "/admin/kuis", icon: FileQuestion },
+    { name: "Dashboard Sensei", href: "/admin", icon: LayoutDashboard },
+    { name: "Courses Management", href: "/admin/courses", icon: Library },
+    { name: "Quizzes Management", href: "/admin/quizzes", icon: FileQuestion },
   ],
 };
 
@@ -136,13 +136,10 @@ export default function Sidebar({ isOpen = false, setIsOpen }: SidebarProps) {
           </button>
         </div>
 
-        <div className="flex-1 py-6 px-4 space-y-6 overflow-y-auto">
+        <div className="flex-1 py-6 px-4 overflow-y-auto">
           {sections.map((section) => (
             <div key={section.label}>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-3">
-                {section.label}
-              </p>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {section.items.map((item) => (
                   <NavLink key={item.href} item={item} onClick={closeMenu} />
                 ))}
