@@ -205,7 +205,6 @@ export default function MaterialPage() {
                 <p className="text-slate-600 text-sm mb-5 line-clamp-3 grow">
                   {materi.description}
                 </p>
-
                 {/* Meta */}
                 <div className="flex flex-col space-y-2 mt-auto">
                   <div className="flex items-center text-xs text-slate-500 font-medium">
@@ -222,7 +221,6 @@ export default function MaterialPage() {
                   )}
                 </div>
               </div>
-
               {/* Actions */}
               <div className="p-4 border-t border-slate-100 bg-slate-50 mt-auto grid grid-cols-2 gap-3">
                 <button
