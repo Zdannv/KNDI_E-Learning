@@ -37,7 +37,8 @@ export async function POST(req: NextRequest) {
 
         const data = await apiRequest("/quizzes", {
             method: "POST",
-            body
+            body,
+            token
         })
 
         return created(data)
