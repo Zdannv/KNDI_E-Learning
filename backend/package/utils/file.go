@@ -24,9 +24,14 @@ func UploadFile(r *http.Request, formKey, destFolder string) (*string, error) {
 	if ext != ".pdf" && ext != ".pptx" {
 		return nil, fmt.Errorf("File must be pdf or pptx!")
 	}
-
-	if err := os.MkdirAll(destFolder, os.ModeAppend); err != nil {
-		return nil, fmt.Errorf("Failed to create directory file: %w", err)
+ 
+	const maxSize = 10 << 20
+	if header.Size > maxSize {
+		return nil, fmt.Errorf("File size must not exceed 10MB")
+	}
+ 
+	if err := os.MkdirAll(destFolder, 0755); err != nil {
+		return nil, fmt.Errorf("Failed to create storage directory: %w", err)
 	}
 
 	fileName := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
@@ -34,9 +39,8 @@ func UploadFile(r *http.Request, formKey, destFolder string) (*string, error) {
 
 	dst, err := os.Create(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to save file to server: %w", err)
+		return nil, fmt.Errorf("Failed to create file on server: %w", err)
 	}
-
 	defer dst.Close()
 
 	if _, err := io.Copy(dst, file); err != nil {
@@ -47,7 +51,7 @@ func UploadFile(r *http.Request, formKey, destFolder string) (*string, error) {
 }
 
 func DeleteFile(filePath string) error {
-	if _, err := os.Stat(filePath); err != nil {
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return nil
 	}
 
