@@ -47,32 +47,37 @@ const (
 
 const (
 	insertQuestion = `
-		INSERT INTO questions (quiz_id, question_text, question_type, correct_answer, url, point, order_number)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO questions (quiz_id, question_text, question_type, correct_answer, image_url, audio_url, point, order_number)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id`
+
+	updateQuestion = `
+		UPDATE questions
+		SET question_text = $1, `
 
 	insertOption = `
-		INSERT INTO question_options (question_id, option_text, url, is_correct)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id`
-
-	insertMatchingCard = `
-		INSERT INTO matching_cards (question_id, left_text, left_url, right_text, right_url)
+		INSERT INTO question_options (question_id, option_text, image_url, audio_url, is_correct)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id`
 
+	insertMatchingCard = `
+		INSERT INTO matching_cards (question_id, left_text, left_image_url, left_audio_url, right_text, right_image_url, right_audio_url)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING id`
+
 	selectQuestionByQuizID = `
-		SELECT id, quiz_id, question_text, question_type, correct_answer, url, point, order_number
-		FROM quizzes WHERE quiz_id = $1
+		SELECT id, quiz_id, question_text, question_type, correct_answer, image_url, audio_url, point, order_number
+		FROM questions
+		WHERE quiz_id = $1
 		ORDER BY order_number DESC`
 
 	selectOptionsByQuestionID = `
-		SELECT id, question_id, option_text, url, is_correct
+		SELECT id, question_id, option_text, image_url, audio_url, is_correct
 		FROM question_options WHERE question_id = $1
 		ORDER BY id ASC`
 
 	selectMatchingCardsByQuestionID = `
-		SELECT id, question_id, left_text, left_url, right_text, right_url
+		SELECT id, question_id, left_text, left_image_url, left_audio_url, right_text, right_image_url, right_audio_url
 		FROM matching_cards WHERE question_id = $1
 		ORDER BY id ASC`
 
@@ -165,7 +170,7 @@ func (r *quizRepository) AddQuestion(ctx context.Context, q *domains.Question) e
 
 	err = tx.QueryRow(ctx, insertQuestion,
 		q.QuizID, q.QuestionText, q.QuestionType,
-		q.CorrectAnswer, q.URL, q.Point, q.OrderNumber,
+		q.CorrectAnswer, q.ImageURL, q.AudioURL, q.Point, q.OrderNumber,
 	).Scan(&q.ID)
 	if err != nil {
 		return fmt.Errorf("QuizRepo.AddQuestion insert: %w", err)
@@ -176,7 +181,11 @@ func (r *quizRepository) AddQuestion(ctx context.Context, q *domains.Question) e
 		for i := range q.Options {
 			q.Options[i].QuestionID = q.ID
 			err = tx.QueryRow(ctx, insertOption,
-				q.ID, q.Options[i].OptionText, q.Options[i].URL, q.Options[i].IsCorrect,
+				q.ID, 
+				q.Options[i].OptionText, 
+				q.Options[i].ImageURL, 
+				q.Options[i].AudioURL, 
+				q.Options[i].IsCorrect,
 			).Scan(&q.Options[i].ID)
 			if err != nil {
 				return fmt.Errorf("QuizRepo.AddQuestion option: %w", err)
@@ -188,8 +197,8 @@ func (r *quizRepository) AddQuestion(ctx context.Context, q *domains.Question) e
 			q.MatchingCards[i].QuestionID = q.ID
 			err = tx.QueryRow(ctx, insertMatchingCard,
 				q.ID,
-				q.MatchingCards[i].LeftText, q.MatchingCards[i].LeftURL,
-				q.MatchingCards[i].RightText, q.MatchingCards[i].RightURL,
+				q.MatchingCards[i].LeftText, q.MatchingCards[i].LeftImageURL, q.MatchingCards[i].LeftAudioURL,
+				q.MatchingCards[i].RightText, q.MatchingCards[i].RightImageURL, q.MatchingCards[i].RightAudioURL,
 			).Scan(&q.MatchingCards[i].ID)
 			if err != nil {
 				return fmt.Errorf("QuizRepo.AddQuestion matching card: %w", err)
@@ -225,7 +234,7 @@ func (r *quizRepository) LoadQuestionForQuiz(ctx context.Context, quizID int) ([
 		var q domains.Question
 		if err := rows.Scan(
 			&q.ID, &q.QuizID, &q.QuestionText, &q.QuestionType,
-			&q.CorrectAnswer, &q.URL, &q.Point, &q.OrderNumber,
+			&q.CorrectAnswer, &q.ImageURL, &q.AudioURL, &q.Point, &q.OrderNumber,
 		); err != nil {
 			return nil, fmt.Errorf("QuizRepo.LoadQuestion scan: %w", err)
 		}
@@ -268,7 +277,10 @@ func (r *quizRepository) LoadQuestionForQuiz(ctx context.Context, quizID int) ([
 
 			for optRows.Next() {
 				var o domains.QuestionOptions
-				if err := optRows.Scan(&o.ID, &o.QuestionID, &o.OptionText, &o.URL, &o.IsCorrect); err != nil {
+				if err := optRows.Scan(
+					&o.ID, &o.QuestionID, &o.OptionText, 
+					&o.ImageURL, &o.AudioURL, &o.IsCorrect,
+				); err != nil {
 					optRows.Close()
 					return nil, fmt.Errorf("QuizRepo.batch option scan: %w", err)
 				}
@@ -286,9 +298,9 @@ func (r *quizRepository) LoadQuestionForQuiz(ctx context.Context, quizID int) ([
 			for cardRows.Next() {
 				var c domains.MatchingCard
 				if err := cardRows.Scan(
-					&c.ID, 
-					&c.QuestionID, &c.LeftText, &c.LeftURL, 
-					&c.RightText, &c.RightURL,
+					&c.ID, &c.QuestionID, 
+					&c.LeftText, &c.LeftImageURL, &c.LeftAudioURL, 
+					&c.RightText, &c.RightImageURL, &c.RightAudioURL,
 				); err != nil {
 					cardRows.Close()
 					return nil, fmt.Errorf("QuizRepo.Batch scan cards: %w", err)

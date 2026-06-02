@@ -91,16 +91,23 @@ func (h *MaterialHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := r.FormValue("name")
-	desc := r.FormValue("description")
+	if name == "" {
+		response.BadRequest(w, "Material name is required!")
+		return
+	}
 
+	desc := r.FormValue("description")
 	var descriptionPtr *string
 	if desc != "" {
 		descriptionPtr = &desc
 	}
 
-	filePath, err := utils.UploadFile(r, "file_path", "./storage/materials")
-	if err != nil {
-		response.BadRequest(w, err.Error())
+	var filePath *string
+	uploadedPath, uploadErr := utils.UploadFile(r, "file_path", "./storage/materials")
+	if uploadErr != nil {
+		filePath = uploadedPath
+	} else if uploadErr.Error() != "File must uploaded" {
+		response.BadRequest(w, uploadErr.Error())
 		return
 	}
 

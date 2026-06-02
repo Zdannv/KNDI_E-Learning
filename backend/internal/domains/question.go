@@ -18,7 +18,8 @@ type Question struct {
 	QuestionText	string				`json:"question_text"`
 	QuestionType	int					`json:"question_type"`
 	CorrectAnswer	*string				`json:"correct_answer"`
-	URL				*string				`json:"url"`
+	ImageURL		*string				`json:"image_url"`
+	AudioURL		*string				`json:"audio_url"`
 	Point			float64				`json:"point"`
 	OrderNumber		int					`json:"order_number"`
 
@@ -30,7 +31,8 @@ type QuestionOptions struct {
 	ID				int					`json:"id"`
 	QuestionID		int					`json:"question_id"`
 	OptionText		string				`json:"option_text"`
-	URL				*string				`json:"url"`
+	ImageURL		*string				`json:"image_url"`
+	AudioURL		*string				`json:"audio_url"`
 	IsCorrect		bool				`json:"is_correct"`
 }
 
@@ -38,7 +40,9 @@ type MatchingCard struct {
 	ID				int					`json:"id"`
 	QuestionID		int					`json:"question_id"`
 	LeftText		string				`json:"left_text"`
-	LeftURL			*string				`json:"left_url"`
+	LeftImageURL 	*string				`json:"left_image_url"`
+	LeftAudioURL 	*string				`json:"left_audio_url"`
 	RightText		string				`json:"right_text"`
-	RightURL		*string				`json:"right_url"`
+	RightImageURL 	*string				`json:"right_image_url"`
+	RightAudioURL 	*string				`json:"right_audio_url"`
 }
