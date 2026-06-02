@@ -36,6 +36,16 @@ const (
 		WHERE a.student_id = $1 AND a.status = $2
 		ORDER BY a.completed_at DESC`
 
+	selectAllHistory = `
+		SELECT a.id, a.student_id, a.quiz_id, a.total_point, a.status,
+			s.name AS status_name, a.started_at, a.completed_at,
+			q.title AS quiz_title
+		FROM assignments a
+		JOIN assignment_status s ON s.id = a.status
+		JOIN quizzes q ON q.id = a.quiz_id
+		WHERE a.status = $1
+		ORDER BY a.completed_at DESC`
+
 	finaliseAssignment = `
 		UPDATE assignments
 		SET total_point = $1, status = $2, completed_at = $3
@@ -65,6 +75,7 @@ type AssignmentRepository interface {
 	SaveHistory(ctx context.Context, items []domains.AssignmentHistory) error
 	FindHistoryByAssignmentID(ctx context.Context, assignmentID int) ([]domains.AssignmentHistory, error)
 	FindHistoryByStudentID(ctx context.Context, studentID string) ([]domains.Assignment, error)
+	FindAllHistory(ctx context.Context) ([]domains.Assignment, error)
 }
 
 type assignmentRepository struct {
@@ -185,6 +196,31 @@ func (r *assignmentRepository) FindHistoryByStudentID(ctx context.Context, stude
 			&a.StatusName, &a.StartedAt, &a.CompletedAt, &quizTitle,
 		); err != nil {
 			return nil, fmt.Errorf("AssignmentRepo.FindHistoryStudent scan: %w", err)
+		}
+
+		a.Quiz.Title = quizTitle
+		assignments = append(assignments, a)
+	}
+
+	return assignments, rows.Err()
+}
+
+func (r *assignmentRepository) FindAllHistory(ctx context.Context) ([]domains.Assignment, error) {
+	rows, err := r.pool.Query(ctx, selectAllHistory, domains.StatusCompleted)
+	if err != nil {
+		return nil, fmt.Errorf("AssignmentRepo.FindAllHistory: %w", err)
+	}
+	defer rows.Close()
+
+	var assignments []domains.Assignment
+	for rows.Next() {
+		a := domains.Assignment{Quiz: &domains.Quiz{}}
+		var quizTitle string
+		if err := rows.Scan(
+			&a.ID, &a.StudentID, &a.QuizID, &a.TotalPoint, &a.Status,
+			&a.StatusName, &a.StartedAt, &a.CompletedAt, &quizTitle,
+		); err != nil {
+			return nil, fmt.Errorf("AssignmentRepo.FindAllHistory scan: %w", err)
 		}
 
 		a.Quiz.Title = quizTitle
