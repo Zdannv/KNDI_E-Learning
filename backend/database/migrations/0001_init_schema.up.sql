@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS question_types (
     name               VARCHAR(225)     NOT NULL UNIQUE
 );
 
-CREATE TABLE IF NOT EXISTS assignment_statuses (
+CREATE TABLE IF NOT EXISTS assignment_status (
     id                  SERIAL          PRIMARY KEY,
     name                VARCHAR(225)    NOT NULL UNIQUE
 );
@@ -51,6 +51,8 @@ CREATE TABLE IF NOT EXISTS questions (
     question_type       INTEGER         NOT NULL REFERENCES question_types(id),
     correct_answer      VARCHAR(225),
     url                 VARCHAR(511),
+    image_url           VARCHAR(511),
+    audio_url           VARCHAR(511),
     point               FLOAT           DEFAULT 1,
     order_number        INTEGER         DEFAULT 0
 );
@@ -60,6 +62,8 @@ CREATE TABLE IF NOT EXISTS question_options (
     question_id         INTEGER         NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
     option_text         VARCHAR(225),
     url                 VARCHAR(511),
+    image_url           VARCHAR(511),
+    audio_url           VARCHAR(511),
     is_correct          BOOLEAN         DEFAULT FALSE
 );
 
@@ -67,9 +71,13 @@ CREATE TABLE IF NOT EXISTS matching_cards (
     id                  SERIAL          PRIMARY KEY,
     question_id         INTEGER         NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
     left_text           VARCHAR(225)    NOT NULL,
-    left_url            VARCHAR(551),
+    left_url            VARCHAR(511),
+    left_image_url      VARCHAR(511),
+    left_audio_url      VARCHAR(511),
     right_text          VARCHAR(225)    NOT NULL,
-    right_url           VARCHAR(551)
+    right_url           VARCHAR(511),
+    right_image_url     VARCHAR(511),
+    right_audio_url     VARCHAR(511)
 );
 
 CREATE TABLE IF NOT EXISTS assignments (
@@ -77,7 +85,7 @@ CREATE TABLE IF NOT EXISTS assignments (
     student_id          UUID            NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     quiz_id             INTEGER         NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
     total_point         FLOAT,
-    status              INTEGER         REFERENCES assignment_statuses(id),
+    status              INTEGER         REFERENCES assignment_status(id),
     started_at          TIMESTAMP       DEFAULT NOW(),
     completed_at        TIMESTAMP       DEFAULT NULL
 );
@@ -101,7 +109,7 @@ INSERT INTO question_types (name) VALUES
     ('matching_card')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO assignment_statuses (name) VALUES
+INSERT INTO assignment_status (name) VALUES
     ('not_started'),
     ('in_progress'),
     ('completed')
