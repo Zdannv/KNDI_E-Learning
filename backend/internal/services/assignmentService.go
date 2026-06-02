@@ -16,6 +16,7 @@ type AssignmentService interface {
 	Submit(ctx context.Context, studentID string, assignmentID int, req dto.SubmitAssignmentRequest) (*dto.AssignmentResultResponse, error)
 	GetResult(ctx context.Context, studentID string, assignmentID int) (*dto.AssignmentResultResponse, error)
 	GetHistory(ctx context.Context, studentID string) ([]dto.HistoryListResponse, error)
+	GetAllHistory(ctx context.Context) ([]dto.HistoryListResponse, error)
 }
 
 type assignmentService struct {
@@ -139,7 +140,7 @@ func (s *assignmentService) Submit(
 		}
 
 		h.IsCorrect = h.ScoreEarned > 0
-		totalEarned = h.ScoreEarned
+		totalEarned += h.ScoreEarned
 		historyItems = append(historyItems, h)
 	}
 
@@ -175,7 +176,7 @@ func (s *assignmentService) GetResult(ctx context.Context, studentID string, ass
 
 	totalEarned := 0.0
 	for _, h := range history {
-		totalEarned = h.ScoreEarned
+		totalEarned += h.ScoreEarned
 	}
 
 	var completedAt time.Time
@@ -188,6 +189,7 @@ func (s *assignmentService) GetResult(ctx context.Context, studentID string, ass
 		totalPossible = *a.TotalPoint
 	}
 
+
 	return buildResultResponse(assignmentID, a.Quiz.Title, totalEarned, totalPossible, history, completedAt), nil
 }
 
@@ -199,9 +201,14 @@ func (s *assignmentService) GetHistory(ctx context.Context, studentID string) ([
 
 	result := make([]dto.HistoryListResponse, 0, len(assignments))
 	for _, a := range assignments {
+		scoreEarned := 0.0 
 		totalPoint := 0.0
 		if a.TotalPoint != nil {
-			totalPoint = *a.TotalPoint
+			scoreEarned = *a.TotalPoint
+		}
+
+		if totalPoint == 0 {
+			totalPoint = scoreEarned
 		}
 
 		var completedAtStr *string
@@ -217,7 +224,7 @@ func (s *assignmentService) GetHistory(ctx context.Context, studentID string) ([
 
 		scorePct := 0.0
 		if totalPoint > 0 {
-			scorePct = totalPoint / totalPoint * 100
+			scorePct = scoreEarned / totalPoint * 100
 		}
 
 		_ = scorePct
@@ -227,7 +234,7 @@ func (s *assignmentService) GetHistory(ctx context.Context, studentID string) ([
 			QuizTitle: 		a.Quiz.Title,
 			ScoreEarned: 	totalPoint,
 			TotalPoint: 	totalPoint,
-			ScorePct: 		100,	// completed means full record
+			ScorePct: 		scorePct,
 			Status: 		a.StatusName,
 			DateStr: 		dateStr,
 			TimeStr: 		timeStr,
@@ -237,6 +244,55 @@ func (s *assignmentService) GetHistory(ctx context.Context, studentID string) ([
 
 	return result, nil
 
+}
+
+func (s *assignmentService) GetAllHistory(ctx context.Context) ([]dto.HistoryListResponse, error) {
+	assignments, err := s.assignmentRepo.FindAllHistory(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("AssignmentService.GetAllHistory: %w", err)
+	}
+	
+	return s.buildHistoryResponse(assignments), nil
+}
+
+func (s *assignmentService) buildHistoryResponse(assignments []domains.Assignment) []dto.HistoryListResponse {
+	result := make([]dto.HistoryListResponse, 0, len(assignments))
+	for _, a := range assignments {
+		scoreEarned := 0.0
+		totalPoint := 0.0
+		if a.TotalPoint != nil {
+			scoreEarned = *a.TotalPoint
+			totalPoint = *a.TotalPoint
+		}
+
+		scorePct := 0.0
+		if totalPoint > 0 {
+			scorePct = scoreEarned / totalPoint * 100
+		}
+
+		dateStr, timeStr := "", ""
+		var completedAtStr *string
+		if a.CompletedAt != nil {
+			dateStr = a.CompletedAt.Format("02 January 2006")
+			timeStr = a.CompletedAt.Format("15:04")
+			rfc := a.CompletedAt.Format(time.RFC3339)
+			completedAtStr = &rfc
+		}
+
+		result = append(result, dto.HistoryListResponse{
+			AssignmentID: a.ID,
+			QuizTitle:    a.Quiz.Title,
+			ScoreEarned:  scoreEarned,
+			TotalPoint:   totalPoint,
+			ScorePct:     scorePct,
+			Status:       a.StatusName,
+			DateStr:      dateStr,
+			TimeStr:      timeStr,
+			CompletedAt:  completedAtStr,
+		})
+	}
+
+	return result
 }
 
 func gradeMultipleChoice(options []domains.QuestionOptions, selectedID int, point float64) float64 {
@@ -257,16 +313,11 @@ func gradeShortAnswer(answerkey, studentAnswer string, point float64) float64 {
 }
 
 func gradeMatchingCard(cards []domains.MatchingCard, leftCardID, rightCardID int, point float64) float64 {
-	for _, c := range cards {
-		if c.ID == leftCardID {
-			if leftCardID == rightCardID {
-				return point / float64(len(cards))
-			}
-			return  0
-		}
+	if leftCardID == rightCardID {
+		return point
 	}
-	return 0
-}
+	return  0
+	}
 
 func buildResultResponse(
 	assignmentID	int,
