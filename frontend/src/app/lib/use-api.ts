@@ -14,24 +14,24 @@ export class ClientApiError extends Error {
   }
 }
 
-const TOKEN_KEY = "app_token"
-const USER_KEY = "app_token_user"
-const COOKIE_SESSION = "app_session"
-const COOKIE_ROLE = "app_role"
+const TOKEN_KEY      = "app_token";
+const USER_KEY       = "app_token_user";
+const COOKIE_SESSION = "app_session";
+const COOKIE_ROLE    = "app_role";
 
 export const tokenStorage = {
-    get(): string | null {
-        if (typeof window === 'undefined') return null
-        return localStorage.getItem(TOKEN_KEY)
-    },
-    set(token: string): void {
-        localStorage.setItem(TOKEN_KEY, token)
-    },
-    clear(): void {
-        localStorage.removeItem(TOKEN_KEY)
-        localStorage.removeItem(USER_KEY)
-    }
-}
+  get(): string | null {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem(TOKEN_KEY);
+  },
+  set(token: string): void {
+    localStorage.setItem(TOKEN_KEY, token);
+  },
+  clear(): void {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+  },
+};
 
 interface FetchOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
