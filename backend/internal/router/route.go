@@ -38,6 +38,9 @@ func Route(
 		_, _ = w.Write([]byte(`{"status": "ok"}`))
 	})
 
+	storageDir := http.Dir("./storage")
+	r.Handle("/storage/*", http.StripPrefix("/storage", http.FileServer(storageDir)))
+
 	r.Route("/", func(r chi.Router) {
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/register", authHandler.Register)
@@ -52,6 +55,8 @@ func Route(
 
 			r.Get("/quizzes", quizHandler.FindAll)
 			r.Get("/quizzes/{id}", quizHandler.FindByID)
+			
+			r.Get("/assignments/history", assignmentHandler.GetHistory)
 		})
 
 		r.Group(func(r chi.Router) {
@@ -68,13 +73,13 @@ func Route(
 
 			r.Post("/quizzes/{id}/questions", quizHandler.AddQuestion)
 			r.Delete("/questions/{id}", quizHandler.DeleteQuestion)
+
+			r.Get("/assignments/all-history", assignmentHandler.GetAllHistory)
 		})
 
 		r.Group(func(r chi.Router) {
 			r.Use(appMiddleware.Authentication(authSvc))
 			r.Use(appMiddleware.RequireRole("student"))
-
-			r.Get("/assignments/history", assignmentHandler.GetHistory)
 
 			r.Post("/assignments", assignmentHandler.Start)
 			r.Post("/assignments/{id}/submit", assignmentHandler.Submit)
