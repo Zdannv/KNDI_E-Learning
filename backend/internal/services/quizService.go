@@ -133,7 +133,8 @@ func (s *quizService) AddQuestion(ctx context.Context, quizID int, senseiID stri
 		QuestionText: 	req.QuestionText,
 		QuestionType: 	req.QuestionType,
 		CorrectAnswer: 	req.CorrectAnswer,
-		URL: 			req.URL,
+		ImageURL: 		req.ImageURL,
+		AudioURL: 		req.AudioURL,
 		Point: 			req.Point,
 		OrderNumber: 	req.OrderNumber,
 	}
@@ -141,17 +142,20 @@ func (s *quizService) AddQuestion(ctx context.Context, quizID int, senseiID stri
 	for _, o := range req.Options {
 		q.Options = append(q.Options, domains.QuestionOptions{
 			OptionText: o.OptionText,
-			URL: 		o.URL,
+			ImageURL: 	o.ImageURL,
+			AudioURL: 	o.AudioURL,
 			IsCorrect: 	o.IsCorrect,
 		})
 	}
 
 	for _, c := range req.MatchingCards {
 		q.MatchingCards = append(q.MatchingCards, domains.MatchingCard{
-			LeftText: 	c.LeftText,
-			LeftURL: 	c.LeftURL,
-			RightText: 	c.RightText,
-			RightURL: 	c.RightUrl,
+			LeftText: 		c.LeftText,
+			LeftImageURL: 	c.LeftImageURL,
+			LeftAudioURL: 	c.LeftAudioURL,
+			RightText: 		c.RightText,
+			RightImageURL: 	c.RightImageURL,
+			RightAudioURL: 	c.RightAudioURL,
 		})
 	}
 

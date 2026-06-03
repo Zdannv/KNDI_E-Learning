@@ -38,6 +38,12 @@ const (
 		WHERE id = $4 AND user_id = $5
 		RETURNING updated_at`
 
+	updateMaterialNoFile = `
+		UPDATE materials
+		set name = $1, description = $2, updated_at = NOW()
+		WHERE id = $4 AND user_id = $5
+		RETURNING updated_at`
+
 	deleteMaterial = `
 		DELETE FROM materials WHERE id = $1 AND user_id = $2`
 )
@@ -89,7 +95,7 @@ func (r *materialRepository) FindAll(ctx context.Context) ([]domains.Material, e
 }
 
 func (r *materialRepository) FindByUserID(ctx context.Context, userID string) ([]domains.Material, error) {
-	return r.ScanMaterial(ctx, selectMaterialByUserID)
+	return r.ScanMaterial(ctx, selectMaterialByUserID, userID)
 }
 
 func (r *materialRepository) ScanMaterial(ctx context.Context, query string, args ...any) ([]domains.Material, error) {
@@ -121,15 +127,23 @@ func (r *materialRepository) ScanMaterial(ctx context.Context, query string, arg
 }
 
 func (r *materialRepository) UpdateMaterial(ctx context.Context, m *domains.Material) (error) {
-	err := r.pool.QueryRow(ctx, updateMaterial, 
-				m.Name, m.Description, m.FilePath, m.ID, m.UserID,
-			).Scan(&m.UpdatedAt)
+	var err error
+
+	if m.FilePath != nil {
+		err = r.pool.QueryRow(ctx, updateMaterial,
+			m.Name, m.Description, m.FilePath, m.ID, m.UserID,
+		).Scan(&m.UpdatedAt)
+	} else {
+		err = r.pool.QueryRow(ctx, updateMaterialNoFile,
+			m.Name, m.Description, m.ID, m.UserID,
+		).Scan(&m.UpdatedAt)
+	}
+
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrorNotFound
 		}
-
-		return fmt.Errorf("MaterialRepo.Update:%w", err)
+		return fmt.Errorf("MaterialRepo.UpdateMaterial: %w", err)
 	}
 
 	return nil

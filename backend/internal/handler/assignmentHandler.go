@@ -82,3 +82,13 @@ func (h *AssignmentHandler) GetHistory(w http.ResponseWriter, r *http.Request) {
 	}
 	response.Success(w, http.StatusOK, history)
 }
+
+func (h *AssignmentHandler) GetAllHistory(w http.ResponseWriter, r *http.Request) {
+	history, err := h.service.GetAllHistory(r.Context())
+	if err != nil {
+		log.Printf("[Assignment] GetAllHistory: %v", err)
+		response.InternalError(w)
+		return
+	}
+	response.Success(w, http.StatusOK, history)
+}

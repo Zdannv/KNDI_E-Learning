@@ -1,31 +1,43 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { useAuth } from "@/context/AuthContext";
 
-export type UserRole = "sensei" | "user";
+export type UserRole = "sensei" | "student";
 
 interface RoleContextType {
   currentRole: UserRole;
-  setRole: (role: UserRole) => void;
 }
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
 
 export function RoleProvider({ children }: { children: ReactNode }) {
-  // Default to sensei as requested, but allow toggling
-  const [currentRole, setRole] = useState<UserRole>("sensei");
+  const { user } = useAuth();
+  const [currentRole, setCurrentRole] = useState<UserRole>("student");
+
+  useEffect(() => {
+    if (user?.role === "sensei" || user?.role === "student") {
+      setCurrentRole(user.role);
+    } else {
+      setCurrentRole("student");
+    }
+  }, [user]);
 
   return (
-    <RoleContext.Provider value={{ currentRole, setRole }}>
+    <RoleContext.Provider value={{ currentRole }}>
       {children}
     </RoleContext.Provider>
   );
 }
 
-export function useRole() {
-  const context = useContext(RoleContext);
-  if (context === undefined) {
-    throw new Error("useRole must be used within a RoleProvider");
-  }
-  return context;
+export function useRole(): RoleContextType {
+  const ctx = useContext(RoleContext);
+  if (!ctx) throw new Error("useRole must be used within a RoleProvider");
+  return ctx;
 }
