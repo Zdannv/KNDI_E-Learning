@@ -17,11 +17,16 @@ type AnswerMap = Record<number, StudentAnswer>;
 function isAnswered(answer: StudentAnswer | undefined, question: Question): boolean {
   if (!answer) return false;
   switch (question.question_type) {
-    case 1: return answer.selectedOptionId !== undefined;
-    case 2: return (answer.answerText ?? "").trim() !== "";
+    case 1:
+      return answer.selectedOptionId !== undefined;
+    case 2:
+      return (answer.answerText ?? "").trim() !== "";
     case 3: {
       const totalPairs = (question.matching_card ?? []).length;
-      return totalPairs > 0 && Object.keys(answer.matchedPairs ?? {}).length === totalPairs;
+      return (
+        totalPairs > 0 &&
+        Object.keys(answer.matchedPairs ?? {}).length === totalPairs
+      );
     }
     case 4: return (answer.answerText ?? "").trim() !== "";
     default: return false;

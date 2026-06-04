@@ -169,11 +169,7 @@ export interface Question {
   id: number;
   quiz_id: number;
   question_text: string;
-<<<<<<< HEAD
   question_type: 1 | 2 | 3 | 4;
-=======
-  question_type: 1 | 2 | 3;
->>>>>>> b78e931 (fix: added variable to access assignment history)
   correct_answer: string | null;
   image_url: string | null;
   audio_url: string | null;
@@ -212,11 +208,7 @@ export interface CreateMatchingCardPayload {
 
 export interface CreateQuestionPayload {
   question_text: string;
-<<<<<<< HEAD
   question_type: 1 | 2 | 3 | 4;
-=======
-  question_type: 1 | 2 | 3;
->>>>>>> b78e931 (fix: added variable to access assignment history)
   correct_answer?: string;
   image_url?: string;
   audio_url?: string;
@@ -241,12 +233,9 @@ export const quizApi = {
   list: (): Promise<Quiz[]> =>
     apiFetch<Quiz[]>("/api/quizzes"),
 
-<<<<<<< HEAD
   listAll: (): Promise<Quiz[]> =>
     apiFetch<Quiz[]>("/api/admin/quizzes"),
 
-=======
->>>>>>> b78e931 (fix: added variable to access assignment history)
   getById: (id: number): Promise<Quiz> =>
     apiFetch<Quiz>(`/api/quizzes/${id}`),
 
@@ -291,18 +280,12 @@ export interface AssignmentStart {
 
 export interface AssignmentHistoryAnswer {
   question_text: string;
-<<<<<<< HEAD
   question_type: 1 | 2 | 3 | 4
   your_answer: string;
   is_correct: boolean;
   score_earned: number;
   total_pairs?: number
   pending_grade?: boolean
-=======
-  your_answer: string;
-  is_correct: boolean;
-  score_earned: number;
->>>>>>> b78e931 (fix: added variable to access assignment history)
 }
 
 export interface AssignmentResult {
@@ -319,13 +302,9 @@ export interface AssignmentResult {
 
 export interface HistoryListItem {
   assignment_id: number;
-<<<<<<< HEAD
   quiz_id: number
   quiz_title: string;
   student_name?: string
-=======
-  quiz_title: string;
->>>>>>> b78e931 (fix: added variable to access assignment history)
   score_earned: number;
   total_point: number;
   score_percent: number;
@@ -379,7 +358,6 @@ export const assignmentApi = {
 
   getAllHistory: (): Promise<HistoryListItem[]> =>
     apiFetch<HistoryListItem[]>("/api/assignment/all-history"),
-<<<<<<< HEAD
 
   getPendingEssays: (): Promise<EssayPendingItem[]> =>
     apiFetch<EssayPendingItem[]>("/api/assignment/pending-essay"),
@@ -410,6 +388,3 @@ export const studentApi = {
   delete: (id: string): Promise<void> =>
     apiFetch<void>(`/api/students/${id}`, { method: "DELETE" }),
 };
-=======
-};
->>>>>>> b78e931 (fix: added variable to access assignment history)
