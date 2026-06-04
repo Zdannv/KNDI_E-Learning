@@ -13,7 +13,7 @@ export default function QuizCard({ quiz, onStart, isStarted }: QuizCardProps) {
     const questionCount = quiz.question?.length ?? 0
     
     return (
-        <div className="bg-white rounded-xl border-slate-200 shadow-sm hover:shadow-md hover:bg-indigo-200 transition-all flex flex-col">
+        <div className="bg-white rounded-xl border-slate-200 shadow-sm hover:shadow-md hover:bg-indigo-50 transition-all flex flex-col">
             <div className="p-6 flex-1">
                 <div className="bg-indigo-50 text-indigo-600 p-3 rounded-xl w-fit mb-4">
                     <BookIcon className="w-6 h-6" />
