@@ -44,6 +44,19 @@ function QuizzesPageContent() {
     setRemedialQuizId(new Set(historyList.filter((h) => h.score_percent < 60).map((h) => h.quiz_id)));
   }, [historyList]);
 
+  const {
+    data: historyList,
+    isLoading: historyLoading
+  } = useAsync<HistoryListItem[]>(fetchHistory)
+
+  const completedQuizId = useMemo<Set<number>>(() => {
+    if (!historyList) {
+      return new Set()
+    }
+
+    return new Set(historyList.map((h) => h.quiz_id))
+  }, [historyList])
+
   const [activeQuiz,   setActiveQuiz]   = useState<Quiz | null>(null);
   const [assignmentId, setAssignmentId] = useState<number | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
