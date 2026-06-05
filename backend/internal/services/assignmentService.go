@@ -51,6 +51,15 @@ func (s *assignmentService) Start(ctx context.Context, studentID string, req dto
 		return nil, fmt.Errorf("Quiz is not published yet!")
 	}
 
+	alreadyDone, err := s.assignmentRepo.QuizCompletedByStudentID(ctx, studentID, req.QuizID)
+	if err != nil {
+		return nil, fmt.Errorf("AssignmentService.Start check: %w", err)
+	}
+
+	if alreadyDone {
+		return nil, ErrorAlreadyCompleted
+	}
+
 	a := &domains.Assignment{
 		StudentID: 	studentID,
 		QuizID: 	req.QuizID,
@@ -199,51 +208,7 @@ func (s *assignmentService) GetHistory(ctx context.Context, studentID string) ([
 		return nil, fmt.Errorf("AssignmentService.GetHistory: %w", err)
 	}
 
-	result := make([]dto.HistoryListResponse, 0, len(assignments))
-	for _, a := range assignments {
-		scoreEarned := 0.0 
-		totalPoint := 0.0
-		if a.TotalPoint != nil {
-			scoreEarned = *a.TotalPoint
-		}
-
-		if totalPoint == 0 {
-			totalPoint = scoreEarned
-		}
-
-		var completedAtStr *string
-		dateStr, timeStr := "", ""
-		if a.CompletedAt != nil {
-			d := a.CompletedAt.Format("23 April 2026")
-			t := a.CompletedAt.Format("10:30")
-			rfc := a.CompletedAt.Format(time.RFC3339)
-			dateStr = d
-			timeStr = t
-			completedAtStr = &rfc
-		}
-
-		scorePct := 0.0
-		if totalPoint > 0 {
-			scorePct = scoreEarned / totalPoint * 100
-		}
-
-		_ = scorePct
-
-		result = append(result, dto.HistoryListResponse{
-			AssignmentID: 	a.ID,
-			QuizTitle: 		a.Quiz.Title,
-			ScoreEarned: 	totalPoint,
-			TotalPoint: 	totalPoint,
-			ScorePct: 		scorePct,
-			Status: 		a.StatusName,
-			DateStr: 		dateStr,
-			TimeStr: 		timeStr,
-			CompletedAt: 	completedAtStr,
-		})
-	}
-
-	return result, nil
-
+	return s.buildHistoryResponse(assignments), nil
 }
 
 func (s *assignmentService) GetAllHistory(ctx context.Context) ([]dto.HistoryListResponse, error) {
@@ -280,15 +245,16 @@ func (s *assignmentService) buildHistoryResponse(assignments []domains.Assignmen
 		}
 
 		result = append(result, dto.HistoryListResponse{
-			AssignmentID: a.ID,
-			QuizTitle:    a.Quiz.Title,
-			ScoreEarned:  scoreEarned,
-			TotalPoint:   totalPoint,
-			ScorePct:     scorePct,
-			Status:       a.StatusName,
-			DateStr:      dateStr,
-			TimeStr:      timeStr,
-			CompletedAt:  completedAtStr,
+			AssignmentID: 	a.ID,
+			QuizID: 		a.QuizID,
+			QuizTitle:    	a.Quiz.Title,
+			ScoreEarned:  	scoreEarned,
+			TotalPoint:   	totalPoint,
+			ScorePct:     	scorePct,
+			Status:       	a.StatusName,
+			DateStr:      	dateStr,
+			TimeStr:      	timeStr,
+			CompletedAt:  	completedAtStr,
 		})
 	}
 

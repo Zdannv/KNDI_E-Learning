@@ -36,6 +36,7 @@ var (
 	ErrorEmailTaken			= errors.New("Email is already registered")
 	ErrorInvalidToken		= errors.New("Invalid or expired token")
 	ErrorForbidden			= errors.New("You do not have permission to perform this action")
+	ErrorAlreadyCompleted 	= errors.New("You have already completed this quiz")
 )
 
 type AuthService interface {

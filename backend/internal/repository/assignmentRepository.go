@@ -66,6 +66,15 @@ const (
 		JOIN   questions q ON q.id = ah.question_id
 		WHERE  ah.assignment_id = $1
 		ORDER  BY ah.id ASC`
+
+	selectQuizCompletedAssignmentByUserID = `
+		SELECT EXISTS (
+			SELECT 1
+			FROM assignments
+			WHERE student_id = $1
+			AND quiz_id = $2
+			AND status = $3
+		)`
 )
 
 type AssignmentRepository interface {
@@ -76,6 +85,7 @@ type AssignmentRepository interface {
 	FindHistoryByAssignmentID(ctx context.Context, assignmentID int) ([]domains.AssignmentHistory, error)
 	FindHistoryByStudentID(ctx context.Context, studentID string) ([]domains.Assignment, error)
 	FindAllHistory(ctx context.Context) ([]domains.Assignment, error)
+	QuizCompletedByStudentID(ctx context.Context, studentID string, quizID int) (bool, error)
 }
 
 type assignmentRepository struct {
@@ -228,4 +238,17 @@ func (r *assignmentRepository) FindAllHistory(ctx context.Context) ([]domains.As
 	}
 
 	return assignments, rows.Err()
+}
+
+func (r *assignmentRepository) QuizCompletedByStudentID(ctx context.Context, studentID string, quizID int) (bool, error) {
+	var exist bool
+	err := r.pool.QueryRow(
+		ctx, selectQuizCompletedAssignmentByUserID, studentID, quizID, domains.StatusCompleted,
+	).Scan(&exist)
+
+	if err != nil {
+		return false, fmt.Errorf("AssignmentRepo.QuizCompleted: %w", err)
+	}
+
+	return exist, nil
 }

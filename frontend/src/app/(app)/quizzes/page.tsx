@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { AlertCircle, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 
 import {
@@ -10,6 +10,7 @@ import {
   Quiz,
   Question,
   SubmitAnswer,
+  HistoryListItem,
 } from "@/app/lib/use-api";
 import { useAsync } from "@/hooks/useAsync";
 
@@ -36,13 +37,27 @@ function isAnswered(answer: StudentAnswer | undefined, question: Question): bool
   }
 }
 
-export default function KuisPage() {
+export default function QuizzesPage() {
   const fetchQuizzes = useCallback(() => quizApi.list(), []);
+  const fetchHistory = useCallback(() => assignmentApi.getHistory(), [])
   const {
     data: quizList,
     isLoading: quizzesLoading,
     error:     quizzesError,
   } = useAsync<Quiz[]>(fetchQuizzes);
+
+  const {
+    data: historyList,
+    isLoading: historyLoading
+  } = useAsync<HistoryListItem[]>(fetchHistory)
+
+  const completedQuizId = useMemo<Set<number>>(() => {
+    if (!historyList) {
+      return new Set()
+    }
+
+    return new Set(historyList.map((h) => h.quiz_id))
+  }, [historyList])
 
   const [activeQuiz,   setActiveQuiz]   = useState<Quiz | null>(null);
   const [assignmentId, setAssignmentId] = useState<number | null>(null);
@@ -73,7 +88,7 @@ export default function KuisPage() {
       setSubmitError(null);
     } catch (err) {
       setStartError(
-        err instanceof Error ? err.message : "Gagal memulai kuis. Coba lagi."
+        err instanceof Error ? err.message : "Failed to start quiz, Please try again"
       );
     } finally {
       setIsStarting(false);
@@ -148,7 +163,7 @@ export default function KuisPage() {
     setStartError(null);
   };
 
-  if (quizzesLoading) {
+  if (quizzesLoading || historyLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] flex-col gap-4">
         <Loader2 className="w-10 h-10 animate-spin text-indigo-500" />
@@ -179,6 +194,7 @@ export default function KuisPage() {
         onStart={handleStart}
         isStarting={isStarting}
         startError={startError}
+        isCompetedQuizId={completedQuizId}
       />
     );
   }
