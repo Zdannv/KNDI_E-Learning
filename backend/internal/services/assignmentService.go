@@ -424,6 +424,7 @@ func (s *assignmentService) buildHistoryResponse(assignments []domains.Assignmen
 			AssignmentID: 	a.ID,
 			QuizID: 		a.QuizID,
 			QuizTitle:    	a.Quiz.Title,
+			StudentName: 	a.StudentName,
 			ScoreEarned:  	scoreEarned,
 			TotalPoint:   	totalPoint,
 			ScorePct:     	scorePct,
