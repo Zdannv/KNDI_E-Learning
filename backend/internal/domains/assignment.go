@@ -17,6 +17,7 @@ type Assignment struct {
 	ID				int						`json:"id"`
 	StudentID		string					`json:"student_id"`
 	QuizID			int						`json:"quiz_id"`
+	StudentName 	string 					`json:"student_name,omitempty"`
 	TotalPoint		*float64				`json:"total_point"`
 	Status			int						`json:"status"`
 	StatusName		string					`json:"status_name"`

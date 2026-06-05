@@ -298,6 +298,7 @@ export interface HistoryListItem {
   assignment_id: number;
   quiz_id: number
   quiz_title: string;
+  student_name?: string
   score_earned: number;
   total_point: number;
   score_percent: number;

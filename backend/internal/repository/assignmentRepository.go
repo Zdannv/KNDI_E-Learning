@@ -39,10 +39,12 @@ const (
 	selectAllHistory = `
 		SELECT a.id, a.student_id, a.quiz_id, a.total_point, a.status,
 			s.name AS status_name, a.started_at, a.completed_at,
-			q.title AS quiz_title
+			q.title AS quiz_title,
+			u.username AS student_name
 		FROM assignments a
 		JOIN assignment_status s ON s.id = a.status
 		JOIN quizzes q ON q.id = a.quiz_id
+		JOIN users u ON u.id = a.student_id
 		WHERE a.status = $1
 		ORDER BY a.completed_at DESC`
 
@@ -223,17 +225,20 @@ func (r *assignmentRepository) FindAllHistory(ctx context.Context) ([]domains.As
 	defer rows.Close()
 
 	var assignments []domains.Assignment
+	var studentName string
 	for rows.Next() {
 		a := domains.Assignment{Quiz: &domains.Quiz{}}
 		var quizTitle string
 		if err := rows.Scan(
 			&a.ID, &a.StudentID, &a.QuizID, &a.TotalPoint, &a.Status,
 			&a.StatusName, &a.StartedAt, &a.CompletedAt, &quizTitle,
+			&studentName,
 		); err != nil {
 			return nil, fmt.Errorf("AssignmentRepo.FindAllHistory scan: %w", err)
 		}
 
 		a.Quiz.Title = quizTitle
+		a.StudentName = studentName
 		assignments = append(assignments, a)
 	}
 

@@ -39,6 +39,7 @@ type HistoryListResponse struct {
 	AssignmentID		int				`json:"assignment_id"`
 	QuizID				int				`json:"quiz_id"`
 	QuizTitle			string			`json:"quiz_title"`
+	StudentName			string			`json:"student_name"`
 	ScoreEarned			float64			`json:"score_earned"`
 	TotalPoint			float64			`json:"total_point"`
 	ScorePct			float64			`json:"score_percent"`

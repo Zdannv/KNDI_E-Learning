@@ -524,7 +524,6 @@ function BuatKuisForm() {
 
         {/* ── Quiz metadata card ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 space-y-5">
-
           {/* Title */}
           <div className="space-y-2">
             <label htmlFor="title" className="block text-sm font-semibold text-slate-700">
