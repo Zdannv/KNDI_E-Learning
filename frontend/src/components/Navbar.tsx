@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Bell, LogOut, Menu, Search, UserCircle2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import ConfirmDialog from "./ConfirmDialog";
 
 interface NavbarProps {
   onMenuClick?: () => void;
@@ -10,17 +11,11 @@ interface NavbarProps {
 
 export default function Navbar({ onMenuClick }: NavbarProps) {
   const { user, logout } = useAuth();
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showDialogLogout, setShowDialogLogout] = useState(false);
 
-  const handleLogout = () => {
-
-    if (showLogoutConfirm) {
-      logout();
-    } else {
-      setShowLogoutConfirm(true);
-      setTimeout(() => setShowLogoutConfirm(false), 3000);
-    }
-  };
+  const handleLogoutConfirm = () => {
+    logout()
+  }
 
   return (
     <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-10 flex items-center justify-between px-4 md:px-8 shadow-sm">
@@ -82,20 +77,25 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
         {/* Logout */}
         <button
-          onClick={handleLogout}
-          title={showLogoutConfirm ? "Klik lagi untuk keluar" : "Keluar"}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-            showLogoutConfirm
-              ? "bg-red-600 text-white hover:bg-red-700"
-              : "text-slate-500 hover:text-red-600 hover:bg-red-50"
-          }`}
+          onClick={() => setShowDialogLogout(true)}
+          title="Logout"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all"
         >
           <LogOut size={16} />
-          <span className="hidden sm:inline">
-            {showLogoutConfirm ? "Yakin keluar?" : "Keluar"}
-          </span>
+          <span className="hidden sm:inline">Logout</span>
         </button>
       </div>
+
+      <ConfirmDialog
+        isOpen={showDialogLogout}
+        title="Logout"
+        description="Are you sure want to logout?"
+        confirmLabel="Logout"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={handleLogoutConfirm}
+        onCancel={() => setShowDialogLogout(false)}
+      />
     </header>
   );
 }
