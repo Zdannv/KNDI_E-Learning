@@ -126,10 +126,14 @@ type AssignmentRepository interface {
 	FindHistoryByAssignmentID(ctx context.Context, assignmentID int) ([]domains.AssignmentHistory, error)
 	FindHistoryByStudentID(ctx context.Context, studentID string) ([]domains.Assignment, error)
 	FindAllHistory(ctx context.Context) ([]domains.Assignment, error)
+<<<<<<< HEAD
 	QuizPassedByStudentID(ctx context.Context, studentID string, quizID int) (bool, error)
 	FindPendingEssays(ctx context.Context) ([]domains.PendingEssay, error)
 	UpdateEssayScore(ctx context.Context, historyID, assignmentID int, score float64) error
 	RecalcAssignmentScore(ctx context.Context, assignmentID int) error
+=======
+	QuizCompletedByStudentID(ctx context.Context, studentID string, quizID int) (bool, error)
+>>>>>>> c5a0a30 (fix: modified to handle use can't doing assignment more then one)
 }
 
 type assignmentRepository struct {
@@ -295,6 +299,7 @@ func (r *assignmentRepository) FindAllHistory(ctx context.Context) ([]domains.As
 	return assignments, rows.Err()
 }
 
+<<<<<<< HEAD
 func (r *assignmentRepository) QuizPassedByStudentID(ctx context.Context, studentID string, quizID int) (bool, error) {
 	var passed bool
 	err := r.pool.QueryRow(
@@ -352,4 +357,17 @@ func (r *assignmentRepository) RecalcAssignmentScore(ctx context.Context, assign
 		return fmt.Errorf("AssignmentRepo.RecalcAssignmentScore: %w", err)
 	}
 	return nil
+=======
+func (r *assignmentRepository) QuizCompletedByStudentID(ctx context.Context, studentID string, quizID int) (bool, error) {
+	var exist bool
+	err := r.pool.QueryRow(
+		ctx, selectQuizCompletedAssignmentByUserID, studentID, quizID, domains.StatusCompleted,
+	).Scan(&exist)
+
+	if err != nil {
+		return false, fmt.Errorf("AssignmentRepo.QuizCompleted: %w", err)
+	}
+
+	return exist, nil
+>>>>>>> c5a0a30 (fix: modified to handle use can't doing assignment more then one)
 }
