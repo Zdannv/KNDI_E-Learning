@@ -102,16 +102,24 @@ export default function AdminQuizzesPage() {
       });
       showToast(
         quiz.is_published
+<<<<<<< HEAD
           ? `Quiz "${quiz.title}" dijadikan Draft`
           : `Quiz "${quiz.title}" dipublikasikan`
       );
       refetchQuizzes();
+=======
+          ? `Quiz ${quiz.title} change to Draft`
+          : `Quiz ${quiz.title} change to Publish`
+      )
+      refetch()
+>>>>>>> ac972f3 (fix: fixing data payload and set authorization page)
     } catch (err) {
       showToast(err instanceof ClientApiError ? err.message : "Gagal mengubah status kuis");
     }
   };
 
   const handleDelete = async (quiz: Quiz) => {
+<<<<<<< HEAD
     if (!confirm(`Apakah Anda yakin ingin menghapus kuis "${quiz.title}"?`)) return;
     try {
       await quizApi.delete(quiz.id);
@@ -119,6 +127,18 @@ export default function AdminQuizzesPage() {
       refetchQuizzes();
     } catch (err) {
       showToast(err instanceof ClientApiError ? err.message : "Gagal menghapus kuis");
+=======
+    if (confirm(`Are you sure want to delete quiz ${quiz.title}`)) {
+      try {
+        await quizApi.delete(quiz.id)
+        showToast("Quiz is deleted")
+        refetch()
+      } catch (err) {
+        showToast(
+          err instanceof ClientApiError ? err.message : "Failed to delete quiz"
+        )
+      }
+>>>>>>> ac972f3 (fix: fixing data payload and set authorization page)
     }
   };
 

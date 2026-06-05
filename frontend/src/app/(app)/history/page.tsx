@@ -126,7 +126,6 @@ export default function HistoryPage() {
           </div>
         </div>
       )}
-
       {/* ── Empty state ── */}
       {!isLoading && !error && (!history || history.length === 0) && (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-12 text-center">
