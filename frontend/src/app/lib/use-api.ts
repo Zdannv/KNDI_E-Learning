@@ -296,6 +296,7 @@ export interface AssignmentResult {
 
 export interface HistoryListItem {
   assignment_id: number;
+  quiz_id: number
   quiz_title: string;
   score_earned: number;
   total_point: number;
