@@ -57,3 +57,7 @@ func write(w http.ResponseWriter, status int, env Envelope) {
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(env)
 }
+
+func Conflict(w http.ResponseWriter, message string) {
+	Error(w, http.StatusConflict, message)
+}
