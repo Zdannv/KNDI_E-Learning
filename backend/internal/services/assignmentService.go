@@ -440,15 +440,16 @@ func (s *assignmentService) buildHistoryResponse(assignments []domains.Assignmen
 		}
 
 		result = append(result, dto.HistoryListResponse{
-			AssignmentID: a.ID,
-			QuizTitle:    a.Quiz.Title,
-			ScoreEarned:  scoreEarned,
-			TotalPoint:   totalPoint,
-			ScorePct:     scorePct,
-			Status:       a.StatusName,
-			DateStr:      dateStr,
-			TimeStr:      timeStr,
-			CompletedAt:  completedAtStr,
+			AssignmentID: 	a.ID,
+			QuizID: 		a.QuizID,
+			QuizTitle:    	a.Quiz.Title,
+			ScoreEarned:  	scoreEarned,
+			TotalPoint:   	totalPoint,
+			ScorePct:     	scorePct,
+			Status:       	a.StatusName,
+			DateStr:      	dateStr,
+			TimeStr:      	timeStr,
+			CompletedAt:  	completedAtStr,
 		})
 	}
 
