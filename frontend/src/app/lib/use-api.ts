@@ -280,19 +280,12 @@ export interface AssignmentStart {
 
 export interface AssignmentHistoryAnswer {
   question_text: string;
-<<<<<<< HEAD
   question_type: 1 | 2 | 3 | 4
-=======
-  question_type: 1 | 2 | 3
->>>>>>> c3c3d14 (fix: modified that matching card handle that saving correct & wrong answer, and showing pair result)
   your_answer: string;
   is_correct: boolean;
   score_earned: number;
   total_pairs?: number
-<<<<<<< HEAD
   pending_grade?: boolean
-=======
->>>>>>> c3c3d14 (fix: modified that matching card handle that saving correct & wrong answer, and showing pair result)
 }
 
 export interface AssignmentResult {
