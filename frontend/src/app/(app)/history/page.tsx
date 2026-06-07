@@ -419,9 +419,6 @@ function HistoryRow({
         <CalendarClock className="w-4 h-4 text-slate-400 shrink-0" />
         <div className="text-sm">
           <span className="font-medium text-slate-700">{item.date_str}</span>
-          {item.time_str && (
-            <span className="text-slate-400 ml-1">· {item.time_str}</span>
-          )}
         </div>
       </div>
 
@@ -432,9 +429,6 @@ function HistoryRow({
           >
             {item.score_percent.toFixed(0)}
           </span>
-          <p className="text-xs text-slate-400 mt-0.5">
-            {item.score_earned.toFixed(1)} / {item.total_point.toFixed(1)} Point
-          </p>
         </div>
       </div>
  

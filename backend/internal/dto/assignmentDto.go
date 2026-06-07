@@ -35,10 +35,7 @@ type AssignmentHistoryResponse struct {
 	IsCorrect			bool			`json:"is_correct"`
 	ScoreEarned			float64			`json:"score_earned"`
 	TotalPairs			int				`json:"total_pairs,omitempty"`
-<<<<<<< HEAD
 	PendingGrade		bool			`json:"pending_grade,omitempty"`
-=======
->>>>>>> c3c3d14 (fix: modified that matching card handle that saving correct & wrong answer, and showing pair result)
 }
 
 type HistoryListResponse struct {

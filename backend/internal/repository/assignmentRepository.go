@@ -28,8 +28,13 @@ const (
 
 	selectHistoryByStudentID = `
 		SELECT a.id, a.student_id, a.quiz_id, a.total_point, a.score_earned, a.status,
+<<<<<<< HEAD
 			s.name AS status_name, a.started_at, a.completed_at,
 			q.title AS quiz_title
+=======
+			   s.name AS status_name, a.started_at, a.completed_at,
+			   q.title AS quiz_title
+>>>>>>> f369d0f (fix: fixing score result bug that always showing 100 or 0)
 		FROM assignments a
 		JOIN assignment_status s ON s.id = a.status
 		JOIN quizzes q ON q.id = a.quiz_id
@@ -38,9 +43,15 @@ const (
 
 	selectAllHistory = `
 		SELECT a.id, a.student_id, a.quiz_id, a.total_point, a.score_earned, a.status,
+<<<<<<< HEAD
 			s.name AS status_name, a.started_at, a.completed_at,
 			q.title AS quiz_title,
 			u.username AS student_name
+=======
+		    s.name AS status_name, a.started_at, a.completed_at,
+		    q.title AS quiz_title,
+		    u.username AS student_name
+>>>>>>> f369d0f (fix: fixing score result bug that always showing 100 or 0)
 		FROM assignments a
 		JOIN assignment_status s ON s.id = a.status
 		JOIN quizzes q ON q.id = a.quiz_id
@@ -60,6 +71,7 @@ const (
 		RETURNING id, created_at, updated_at`
 
 	selectHistoryByAssignmentID = `
+<<<<<<< HEAD
 		SELECT ah.id, ah.assignment_id, ah.question_id,
 			ah.question_option_id, ah.matching_card_id,
 			ah.answer_text, ah.score_earned, ah.is_graded,
@@ -69,6 +81,16 @@ const (
 		JOIN questions q ON q.id = ah.question_id
 		WHERE ah.assignment_id = $1
 		ORDER BY ah.id ASC`
+=======
+		SELECT a.id, a.student_id, a.quiz_id, a.total_point, a.score_earned, a.status,
+		    s.name AS status_name, a.started_at, a.completed_at,
+		    q.title AS quiz_title
+		FROM assignments a
+		JOIN assignment_status s ON s.id = a.status
+		JOIN quizzes q ON q.id = a.quiz_id
+		WHERE a.student_id = $1 AND a.status = $2
+		ORDER BY a.completed_at DESC`
+>>>>>>> f369d0f (fix: fixing score result bug that always showing 100 or 0)
 
 	selectQuizPassedByStudentID = `
 		SELECT EXISTS (
@@ -170,6 +192,7 @@ func (r *assignmentRepository) FindByID(ctx context.Context, id int) (*domains.A
 }
 
 func (r *assignmentRepository) Finalise(
+<<<<<<< HEAD
 	ctx         context.Context,
 	id          int,
 	totalPoint  float64,
@@ -183,6 +206,21 @@ func (r *assignmentRepository) Finalise(
 		return fmt.Errorf("AssignmentRepo.Finalise: %w", err)
 	}
 	return nil
+=======
+    ctx context.Context,
+    id int,
+    totalPoint float64,
+    scoreEarned float64,
+    completedAt time.Time,
+    status int,
+) error {
+    _, err := r.pool.Exec(ctx, finaliseAssignment,
+        totalPoint, scoreEarned, status, completedAt, id)
+    if err != nil {
+        return fmt.Errorf("AssignmentRepo.Finalise: %w", err)
+    }
+    return nil
+>>>>>>> f369d0f (fix: fixing score result bug that always showing 100 or 0)
 }
 
 func (r *assignmentRepository) SaveHistory(ctx context.Context, items []domains.AssignmentHistory) error {
@@ -282,8 +320,13 @@ func (r *assignmentRepository) FindAllHistory(ctx context.Context) ([]domains.As
 		var quizTitle, studentName string
 		if err := rows.Scan(
 			&a.ID, &a.StudentID, &a.QuizID, &a.TotalPoint, &a.ScoreEarned, &a.Status,
+<<<<<<< HEAD
 			&a.StatusName, &a.StartedAt, &a.CompletedAt,
 			&quizTitle, &studentName,
+=======
+    		&a.StatusName, &a.StartedAt, &a.CompletedAt,
+    		&quizTitle, &studentName,
+>>>>>>> f369d0f (fix: fixing score result bug that always showing 100 or 0)
 		); err != nil {
 			return nil, fmt.Errorf("AssignmentRepo.FindAllHistory scan: %w", err)
 		}
