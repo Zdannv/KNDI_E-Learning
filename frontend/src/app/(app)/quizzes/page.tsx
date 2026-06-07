@@ -96,17 +96,17 @@ export default function QuizzesPage() {
 
   const handleSubmit = async () => {
     if (!activeQuiz || assignmentId === null) return;
-
+ 
     setIsSubmitting(true);
     setSubmitError(null);
-
+ 
     try {
       const questions = activeQuiz.question ?? [];
       const payload: SubmitAnswer[] = [];
-
+ 
       for (const q of questions) {
         const studentAnswer = answers[q.id];
-
+ 
         if (q.question_type === 1) {
           if (studentAnswer?.selectedOptionId !== undefined) {
             payload.push({
@@ -140,7 +140,7 @@ export default function QuizzesPage() {
           });
         }
       }
-
+ 
       const scored = await assignmentApi.submit(assignmentId, payload);
       setResult(scored);
     } catch (err) {
@@ -149,6 +149,7 @@ export default function QuizzesPage() {
       setIsSubmitting(false);
     }
   };
+
 
   const handleReset = () => {
     setActiveQuiz(null);
