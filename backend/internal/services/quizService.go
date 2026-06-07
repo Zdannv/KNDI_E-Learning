@@ -9,6 +9,8 @@ import (
 	"fmt"
 )
 
+// ─── Interface ────────────────────────────────────────────────────────────────
+
 type QuizService interface {
 	Create(ctx context.Context, senseiID string, req dto.CreateQuizRequest) (*domains.Quiz, error)
 	FindAll(ctx context.Context, role, senseiID string) ([]domains.Quiz, error)
@@ -19,6 +21,8 @@ type QuizService interface {
 	UpdateQuestion(ctx context.Context, questionID int, senseiID string, req dto.UpdateQuestionRequest) (*domains.Question, error)
 	DeleteQuestion(ctx context.Context, questionID int) error
 }
+
+// ─── Implementation ───────────────────────────────────────────────────────────
 
 type quizService struct {
 	repo repository.QuizRepository

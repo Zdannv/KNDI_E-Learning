@@ -79,9 +79,16 @@ export async function DELETE(
             return badRequest("Invalid question id!")
         }
 
+        const body: UpdateQuestionBody = await req.json()
+
+        if (!body.question_text?.trim()) {
+            return badRequest("Question text is required!")
+        }
+
         const data = await apiRequest(`/questions/${questionId}`, {
-            method: "DELETE",
-            token
+            method: "PUT",
+            body,
+            token,
         })
 
         return ok(data)
