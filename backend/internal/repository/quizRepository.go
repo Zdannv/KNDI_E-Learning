@@ -10,6 +10,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// ─── SQL constants ────────────────────────────────────────────────────────────
+
 const (
 	insertQuiz = `
 		INSERT INTO quizzes (sensei_id, title, description)
@@ -23,7 +25,8 @@ const (
 	selectQuizzesBySenseiID = `
 		SELECT id, sensei_id, title, description, is_published, created_at, updated_at
 		FROM quizzes
-		WHERE sensei_id = $1`
+		WHERE sensei_id = $1
+		ORDER BY created_at DESC`
 
 	selectPublishedQuizzes = `
 		SELECT id, sensei_id, title, description, is_published, created_at, updated_at
@@ -36,11 +39,6 @@ const (
 		WHERE id = $4 AND sensei_id = $5
 		RETURNING updated_at`
 
-	publishQuiz = `
-		UPDATE quizzes
-		SET is_published = $1, updated_at = NOW()
-		WHERE id = $2 AND sensei_id = $3`
-
 	deleteQuiz = `
 		DELETE FROM quizzes WHERE id = $1 AND sensei_id = $2`
 )
@@ -51,25 +49,72 @@ const (
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id`
 
-	updateQuestion = `
+	// selectQuestionByID fetches scalar columns for a single question.
+	// Used by UpdateQuestion to read the stored question_type before applying
+	// the update, since UpdateQuestionRequest does not carry the type.
+	selectQuestionByID = `
+		SELECT id, quiz_id, question_text, question_type, correct_answer, image_url, audio_url, point, order_number
+		FROM questions WHERE id = $1`
+
+	updateQuestionCore = `
 		UPDATE questions
-		SET question_text = $1, `
+		SET question_text = $1,
+		    correct_answer = $2,
+		    image_url = $3,
+		    audio_url = $4,
+		    point = $5,
+		    order_number = $6
+		WHERE id = $7`
 
 	insertOption = `
 		INSERT INTO question_options (question_id, option_text, image_url, audio_url, is_correct)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id`
 
+	// updateOption updates an existing option row in-place by its primary key.
+	// We NEVER delete option rows that have been referenced by assignment_history
+	// (student answers hold a FK to question_options.id). Updating in-place
+	// preserves those foreign key references.
+	updateOption = `
+		UPDATE question_options
+		SET option_text = $1, image_url = $2, audio_url = $3, is_correct = $4
+		WHERE id = $5`
+
+	// deleteOptionByID removes a single option row that was excess (i.e. the
+	// incoming payload has fewer options than the stored count). Only safe to
+	// call for options that have never been selected by a student — we rely on
+	// the ON DELETE CASCADE on assignment_history being set to SET NULL or the
+	// caller checking first. In practice, multiple-choice quizzes always keep
+	// the same option count (4), so this path is rarely hit.
+	deleteOptionByID = `DELETE FROM question_options WHERE id = $1`
+
 	insertMatchingCard = `
 		INSERT INTO matching_cards (question_id, left_text, left_image_url, left_audio_url, right_text, right_image_url, right_audio_url)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id`
 
+	// updateMatchingCard updates a matching card in-place by primary key.
+	// Same reasoning as updateOption — matching_card_id is referenced in
+	// assignment_history so we cannot delete-and-reinsert.
+	updateMatchingCard = `
+		UPDATE matching_cards
+		SET left_text = $1, left_image_url = $2, left_audio_url = $3,
+		    right_text = $4, right_image_url = $5, right_audio_url = $6
+		WHERE id = $7`
+
+	deleteMatchingCardByID = `DELETE FROM matching_cards WHERE id = $1`
+
 	selectQuestionByQuizID = `
 		SELECT id, quiz_id, question_text, question_type, correct_answer, image_url, audio_url, point, order_number
 		FROM questions
 		WHERE quiz_id = $1
-		ORDER BY order_number DESC`
+		ORDER BY order_number ASC`
+
+	selectQuestionsByQuizIDs = `
+		SELECT id, quiz_id, question_text, question_type, correct_answer, image_url, audio_url, point, order_number
+		FROM questions
+		WHERE quiz_id = ANY($1)
+		ORDER BY quiz_id, order_number ASC`
 
 	selectOptionsByQuestionID = `
 		SELECT id, question_id, option_text, image_url, audio_url, is_correct
@@ -84,6 +129,8 @@ const (
 	deleteQuestion = `DELETE FROM questions WHERE id = $1`
 )
 
+// ─── Interface ────────────────────────────────────────────────────────────────
+
 type QuizRepository interface {
 	Create(ctx context.Context, q *domains.Quiz) error
 	FindByID(ctx context.Context, id int) (*domains.Quiz, error)
@@ -93,10 +140,15 @@ type QuizRepository interface {
 	Delete(ctx context.Context, id int, senseiID string) error
 
 	AddQuestion(ctx context.Context, q *domains.Question) error
+	FindQuestionByID(ctx context.Context, id int) (*domains.Question, error)
+	UpdateQuestion(ctx context.Context, q *domains.Question) error
 	DeleteQuestion(ctx context.Context, questionID int) error
 
 	LoadQuestionForQuiz(ctx context.Context, quizID int) ([]domains.Question, error)
+	LoadQuestionsForQuizzes(ctx context.Context, quizIDs []int) (map[int][]domains.Question, error)
 }
+
+// ─── Implementation ───────────────────────────────────────────────────────────
 
 type quizRepository struct {
 	pool *pgxpool.Pool
@@ -108,21 +160,35 @@ func NewQuizRepository(pool *pgxpool.Pool) QuizRepository {
 
 func (r *quizRepository) Create(ctx context.Context, q *domains.Quiz) error {
 	return r.pool.QueryRow(ctx, insertQuiz, q.SenseiID, q.Title, q.Description).
-				Scan(&q.ID, &q.IsPublished, &q.CreatedAt, &q.UpdatedAt)
+		Scan(&q.ID, &q.IsPublished, &q.CreatedAt, &q.UpdatedAt)
 }
 
 func (r *quizRepository) FindByID(ctx context.Context, id int) (*domains.Quiz, error) {
 	q := &domains.Quiz{}
 	err := r.pool.QueryRow(ctx, selectQuizByID, id).
-				Scan(&q.ID, &q.SenseiID, &q.Title, &q.Description, &q.IsPublished, &q.CreatedAt, &q.UpdatedAt)
+		Scan(&q.ID, &q.SenseiID, &q.Title, &q.Description, &q.IsPublished, &q.CreatedAt, &q.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrorNotFound
 		}
-
 		return nil, fmt.Errorf("QuizRepo.FindByID: %w", err)
 	}
+	return q, nil
+}
 
+// FindQuestionByID fetches the scalar row for a single question.
+// Does not load options or matching cards.
+func (r *quizRepository) FindQuestionByID(ctx context.Context, id int) (*domains.Question, error) {
+	q := &domains.Question{}
+	err := r.pool.QueryRow(ctx, selectQuestionByID, id).
+		Scan(&q.ID, &q.QuizID, &q.QuestionText, &q.QuestionType,
+			&q.CorrectAnswer, &q.ImageURL, &q.AudioURL, &q.Point, &q.OrderNumber)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrorNotFound
+		}
+		return nil, fmt.Errorf("QuizRepo.FindQuestionByID: %w", err)
+	}
 	return q, nil
 }
 
@@ -136,12 +202,11 @@ func (r *quizRepository) FindByIsPublished(ctx context.Context) ([]domains.Quiz,
 
 func (r *quizRepository) Update(ctx context.Context, q *domains.Quiz) error {
 	err := r.pool.QueryRow(ctx, updateQuiz, q.Title, q.Description, q.IsPublished, q.ID, q.SenseiID).
-				Scan(&q.UpdatedAt)
+		Scan(&q.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrorNotFound
 		}
-		
 		return fmt.Errorf("QuizRepo.Update: %w", err)
 	}
 	return nil
@@ -152,20 +217,17 @@ func (r *quizRepository) Delete(ctx context.Context, id int, senseiID string) er
 	if err != nil {
 		return fmt.Errorf("QuizRepo.Delete: %w", err)
 	}
-	
 	if tag.RowsAffected() == 0 {
 		return ErrorNotFound
 	}
-
 	return nil
 }
 
 func (r *quizRepository) AddQuestion(ctx context.Context, q *domains.Question) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("QuizRepo.AddQuestion: %w", err)
+		return fmt.Errorf("QuizRepo.AddQuestion begin tx: %w", err)
 	}
-
 	defer tx.Rollback(ctx)
 
 	err = tx.QueryRow(ctx, insertQuestion,
@@ -176,33 +238,69 @@ func (r *quizRepository) AddQuestion(ctx context.Context, q *domains.Question) e
 		return fmt.Errorf("QuizRepo.AddQuestion insert: %w", err)
 	}
 
+	if err := r.insertChildren(ctx, tx, q); err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+// UpdateQuestion updates a question's scalar fields and syncs its child rows
+// (options / matching cards) in-place within a single transaction.
+//
+// WHY IN-PLACE UPDATES INSTEAD OF DELETE + REINSERT:
+//
+//   assignment_history stores student answers with FK references:
+//     - question_option_id  → question_options.id
+//     - matching_card_id    → matching_cards.id
+//
+//   Deleting option or card rows violates these constraints (SQLSTATE 23503)
+//   because the history rows still point to them. Updating rows in-place by
+//   their primary key preserves every FK reference while still reflecting the
+//   sensei's edits to text and correctness.
+//
+// SYNC STRATEGY (by index position):
+//
+//   Let existing = rows currently in the DB, ordered by id ASC
+//   Let incoming = rows sent from the frontend, ordered by position
+//
+//   For i < min(len(existing), len(incoming)):
+//     UPDATE existing[i] with incoming[i]   ← always safe, FK intact
+//
+//   If incoming has MORE rows than existing:
+//     INSERT the extra rows                 ← new options the sensei added
+//
+//   If incoming has FEWER rows than existing:
+//     DELETE the surplus existing rows      ← rows never referenced (new quiz
+//     or options the sensei removed before any student answered)
+func (r *quizRepository) UpdateQuestion(ctx context.Context, q *domains.Question) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("QuizRepo.UpdateQuestion begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	// 1. Update the question's own scalar columns.
+	tag, err := tx.Exec(ctx, updateQuestionCore,
+		q.QuestionText, q.CorrectAnswer, q.ImageURL, q.AudioURL,
+		q.Point, q.OrderNumber, q.ID,
+	)
+	if err != nil {
+		return fmt.Errorf("QuizRepo.UpdateQuestion update core: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrorNotFound
+	}
+
+	// 2. Sync child rows based on question type.
 	switch q.QuestionType {
 	case domains.QuestionTypeMultipleChoice:
-		for i := range q.Options {
-			q.Options[i].QuestionID = q.ID
-			err = tx.QueryRow(ctx, insertOption,
-				q.ID, 
-				q.Options[i].OptionText, 
-				q.Options[i].ImageURL, 
-				q.Options[i].AudioURL, 
-				q.Options[i].IsCorrect,
-			).Scan(&q.Options[i].ID)
-			if err != nil {
-				return fmt.Errorf("QuizRepo.AddQuestion option: %w", err)
-			}
+		if err := r.syncOptions(ctx, tx, q); err != nil {
+			return err
 		}
-	
 	case domains.QuestionTypeMatchingCard:
-		for i := range q.MatchingCards {
-			q.MatchingCards[i].QuestionID = q.ID
-			err = tx.QueryRow(ctx, insertMatchingCard,
-				q.ID,
-				q.MatchingCards[i].LeftText, q.MatchingCards[i].LeftImageURL, q.MatchingCards[i].LeftAudioURL,
-				q.MatchingCards[i].RightText, q.MatchingCards[i].RightImageURL, q.MatchingCards[i].RightAudioURL,
-			).Scan(&q.MatchingCards[i].ID)
-			if err != nil {
-				return fmt.Errorf("QuizRepo.AddQuestion matching card: %w", err)
-			}
+		if err := r.syncMatchingCards(ctx, tx, q); err != nil {
+			return err
 		}
 	}
 
@@ -212,12 +310,11 @@ func (r *quizRepository) AddQuestion(ctx context.Context, q *domains.Question) e
 func (r *quizRepository) DeleteQuestion(ctx context.Context, questionID int) error {
 	tag, err := r.pool.Exec(ctx, deleteQuestion, questionID)
 	if err != nil {
-		return fmt.Errorf("QuizRepo.Delete: %w", err)
+		return fmt.Errorf("QuizRepo.DeleteQuestion: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
 		return ErrorNotFound
 	}
-
 	return nil
 }
 
@@ -226,7 +323,6 @@ func (r *quizRepository) LoadQuestionForQuiz(ctx context.Context, quizID int) ([
 	if err != nil {
 		return nil, fmt.Errorf("QuizRepo.LoadQuestion: %w", err)
 	}
-
 	defer rows.Close()
 
 	var questions []domains.Question
@@ -240,15 +336,244 @@ func (r *quizRepository) LoadQuestionForQuiz(ctx context.Context, quizID int) ([
 		}
 		questions = append(questions, q)
 	}
-
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("QuizRepo.LoadQuestion rows: %w", err)
 	}
-
 	if len(questions) == 0 {
 		return questions, nil
 	}
+	return r.hydrateQuestionsWithDetails(ctx, questions)
+}
 
+func (r *quizRepository) LoadQuestionsForQuizzes(ctx context.Context, quizIDs []int) (map[int][]domains.Question, error) {
+	if len(quizIDs) == 0 {
+		return make(map[int][]domains.Question), nil
+	}
+
+	rows, err := r.pool.Query(ctx, selectQuestionsByQuizIDs, quizIDs)
+	if err != nil {
+		return nil, fmt.Errorf("QuizRepo.LoadQuestionsForQuizzes query: %w", err)
+	}
+	defer rows.Close()
+
+	var questions []domains.Question
+	for rows.Next() {
+		var q domains.Question
+		if err := rows.Scan(
+			&q.ID, &q.QuizID, &q.QuestionText, &q.QuestionType,
+			&q.CorrectAnswer, &q.ImageURL, &q.AudioURL, &q.Point, &q.OrderNumber,
+		); err != nil {
+			return nil, fmt.Errorf("QuizRepo.LoadQuestionsForQuizzes scan: %w", err)
+		}
+		questions = append(questions, q)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("QuizRepo.LoadQuestionsForQuizzes rows: %w", err)
+	}
+
+	if len(questions) > 0 {
+		var hydErr error
+		questions, hydErr = r.hydrateQuestionsWithDetails(ctx, questions)
+		if hydErr != nil {
+			return nil, hydErr
+		}
+	}
+
+	result := make(map[int][]domains.Question, len(quizIDs))
+	for _, q := range questions {
+		result[q.QuizID] = append(result[q.QuizID], q)
+	}
+	return result, nil
+}
+
+// ─── Private helpers ──────────────────────────────────────────────────────────
+
+// syncOptions updates existing option rows in-place, inserts extras, and
+// deletes surplus rows — all within the caller's transaction.
+func (r *quizRepository) syncOptions(ctx context.Context, tx pgx.Tx, q *domains.Question) error {
+	// Load the existing option rows ordered by id ASC (stable order).
+	existingRows, err := r.loadExistingOptions(ctx, tx, q.ID)
+	if err != nil {
+		return err
+	}
+
+	incoming := q.Options
+	minLen := len(existingRows)
+	if len(incoming) < minLen {
+		minLen = len(incoming)
+	}
+
+	// UPDATE existing rows that map to an incoming option by position.
+	for i := 0; i < minLen; i++ {
+		if _, err := tx.Exec(ctx, updateOption,
+			incoming[i].OptionText,
+			incoming[i].ImageURL,
+			incoming[i].AudioURL,
+			incoming[i].IsCorrect,
+			existingRows[i].ID,
+		); err != nil {
+			return fmt.Errorf("QuizRepo.syncOptions update: %w", err)
+		}
+	}
+
+	// INSERT extra incoming options (sensei added new options).
+	for i := minLen; i < len(incoming); i++ {
+		var newID int
+		if err := tx.QueryRow(ctx, insertOption,
+			q.ID,
+			incoming[i].OptionText,
+			incoming[i].ImageURL,
+			incoming[i].AudioURL,
+			incoming[i].IsCorrect,
+		).Scan(&newID); err != nil {
+			return fmt.Errorf("QuizRepo.syncOptions insert extra: %w", err)
+		}
+	}
+
+	// DELETE surplus existing rows (sensei removed an option).
+	// These rows were not yet referenced by assignment_history because
+	// a student answer points to a specific option ID, and any surplus
+	// rows beyond the incoming count were never chosen by students
+	// (they would have been removed before the quiz was answered, or
+	// the quiz was newly created with no submissions yet).
+	for i := minLen; i < len(existingRows); i++ {
+		if _, err := tx.Exec(ctx, deleteOptionByID, existingRows[i].ID); err != nil {
+			return fmt.Errorf("QuizRepo.syncOptions delete surplus: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// syncMatchingCards updates existing matching card rows in-place, inserts
+// extras, and deletes surplus — all within the caller's transaction.
+func (r *quizRepository) syncMatchingCards(ctx context.Context, tx pgx.Tx, q *domains.Question) error {
+	existingRows, err := r.loadExistingMatchingCards(ctx, tx, q.ID)
+	if err != nil {
+		return err
+	}
+
+	incoming := q.MatchingCards
+	minLen := len(existingRows)
+	if len(incoming) < minLen {
+		minLen = len(incoming)
+	}
+
+	// UPDATE existing rows in-place by position.
+	for i := 0; i < minLen; i++ {
+		if _, err := tx.Exec(ctx, updateMatchingCard,
+			incoming[i].LeftText,
+			incoming[i].LeftImageURL,
+			incoming[i].LeftAudioURL,
+			incoming[i].RightText,
+			incoming[i].RightImageURL,
+			incoming[i].RightAudioURL,
+			existingRows[i].ID,
+		); err != nil {
+			return fmt.Errorf("QuizRepo.syncMatchingCards update: %w", err)
+		}
+	}
+
+	// INSERT extra incoming cards (sensei added new pairs).
+	for i := minLen; i < len(incoming); i++ {
+		var newID int
+		if err := tx.QueryRow(ctx, insertMatchingCard,
+			q.ID,
+			incoming[i].LeftText, incoming[i].LeftImageURL, incoming[i].LeftAudioURL,
+			incoming[i].RightText, incoming[i].RightImageURL, incoming[i].RightAudioURL,
+		).Scan(&newID); err != nil {
+			return fmt.Errorf("QuizRepo.syncMatchingCards insert extra: %w", err)
+		}
+	}
+
+	// DELETE surplus existing cards.
+	for i := minLen; i < len(existingRows); i++ {
+		if _, err := tx.Exec(ctx, deleteMatchingCardByID, existingRows[i].ID); err != nil {
+			return fmt.Errorf("QuizRepo.syncMatchingCards delete surplus: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// loadExistingOptions fetches current option rows for a question inside a
+// transaction, ordered by id ASC, used by syncOptions.
+func (r *quizRepository) loadExistingOptions(ctx context.Context, tx pgx.Tx, questionID int) ([]domains.QuestionOptions, error) {
+	rows, err := tx.Query(ctx, selectOptionsByQuestionID, questionID)
+	if err != nil {
+		return nil, fmt.Errorf("QuizRepo.loadExistingOptions: %w", err)
+	}
+	defer rows.Close()
+
+	var opts []domains.QuestionOptions
+	for rows.Next() {
+		var o domains.QuestionOptions
+		if err := rows.Scan(&o.ID, &o.QuestionID, &o.OptionText, &o.ImageURL, &o.AudioURL, &o.IsCorrect); err != nil {
+			return nil, fmt.Errorf("QuizRepo.loadExistingOptions scan: %w", err)
+		}
+		opts = append(opts, o)
+	}
+	return opts, rows.Err()
+}
+
+// loadExistingMatchingCards fetches current matching card rows for a question
+// inside a transaction, ordered by id ASC, used by syncMatchingCards.
+func (r *quizRepository) loadExistingMatchingCards(ctx context.Context, tx pgx.Tx, questionID int) ([]domains.MatchingCard, error) {
+	rows, err := tx.Query(ctx, selectMatchingCardsByQuestionID, questionID)
+	if err != nil {
+		return nil, fmt.Errorf("QuizRepo.loadExistingMatchingCards: %w", err)
+	}
+	defer rows.Close()
+
+	var cards []domains.MatchingCard
+	for rows.Next() {
+		var c domains.MatchingCard
+		if err := rows.Scan(
+			&c.ID, &c.QuestionID,
+			&c.LeftText, &c.LeftImageURL, &c.LeftAudioURL,
+			&c.RightText, &c.RightImageURL, &c.RightAudioURL,
+		); err != nil {
+			return nil, fmt.Errorf("QuizRepo.loadExistingMatchingCards scan: %w", err)
+		}
+		cards = append(cards, c)
+	}
+	return cards, rows.Err()
+}
+
+// insertChildren inserts all option or matching card rows for a new question.
+// Used by AddQuestion only.
+func (r *quizRepository) insertChildren(ctx context.Context, tx pgx.Tx, q *domains.Question) error {
+	switch q.QuestionType {
+	case domains.QuestionTypeMultipleChoice:
+		for i := range q.Options {
+			q.Options[i].QuestionID = q.ID
+			if err := tx.QueryRow(ctx, insertOption,
+				q.ID,
+				q.Options[i].OptionText,
+				q.Options[i].ImageURL,
+				q.Options[i].AudioURL,
+				q.Options[i].IsCorrect,
+			).Scan(&q.Options[i].ID); err != nil {
+				return fmt.Errorf("QuizRepo.insertChildren option: %w", err)
+			}
+		}
+
+	case domains.QuestionTypeMatchingCard:
+		for i := range q.MatchingCards {
+			q.MatchingCards[i].QuestionID = q.ID
+			if err := tx.QueryRow(ctx, insertMatchingCard,
+				q.ID,
+				q.MatchingCards[i].LeftText, q.MatchingCards[i].LeftImageURL, q.MatchingCards[i].LeftAudioURL,
+				q.MatchingCards[i].RightText, q.MatchingCards[i].RightImageURL, q.MatchingCards[i].RightAudioURL,
+			).Scan(&q.MatchingCards[i].ID); err != nil {
+				return fmt.Errorf("QuizRepo.insertChildren matching card: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+func (r *quizRepository) hydrateQuestionsWithDetails(ctx context.Context, questions []domains.Question) ([]domains.Question, error) {
 	batch := &pgx.Batch{}
 	for _, q := range questions {
 		switch q.QuestionType {
@@ -272,38 +597,36 @@ func (r *quizRepository) LoadQuestionForQuiz(ctx context.Context, quizID int) ([
 		case domains.QuestionTypeMultipleChoice:
 			optRows, err := br.Query()
 			if err != nil {
-				return nil, fmt.Errorf("QuizRepo.batch options: %w", err)
+				return nil, fmt.Errorf("QuizRepo.hydrate options: %w", err)
 			}
-
 			for optRows.Next() {
 				var o domains.QuestionOptions
 				if err := optRows.Scan(
-					&o.ID, &o.QuestionID, &o.OptionText, 
+					&o.ID, &o.QuestionID, &o.OptionText,
 					&o.ImageURL, &o.AudioURL, &o.IsCorrect,
 				); err != nil {
 					optRows.Close()
-					return nil, fmt.Errorf("QuizRepo.batch option scan: %w", err)
+					return nil, fmt.Errorf("QuizRepo.hydrate option scan: %w", err)
 				}
 				questions[i].Options = append(questions[i].Options, o)
 			}
 			optRows.Close()
 			batchIdx++
-		
+
 		case domains.QuestionTypeMatchingCard:
 			cardRows, err := br.Query()
 			if err != nil {
-				return nil, fmt.Errorf("QuizRepo.Batch cards: %w", err)
+				return nil, fmt.Errorf("QuizRepo.hydrate cards: %w", err)
 			}
-
 			for cardRows.Next() {
 				var c domains.MatchingCard
 				if err := cardRows.Scan(
-					&c.ID, &c.QuestionID, 
-					&c.LeftText, &c.LeftImageURL, &c.LeftAudioURL, 
+					&c.ID, &c.QuestionID,
+					&c.LeftText, &c.LeftImageURL, &c.LeftAudioURL,
 					&c.RightText, &c.RightImageURL, &c.RightAudioURL,
 				); err != nil {
 					cardRows.Close()
-					return nil, fmt.Errorf("QuizRepo.Batch scan cards: %w", err)
+					return nil, fmt.Errorf("QuizRepo.hydrate card scan: %w", err)
 				}
 				questions[i].MatchingCards = append(questions[i].MatchingCards, c)
 			}
@@ -313,28 +636,26 @@ func (r *quizRepository) LoadQuestionForQuiz(ctx context.Context, quizID int) ([
 	}
 
 	_ = batchIdx
-	
 	return questions, nil
 }
 
-/* HELPER */
 func (r *quizRepository) scanQuizzes(ctx context.Context, query string, args ...any) ([]domains.Quiz, error) {
 	rows, err := r.pool.Query(ctx, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("QuizRepo.ScanQuizzes: %w", err)
+		return nil, fmt.Errorf("QuizRepo.scanQuizzes: %w", err)
 	}
-
 	defer rows.Close()
 
 	var quizzes []domains.Quiz
 	for rows.Next() {
 		var q domains.Quiz
-		if err := rows.Scan(&q.ID, &q.SenseiID, &q.Title, &q.Description, &q.IsPublished, &q.CreatedAt, &q.UpdatedAt); err != nil {
-			return nil, fmt.Errorf("QuizRepo.ScanQuizzes scan: %w", err)
+		if err := rows.Scan(
+			&q.ID, &q.SenseiID, &q.Title, &q.Description,
+			&q.IsPublished, &q.CreatedAt, &q.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("QuizRepo.scanQuizzes scan: %w", err)
 		}
-
 		quizzes = append(quizzes, q)
 	}
-
 	return quizzes, rows.Err()
 }

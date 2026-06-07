@@ -21,6 +21,7 @@ import {
   CreateQuestionPayload,
   Question as BackendQuestion,
   quizApi,
+  UpdateQuestionPayload,
 } from "@/app/lib/use-api";
 
 // ─── Local type definitions (no dummyKuis dependency) ─────────────────────────
@@ -70,8 +71,6 @@ interface MatchingQuestion extends QuestionBase {
 
 type Question = MultipleChoiceQuestion | ShortAnswerQuestion | MatchingQuestion;
 
-// ─── Form state ───────────────────────────────────────────────────────────────
-
 interface QuizFormState {
   title: string;
   description: string;
@@ -86,21 +85,12 @@ const EMPTY_FORM: QuizFormState = {
   questions: [],
 };
 
-// ─── Helper ───────────────────────────────────────────────────────────────────
-
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
-/** Only include media string if it's a non-empty value */
 function mediaOrUndefined(value: string | undefined): string | undefined {
   return value && value.length > 0 ? value : undefined;
 }
 
-// ─── Type converters ──────────────────────────────────────────────────────────
-
-/**
- * Frontend Question[] → CreateQuestionPayload[] for the API.
- * Uses separate image_url and audio_url fields.
- */
 function toBackendQuestions(questions: Question[]): CreateQuestionPayload[] {
   return questions.map((q, index): CreateQuestionPayload => {
     const base = {
@@ -148,10 +138,48 @@ function toBackendQuestions(questions: Question[]): CreateQuestionPayload[] {
   });
 }
 
-/**
- * Backend Question[] → frontend Question[] for the edit form.
- * Reads image_url and audio_url separately.
- */
+function toUpdatePayload(q: Question, index: number): UpdateQuestionPayload {
+  const base = {
+    question_text: q.questionText,
+    image_url:     mediaOrUndefined(q.imageUrl),
+    audio_url:     mediaOrUndefined(q.audioUrl),
+    point:         1,
+    order_number:  index + 1,
+  };
+
+  switch (q.type) {
+    case "multiple_choice":
+      return {
+        ...base,
+        options: q.options.map((o, i) => ({
+          option_text: o.text,
+          image_url:   mediaOrUndefined(o.imageUrl),
+          audio_url:   mediaOrUndefined(o.audioUrl),
+          is_correct:  i === q.correctOptionIndex,
+        })),
+      };
+
+    case "short_answer":
+      return {
+        ...base,
+        correct_answer: q.correctAnswerText,
+      };
+
+    case "matching":
+      return {
+        ...base,
+        matching_cards: q.pairs.map((p) => ({
+          left_text:       p.leftContent.text,
+          left_image_url:  mediaOrUndefined(p.leftContent.imageUrl),
+          left_audio_url:  mediaOrUndefined(p.leftContent.audioUrl),
+          right_text:      p.rightContent.text,
+          right_image_url: mediaOrUndefined(p.rightContent.imageUrl),
+          right_audio_url: mediaOrUndefined(p.rightContent.audioUrl),
+        })),
+      };
+  }
+}
+
 function toFrontendQuestions(backendQuestions: BackendQuestion[]): Question[] {
   return backendQuestions.map((bq): Question => {
     const id = String(bq.id);
@@ -452,10 +480,17 @@ function BuatKuisForm() {
 
         // 2. Delete removed questions
         const currentIds = new Set(formState.questions.map((q) => q.id));
-        const deletedIds  = Object.keys(existingQuestionIds).filter((fId) => !currentIds.has(fId));
+        const deletedIds = Object.keys(existingQuestionIds).filter((fId) => !currentIds.has(fId));
         await Promise.all(deletedIds.map((fId) => quizApi.deleteQuestion(existingQuestionIds[fId])));
 
-        // 3. Add new questions (those not in existingQuestionIds)
+        // 3. Update existing questions that were edited
+        const existingQuestions = formState.questions.filter((q) => q.id in existingQuestionIds);
+        await Promise.all(
+          existingQuestions.map((q, i) =>
+            quizApi.updateQuestion(existingQuestionIds[q.id], toUpdatePayload(q, i))
+          )
+        );
+
         const newQuestions = formState.questions.filter((q) => !(q.id in existingQuestionIds));
         if (newQuestions.length > 0) {
           await quizApi.addQuestions(numericId, toBackendQuestions(newQuestions));
