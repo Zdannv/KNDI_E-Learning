@@ -120,7 +120,11 @@ function CreateQuizForm() {
   );
 }
 
+<<<<<<< HEAD
 export default function CreateQuizPage() {
+=======
+export default function BuatKuisPage() {
+>>>>>>> b175b8c (fix: refactoring code)
   return (
     <Suspense
       fallback={
