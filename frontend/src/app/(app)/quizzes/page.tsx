@@ -110,11 +110,11 @@ function QuizzesPageContent() {
     if (!activeQuiz || assignmentId === null) return;
     setIsSubmitting(true);
     setSubmitError(null);
-
+ 
     try {
       const questions = activeQuiz.question ?? [];
       const payload: SubmitAnswer[] = [];
-
+ 
       for (const q of questions) {
         const a = answers[q.id];
         if (q.question_type === 1) {
@@ -134,7 +134,7 @@ function QuizzesPageContent() {
           payload.push({ question_id: q.id, answer_text: a?.answerText?.trim() ?? "" });
         }
       }
-
+ 
       const scored = await assignmentApi.submit(assignmentId, payload);
 
       if (scored.score_percent >= 60) {
@@ -152,6 +152,7 @@ function QuizzesPageContent() {
       setIsSubmitting(false);
     }
   };
+
 
   const handleReset = () => {
     setActiveQuiz(null);
