@@ -9,6 +9,8 @@ import (
 	"fmt"
 )
 
+// ─── Interface ────────────────────────────────────────────────────────────────
+
 type QuizService interface {
 	Create(ctx context.Context, senseiID string, req dto.CreateQuizRequest) (*domains.Quiz, error)
 	FindAll(ctx context.Context, role, senseiID string) ([]domains.Quiz, error)
@@ -16,8 +18,11 @@ type QuizService interface {
 	Update(ctx context.Context, id int, senseiID string, req dto.UpdateQuizRequest) (*domains.Quiz, error)
 	Delete(ctx context.Context, id int, senseiID string) error
 	AddQuestion(ctx context.Context, quizID int, senseiID string, req dto.CreateQuestionRequest) (*domains.Question, error)
+	UpdateQuestion(ctx context.Context, questionID int, senseiID string, req dto.UpdateQuestionRequest) (*domains.Question, error)
 	DeleteQuestion(ctx context.Context, questionID int) error
 }
+
+// ─── Implementation ───────────────────────────────────────────────────────────
 
 type quizService struct {
 	repo repository.QuizRepository
@@ -33,38 +38,68 @@ func (s *quizService) Create(ctx context.Context, senseiID string, req dto.Creat
 	}
 
 	q := &domains.Quiz{
-		SenseiID: 		senseiID,
-		Title: 			req.Title,
-		Description: 	req.Description,
+		SenseiID:    senseiID,
+		Title:       req.Title,
+		Description: req.Description,
 	}
 
 	if err := s.repo.Create(ctx, q); err != nil {
-		return nil, fmt.Errorf("MaterialService.Create: %w", err)
+		return nil, fmt.Errorf("QuizService.Create: %w", err)
 	}
-
 	return q, nil
 }
 
 func (s *quizService) FindAll(ctx context.Context, role, senseiID string) ([]domains.Quiz, error) {
+	var quizzes []domains.Quiz
+	var err error
+
 	if role == "sensei" {
-		return s.repo.FindBySenseiID(ctx, senseiID)
+		quizzes, err = s.repo.FindBySenseiID(ctx, senseiID)
+	} else {
+		quizzes, err = s.repo.FindByIsPublished(ctx)
 	}
-	return s.repo.FindByIsPublished(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("QuizService.FindAll fetch list: %w", err)
+	}
+
+	if len(quizzes) == 0 {
+		return quizzes, nil
+	}
+
+	quizIDs := make([]int, len(quizzes))
+	for i, q := range quizzes {
+		quizIDs[i] = q.ID
+	}
+
+	questionsByQuizID, err := s.repo.LoadQuestionsForQuizzes(ctx, quizIDs)
+	if err != nil {
+		return nil, fmt.Errorf("QuizService.FindAll load questions: %w", err)
+	}
+
+	for i := range quizzes {
+		if qs, ok := questionsByQuizID[quizzes[i].ID]; ok {
+			quizzes[i].Question = qs
+		} else {
+			quizzes[i].Question = []domains.Question{}
+		}
+	}
+
+	return quizzes, nil
 }
 
-func (s *quizService) FindByID(ctx context.Context, id int , withQuestions bool) (*domains.Quiz, error) {
+func (s *quizService) FindByID(ctx context.Context, id int, withQuestions bool) (*domains.Quiz, error) {
 	q, err := s.repo.FindByID(ctx, id)
-	if err!= nil {
+	if err != nil {
 		if errors.Is(err, repository.ErrorNotFound) {
 			return nil, ErrorNotFound
 		}
-		return nil, fmt.Errorf("QuizService.FindByID")
+		return nil, fmt.Errorf("QuizService.FindByID: %w", err)
 	}
 
 	if withQuestions {
 		questions, err := s.repo.LoadQuestionForQuiz(ctx, id)
 		if err != nil {
-			return nil, fmt.Errorf("QuizService.FindByID load question: %w", err)
+			return nil, fmt.Errorf("QuizService.FindByID load questions: %w", err)
 		}
 		q.Question = questions
 	}
@@ -77,20 +112,19 @@ func (s *quizService) Update(ctx context.Context, id int, senseiID string, req d
 	}
 
 	q := &domains.Quiz{
-		ID: 			id,
-		SenseiID: 		senseiID,
-		Title: 			req.Title,
-		Description: 	req.Description,
-		IsPublished: 	req.IsPublished,
+		ID:          id,
+		SenseiID:    senseiID,
+		Title:       req.Title,
+		Description: req.Description,
+		IsPublished: req.IsPublished,
 	}
 
 	if err := s.repo.Update(ctx, q); err != nil {
 		if errors.Is(err, repository.ErrorNotFound) {
 			return nil, ErrorNotFound
 		}
-		return nil, fmt.Errorf("QuizRepo.Update: %w", err)
+		return nil, fmt.Errorf("QuizService.Update: %w", err)
 	}
-
 	return q, nil
 }
 
@@ -104,82 +138,111 @@ func (s *quizService) Delete(ctx context.Context, id int, senseiID string) error
 	return nil
 }
 
-func (s *quizService) AddQuestion(ctx context.Context, quizID int, senseiID string, req dto.CreateQuestionRequest) (*domains.Question,error) {
+func (s *quizService) AddQuestion(ctx context.Context, quizID int, senseiID string, req dto.CreateQuestionRequest) (*domains.Question, error) {
 	quiz, err := s.repo.FindByID(ctx, quizID)
 	if err != nil {
 		if errors.Is(err, repository.ErrorNotFound) {
 			return nil, ErrorNotFound
 		}
-		return nil, fmt.Errorf("QuizService.AddQuestion: %w", err)
+		return nil, fmt.Errorf("QuizService.AddQuestion find quiz: %w", err)
 	}
 
 	if quiz.SenseiID != senseiID {
 		return nil, ErrorForbidden
 	}
 
-	if req.QuestionText == "" {
-		return nil, fmt.Errorf("Question text is required!")
-	}
-	if req.QuestionType < 1 || req.QuestionType > 3 {
-		return nil, fmt.Errorf("Question type must be 1 (multiple_choice), 2 (short_answer), or 3 (matching_card)")
+	if err := validateQuestionRequest(req.QuestionText, req.QuestionType); err != nil {
+		return nil, err
 	}
 
 	if req.Point < 0 {
 		req.Point = 1
 	}
 
-	q := &domains.Question{
-		QuizID: 		quizID,
-		QuestionText: 	req.QuestionText,
-		QuestionType: 	req.QuestionType,
-		CorrectAnswer: 	req.CorrectAnswer,
-		ImageURL: 		req.ImageURL,
-		AudioURL: 		req.AudioURL,
-		Point: 			req.Point,
-		OrderNumber: 	req.OrderNumber,
-	}
+	q := buildQuestion(quizID, req)
 
-	for _, o := range req.Options {
-		q.Options = append(q.Options, domains.QuestionOptions{
-			OptionText: o.OptionText,
-			ImageURL: 	o.ImageURL,
-			AudioURL: 	o.AudioURL,
-			IsCorrect: 	o.IsCorrect,
-		})
-	}
-
-	for _, c := range req.MatchingCards {
-		q.MatchingCards = append(q.MatchingCards, domains.MatchingCard{
-			LeftText: 		c.LeftText,
-			LeftImageURL: 	c.LeftImageURL,
-			LeftAudioURL: 	c.LeftAudioURL,
-			RightText: 		c.RightText,
-			RightImageURL: 	c.RightImageURL,
-			RightAudioURL: 	c.RightAudioURL,
-		})
-	}
-
-	switch q.QuestionType {
-	case domains.QuestionTypeMultipleChoice:
-		if len(q.Options) < 2 {
-			return nil, fmt.Errorf("Multiple choice require at least 2 questions")
-		}
-
-	case domains.QuestionTypeMatchingCard:
-		if len(q.MatchingCards) < 2 {
-			return nil, fmt.Errorf("Matching card require at least2 pairs")
-		}
-
-	case domains.QuestionTypeShortAnswer:
-		if q.CorrectAnswer == nil || *q.CorrectAnswer == "" {
-			return nil, fmt.Errorf("Short answer require correct answer")
-		}
+	if err := validateQuestionChildren(q); err != nil {
+		return nil, err
 	}
 
 	if err := s.repo.AddQuestion(ctx, q); err != nil {
 		return nil, fmt.Errorf("QuizService.AddQuestion: %w", err)
 	}
+	return q, nil
+}
 
+// UpdateQuestion persists changes to an existing question's content.
+//
+// Why we fetch the question first:
+//   UpdateQuestionRequest intentionally omits question_type — the type is
+//   set at creation and cannot change afterward (it would invalidate stored
+//   student answers and break the scoring logic). However, the repo's
+//   UpdateQuestion and validateQuestionChildren both switch on QuestionType
+//   to know which child rows to touch. We therefore load the stored row to
+//   read the type, then apply all other fields from the request.
+func (s *quizService) UpdateQuestion(ctx context.Context, questionID int, senseiID string, req dto.UpdateQuestionRequest) (*domains.Question, error) {
+	// 1. Load the existing question to get its immutable QuestionType.
+	existing, err := s.repo.FindQuestionByID(ctx, questionID)
+	if err != nil {
+		if errors.Is(err, repository.ErrorNotFound) {
+			return nil, ErrorNotFound
+		}
+		return nil, fmt.Errorf("QuizService.UpdateQuestion find: %w", err)
+	}
+
+	// 2. Validate the incoming text fields.
+	if req.QuestionText == "" {
+		return nil, fmt.Errorf("Question text is required")
+	}
+	if req.Point < 0 {
+		req.Point = 1
+	}
+
+	// 3. Build the update struct using the stored type + new request fields.
+	q := &domains.Question{
+		ID:            questionID,
+		QuizID:        existing.QuizID,       // kept for completeness
+		QuestionType:  existing.QuestionType, // read from DB — not from request
+		QuestionText:  req.QuestionText,
+		CorrectAnswer: req.CorrectAnswer,
+		ImageURL:      req.ImageURL,
+		AudioURL:      req.AudioURL,
+		Point:         req.Point,
+		OrderNumber:   req.OrderNumber,
+	}
+
+	for _, o := range req.Options {
+		q.Options = append(q.Options, domains.QuestionOptions{
+			OptionText: o.OptionText,
+			ImageURL:   o.ImageURL,
+			AudioURL:   o.AudioURL,
+			IsCorrect:  o.IsCorrect,
+		})
+	}
+
+	for _, c := range req.MatchingCards {
+		q.MatchingCards = append(q.MatchingCards, domains.MatchingCard{
+			LeftText:      c.LeftText,
+			LeftImageURL:  c.LeftImageURL,
+			LeftAudioURL:  c.LeftAudioURL,
+			RightText:     c.RightText,
+			RightImageURL: c.RightImageURL,
+			RightAudioURL: c.RightAudioURL,
+		})
+	}
+
+	// 4. Validate child rows now that QuestionType is correctly set.
+	if err := validateQuestionChildren(q); err != nil {
+		return nil, err
+	}
+
+	// 5. Persist.
+	if err := s.repo.UpdateQuestion(ctx, q); err != nil {
+		if errors.Is(err, repository.ErrorNotFound) {
+			return nil, ErrorNotFound
+		}
+		return nil, fmt.Errorf("QuizService.UpdateQuestion: %w", err)
+	}
 	return q, nil
 }
 
@@ -191,4 +254,69 @@ func (s *quizService) DeleteQuestion(ctx context.Context, questionID int) error 
 		return fmt.Errorf("QuizService.DeleteQuestion: %w", err)
 	}
 	return nil
+}
+
+// ─── Private helpers ──────────────────────────────────────────────────────────
+
+func validateQuestionRequest(text string, qType int) error {
+	if text == "" {
+		return fmt.Errorf("Question text is required")
+	}
+	if qType < 1 || qType > 3 {
+		return fmt.Errorf("Question type must be 1 (multiple_choice), 2 (short_answer), or 3 (matching_card)")
+	}
+	return nil
+}
+
+func validateQuestionChildren(q *domains.Question) error {
+	switch q.QuestionType {
+	case domains.QuestionTypeMultipleChoice:
+		if len(q.Options) < 2 {
+			return fmt.Errorf("Multiple choice requires at least 2 options")
+		}
+	case domains.QuestionTypeMatchingCard:
+		if len(q.MatchingCards) < 2 {
+			return fmt.Errorf("Matching card requires at least 2 pairs")
+		}
+	case domains.QuestionTypeShortAnswer:
+		if q.CorrectAnswer == nil || *q.CorrectAnswer == "" {
+			return fmt.Errorf("Short answer requires a correct answer")
+		}
+	}
+	return nil
+}
+
+func buildQuestion(quizID int, req dto.CreateQuestionRequest) *domains.Question {
+	q := &domains.Question{
+		QuizID:        quizID,
+		QuestionText:  req.QuestionText,
+		QuestionType:  req.QuestionType,
+		CorrectAnswer: req.CorrectAnswer,
+		ImageURL:      req.ImageURL,
+		AudioURL:      req.AudioURL,
+		Point:         req.Point,
+		OrderNumber:   req.OrderNumber,
+	}
+
+	for _, o := range req.Options {
+		q.Options = append(q.Options, domains.QuestionOptions{
+			OptionText: o.OptionText,
+			ImageURL:   o.ImageURL,
+			AudioURL:   o.AudioURL,
+			IsCorrect:  o.IsCorrect,
+		})
+	}
+
+	for _, c := range req.MatchingCards {
+		q.MatchingCards = append(q.MatchingCards, domains.MatchingCard{
+			LeftText:      c.LeftText,
+			LeftImageURL:  c.LeftImageURL,
+			LeftAudioURL:  c.LeftAudioURL,
+			RightText:     c.RightText,
+			RightImageURL: c.RightImageURL,
+			RightAudioURL: c.RightAudioURL,
+		})
+	}
+
+	return q
 }

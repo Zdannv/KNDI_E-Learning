@@ -158,7 +158,7 @@ export default function AdminQuizzesPage() {
  
                   {/* Edit — passes real numeric DB id */}
                   <Link
-                    href={`/admin/kuis/buat?edit=${quiz.id}`}
+                    href={`/admin/quizzes/create?edit=${quiz.id}`}
                     className="p-2 bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors border border-slate-100"
                     title="Edit Kuis"
                   >
