@@ -420,15 +420,18 @@ func (s *assignmentService) buildHistoryResponse(assignments []domains.Assignmen
 	for _, a := range assignments {
 		scoreEarned := 0.0
 		totalPoint  := 0.0
-		if a.TotalPoint != nil {
-			scoreEarned = *a.TotalPoint
-			totalPoint  = *a.TotalPoint
-		}
+		
+		if a.ScoreEarned != nil {
+            scoreEarned = *a.ScoreEarned
+        }
+        if a.TotalPoint != nil {
+            totalPoint = *a.TotalPoint
+        }
 
-		scorePct := 0.0
-		if totalPoint > 0 {
-			scorePct = scoreEarned / totalPoint * 100
-		}
+        scorePct := 0.0
+        if totalPoint > 0 {
+            scorePct = scoreEarned / totalPoint * 100
+        }
 
 		dateStr, timeStr := "", ""
 		var completedAtStr *string
