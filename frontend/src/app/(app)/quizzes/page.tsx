@@ -101,17 +101,17 @@ export default function QuizzesPage() {
 
   const handleSubmit = async () => {
     if (!activeQuiz || assignmentId === null) return;
-
+ 
     setIsSubmitting(true);
     setSubmitError(null);
-
+ 
     try {
       const questions = activeQuiz.question ?? [];
       const payload: SubmitAnswer[] = [];
-
+ 
       for (const q of questions) {
         const studentAnswer = answers[q.id];
-
+ 
         if (q.question_type === 1) {
           if (studentAnswer?.selectedOptionId !== undefined) {
             payload.push({
@@ -126,14 +126,14 @@ export default function QuizzesPage() {
           });
         } else if (q.question_type === 3) {
           const matchedPairs = studentAnswer?.matchedPairs ?? {};
-          const entries = Object.entries(matchedPairs);
-
+          const entries      = Object.entries(matchedPairs);
+ 
           if (entries.length > 0) {
             for (const [leftCardId, rightCardId] of entries) {
               payload.push({
                 question_id:      q.id,
                 question_card_id: Number(leftCardId),
-                selected_card:    rightCardId,
+                selected_card:    Number(rightCardId), // FIX: cast to number, Object.entries gives string keys
               });
             }
           } else {
@@ -141,7 +141,7 @@ export default function QuizzesPage() {
           }
         }
       }
-
+ 
       const scored = await assignmentApi.submit(assignmentId, payload);
       setResult(scored);
     } catch (err) {
@@ -152,6 +152,7 @@ export default function QuizzesPage() {
       setIsSubmitting(false);
     }
   };
+
 
   const handleReset = () => {
     setActiveQuiz(null);
