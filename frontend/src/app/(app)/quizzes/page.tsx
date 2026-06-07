@@ -133,7 +133,7 @@ export default function QuizzesPage() {
               payload.push({
                 question_id:      q.id,
                 question_card_id: Number(leftCardId),
-                selected_card:    Number(rightCardId), // FIX: cast to number, Object.entries gives string keys
+                selected_card:    Number(rightCardId),
               });
             }
           } else {

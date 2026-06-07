@@ -8,10 +8,6 @@ interface AnswerReviewItemProps {
     index: number
 }
 
-// ─── Sub-component: Matching Card Result ──────────────────────────────────────
-//
-// For matching card questions, instead of showing a text answer (which doesn't
-// make sense for card pairs), we show a visual "X / Y pairs correct" indicator.
 
 interface MatchingCardResultProps {
     scoreEarned: number
@@ -20,10 +16,6 @@ interface MatchingCardResultProps {
 }
 
 function MatchingCardResult({ scoreEarned, totalPairs, isCorrect }: MatchingCardResultProps) {
-    // scoreEarned is a proportional value: correctPairs / totalPairs × q.Point
-    // e.g. 3 correct out of 5 pairs → scoreEarned = 0.6
-    // To recover the integer pair count: round(scoreEarned × totalPairs)
-    // Math.round handles floating-point imprecision (e.g. 0.5999... × 5 = 2.999... → 3)
     const correct = Math.round(scoreEarned * totalPairs)
     const wrong   = totalPairs - correct
 
@@ -96,7 +88,6 @@ export default function AnswerReviewItem({ answer, index }: AnswerReviewItemProp
 
     return (
         <div className={`flex items-start gap-3 p-4 rounded-xl border ${cardColor}`}>
-            {/* Status icon */}
             <span className={`shrink-0 mt-0.5 ${iconColor}`}>
                 {isMatchingCard ? (
                     <Shuffle className="w-5 h-5" />

@@ -27,7 +27,7 @@ const (
 		WHERE a.id = $1`
 
 	selectHistoryByStudentID = `
-		SELECT a.id, a.student_id, a.quiz_id, a.total_point, a.status,
+		SELECT a.id, a.student_id, a.quiz_id, a.total_point, a.score_earned, a.status,
 			   s.name AS status_name, a.started_at, a.completed_at,
 			   q.title AS quiz_title
 		FROM assignments a
@@ -37,10 +37,10 @@ const (
 		ORDER BY a.completed_at DESC`
 
 	selectAllHistory = `
-		SELECT a.id, a.student_id, a.quiz_id, a.total_point, a.status,
-			s.name AS status_name, a.started_at, a.completed_at,
-			q.title AS quiz_title,
-			u.username AS student_name
+		SELECT a.id, a.student_id, a.quiz_id, a.total_point, a.score_earned, a.status,
+		    s.name AS status_name, a.started_at, a.completed_at,
+		    q.title AS quiz_title,
+		    u.username AS student_name
 		FROM assignments a
 		JOIN assignment_status s ON s.id = a.status
 		JOIN quizzes q ON q.id = a.quiz_id
@@ -50,8 +50,8 @@ const (
 
 	finaliseAssignment = `
 		UPDATE assignments
-		SET total_point = $1, status = $2, completed_at = $3
-		WHERE id = $4`
+		SET total_point = $1, score_earned = $2, status = $3, completed_at = $4
+		WHERE id = $5`
 
 	insertAssignmentHistory = `
 		INSERT INTO assignment_history
@@ -60,14 +60,14 @@ const (
 		RETURNING id, created_at, updated_at`
 
 	selectHistoryByAssignmentID = `
-		SELECT ah.id, ah.assignment_id, ah.question_id,
-			ah.question_option_id, ah.matching_card_id,
-			ah.answer_text, ah.score_earned, ah.created_at, ah.updated_at,
-			q.question_text
-		FROM   assignment_history ah
-		JOIN   questions q ON q.id = ah.question_id
-		WHERE  ah.assignment_id = $1
-		ORDER  BY ah.id ASC`
+		SELECT a.id, a.student_id, a.quiz_id, a.total_point, a.score_earned, a.status,
+		    s.name AS status_name, a.started_at, a.completed_at,
+		    q.title AS quiz_title
+		FROM assignments a
+		JOIN assignment_status s ON s.id = a.status
+		JOIN quizzes q ON q.id = a.quiz_id
+		WHERE a.student_id = $1 AND a.status = $2
+		ORDER BY a.completed_at DESC`
 
 	selectQuizCompletedAssignmentByUserID = `
 		SELECT EXISTS (
@@ -82,7 +82,7 @@ const (
 type AssignmentRepository interface {
 	Create(ctx context.Context, a *domains.Assignment) error
 	FindByID(ctx context.Context, id int) (*domains.Assignment, error)
-	Finalise(ctx context.Context, id int, totalPoint float64, completedAt time.Time, status int) error
+	Finalise(ctx context.Context, id int, totalPoint float64, scoreEarned float64, completedAt time.Time, status int) error
 	SaveHistory(ctx context.Context, items []domains.AssignmentHistory) error
 	FindHistoryByAssignmentID(ctx context.Context, assignmentID int) ([]domains.AssignmentHistory, error)
 	FindHistoryByStudentID(ctx context.Context, studentID string) ([]domains.Assignment, error)
@@ -127,13 +127,20 @@ func (r *assignmentRepository) FindByID(ctx context.Context, id int) (*domains.A
 	return a, nil
 }
 
-func (r *assignmentRepository) Finalise(ctx context.Context, id int, totalPoint float64, completedAt time.Time, status int) error {
-	_, err := r.pool.Exec(ctx, finaliseAssignment, totalPoint, status, completedAt, id)
-	if err != nil {
-		return fmt.Errorf("AssignmentRepo.Finalise: %w", err)
-	}
-
-	return nil
+func (r *assignmentRepository) Finalise(
+    ctx context.Context,
+    id int,
+    totalPoint float64,
+    scoreEarned float64,
+    completedAt time.Time,
+    status int,
+) error {
+    _, err := r.pool.Exec(ctx, finaliseAssignment,
+        totalPoint, scoreEarned, status, completedAt, id)
+    if err != nil {
+        return fmt.Errorf("AssignmentRepo.Finalise: %w", err)
+    }
+    return nil
 }
 
 func (r *assignmentRepository) SaveHistory(ctx context.Context, items []domains.AssignmentHistory) error {
@@ -204,8 +211,8 @@ func (r *assignmentRepository) FindHistoryByStudentID(ctx context.Context, stude
 		a := domains.Assignment{Quiz: &domains.Quiz{}}
 		var quizTitle string
 		if err := rows.Scan(
-			&a.ID, &a.StudentID, &a.QuizID, &a.TotalPoint, &a.Status,
-			&a.StatusName, &a.StartedAt, &a.CompletedAt, &quizTitle,
+			&a.ID, &a.StudentID, &a.QuizID, &a.TotalPoint, &a.ScoreEarned, &a.Status,
+    		&a.StatusName, &a.StartedAt, &a.CompletedAt, &quizTitle,
 		); err != nil {
 			return nil, fmt.Errorf("AssignmentRepo.FindHistoryStudent scan: %w", err)
 		}
@@ -230,9 +237,9 @@ func (r *assignmentRepository) FindAllHistory(ctx context.Context) ([]domains.As
 		a := domains.Assignment{Quiz: &domains.Quiz{}}
 		var quizTitle string
 		if err := rows.Scan(
-			&a.ID, &a.StudentID, &a.QuizID, &a.TotalPoint, &a.Status,
-			&a.StatusName, &a.StartedAt, &a.CompletedAt, &quizTitle,
-			&studentName,
+			&a.ID, &a.StudentID, &a.QuizID, &a.TotalPoint, &a.ScoreEarned, &a.Status,
+    		&a.StatusName, &a.StartedAt, &a.CompletedAt,
+    		&quizTitle, &studentName,
 		); err != nil {
 			return nil, fmt.Errorf("AssignmentRepo.FindAllHistory scan: %w", err)
 		}
