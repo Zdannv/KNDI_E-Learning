@@ -30,21 +30,23 @@ type AssignmentResultResponse struct {
 
 type AssignmentHistoryResponse struct {
 	QuestionText		string			`json:"question_text"`
+	QuestionType		int				`json:"question_type"`
 	YourAnswer			string			`json:"your_answer"`
 	IsCorrect			bool			`json:"is_correct"`
 	ScoreEarned			float64			`json:"score_earned"`
+	TotalPairs			int				`json:"total_pairs,omitempty"`
 }
 
 type HistoryListResponse struct {
-	AssignmentID		int				`json:"assignment_id"`
-	QuizID				int				`json:"quiz_id"`
-	QuizTitle			string			`json:"quiz_title"`
-	StudentName			string			`json:"student_name"`
-	ScoreEarned			float64			`json:"score_earned"`
-	TotalPoint			float64			`json:"total_point"`
-	ScorePct			float64			`json:"score_percent"`
-	Status				string			`json:"status"`
-	DateStr				string			`json:"date_str"`
-	TimeStr				string			`json:"time_str"`
-	CompletedAt			*string			`json:"completed_at"`
+	AssignmentID 		int     		`json:"assignment_id"`
+	QuizID       		int     		`json:"quiz_id"`
+	QuizTitle    		string  		`json:"quiz_title"`
+	StudentName  		string  		`json:"student_name"`
+	ScoreEarned  		float64 		`json:"score_earned"`
+	TotalPoint   		float64 		`json:"total_point"`
+	ScorePct     		float64 		`json:"score_percent"`
+	Status       		string  		`json:"status"`
+	DateStr      		string  		`json:"date_str"`
+	TimeStr      		string  		`json:"time_str"`
+	CompletedAt  		*string 		`json:"completed_at"`
 }

@@ -5,46 +5,47 @@ import MultipleChoiceOption from "./MultipleChoiceOption"
 import MatchingCardQuestion from "./MatchingCardQuestion"
 
 export interface StudentAnswer {
-    questionId: number
-    questionType: 1 | 2 | 3
-    selectedOptionId?: number
+    questionId:          number
+    questionType:        1 | 2 | 3
+    selectedOptionId?:   number
     selectedOptionIndex?: number
-    answerText?: string
+    answerText?:         string
     matchedPairs?: Record<number, number>
 }
 
 export interface QuestionCardProps {
     question: Question
-    index: number
-    total: number
-    answer: StudentAnswer | undefined
+    index:    number
+    total:    number
+    answer:   StudentAnswer | undefined
     onAnswer: (answer: StudentAnswer) => void
 }
 
 export default function QuestionCard(props: QuestionCardProps) {
     const handleOptionSelect = (optionId: number, optionIndex: number) => {
         props.onAnswer({
-            questionId: props.question.id,
-            questionType: 1,
-            selectedOptionId: optionId,
-            selectedOptionIndex: optionIndex
+            questionId:          props.question.id,
+            questionType:        1,
+            selectedOptionId:    optionId,
+            selectedOptionIndex: optionIndex,
         })
     }
 
     const handleTextChange = (text: string) => {
         props.onAnswer({
-            questionId: props.question.id,
+            questionId:   props.question.id,
             questionType: 2,
-            answerText: text
+            answerText:   text,
         })
     }
 
     const handleMatching = (leftCardId: number, rightCardId: number) => {
-        const current = props.answer?.matchedPairs ?? []
+        const current = props.answer?.matchedPairs ?? {}
+
         props.onAnswer({
-            questionId: props.question.id,
+            questionId:   props.question.id,
             questionType: 3,
-            matchedPairs: { ...current, [leftCardId]: rightCardId }
+            matchedPairs: { ...current, [leftCardId]: rightCardId },
         })
     }
 
@@ -54,7 +55,7 @@ export default function QuestionCard(props: QuestionCardProps) {
                 <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-wider">
                     Question {props.index + 1} from {props.total}
                 </span>
- 
+
                 <p className="text-xl font-bold text-slate-800 mt-4 leading-relaxed">
                     {props.question.question_text}
                 </p>
@@ -75,12 +76,12 @@ export default function QuestionCard(props: QuestionCardProps) {
                 <div className="grid grid-cols-1 gap-3">
                     {(props.question.question_options ?? []).map((opt, idx) => (
                         <MultipleChoiceOption
-                        key={opt.id}
-                        option={opt}
-                        index={idx}
-                        isSelected={props.answer?.selectedOptionId === opt.id}
-                        onSelect={() => handleOptionSelect(opt.id, idx)}
-                    />
+                            key={opt.id}
+                            option={opt}
+                            index={idx}
+                            isSelected={props.answer?.selectedOptionId === opt.id}
+                            onSelect={() => handleOptionSelect(opt.id, idx)}
+                        />
                     ))}
                 </div>
             )}
@@ -99,7 +100,7 @@ export default function QuestionCard(props: QuestionCardProps) {
                     />
                 </div>
             )}
- 
+
             {props.question.question_type === 3 && (
                 <MatchingCardQuestion
                     cards={props.question.matching_card ?? ([] as MatchingCard[])}
@@ -107,7 +108,6 @@ export default function QuestionCard(props: QuestionCardProps) {
                     onMatch={handleMatching}
                 />
             )}
-    </div>
-
+        </div>
     )
 }
