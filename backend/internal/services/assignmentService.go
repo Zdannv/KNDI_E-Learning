@@ -20,18 +20,23 @@ type AssignmentService interface {
 }
 
 type assignmentService struct {
-	assignmentRepo	repository.AssignmentRepository
-	quizRepo		repository.QuizRepository
+	assignmentRepo repository.AssignmentRepository
+	quizRepo       repository.QuizRepository
 }
 
 func NewAssignmentService(
-	assignmentRepo 	repository.AssignmentRepository,
-	quizRepo		repository.QuizRepository,
+	assignmentRepo repository.AssignmentRepository,
+	quizRepo       repository.QuizRepository,
 ) AssignmentService {
 	return &assignmentService{
 		assignmentRepo: assignmentRepo,
-		quizRepo:		quizRepo,
+		quizRepo:       quizRepo,
 	}
+}
+
+type matchingPairEntry struct {
+	leftCardID  int
+	rightCardID int
 }
 
 func (s *assignmentService) Start(ctx context.Context, studentID string, req dto.StartAssignment) (*domains.Assignment, error) {
@@ -51,9 +56,18 @@ func (s *assignmentService) Start(ctx context.Context, studentID string, req dto
 		return nil, fmt.Errorf("Quiz is not published yet!")
 	}
 
+	alreadyDone, err := s.assignmentRepo.QuizCompletedByStudentID(ctx, studentID, req.QuizID)
+	if err != nil {
+		return nil, fmt.Errorf("AssignmentService.Start check: %w", err)
+	}
+
+	if alreadyDone {
+		return nil, ErrorAlreadyCompleted
+	}
+
 	a := &domains.Assignment{
-		StudentID: 	studentID,
-		QuizID: 	req.QuizID,
+		StudentID: studentID,
+		QuizID:    req.QuizID,
 	}
 
 	if err := s.assignmentRepo.Create(ctx, a); err != nil {
@@ -64,10 +78,10 @@ func (s *assignmentService) Start(ctx context.Context, studentID string, req dto
 }
 
 func (s *assignmentService) Submit(
-	ctx 			context.Context, 
-	studentID 		string, 
-	assignmentID 	int, 
-	req 			dto.SubmitAssignmentRequest,
+	ctx          context.Context,
+	studentID    string,
+	assignmentID int,
+	req          dto.SubmitAssignmentRequest,
 ) (*dto.AssignmentResultResponse, error) {
 	a, err := s.assignmentRepo.FindByID(ctx, assignmentID)
 	if err != nil {
@@ -85,14 +99,13 @@ func (s *assignmentService) Submit(
 		return nil, errors.New("This assignment is already submitted!")
 	}
 
-	question, err := s.quizRepo.LoadQuestionForQuiz(ctx, a.QuizID)
+	questions, err := s.quizRepo.LoadQuestionForQuiz(ctx, a.QuizID)
 	if err != nil {
 		return nil, fmt.Errorf("AssignmentService.Submit load question: %w", err)
 	}
 
-	// Lookup: O(1) access during grading
-	qMap := make(map[int]domains.Question, len(question))
-	for _, q := range question {
+	qMap := make(map[int]domains.Question, len(questions))
+	for _, q := range questions {
 		qMap[q.ID] = q
 	}
 
@@ -101,46 +114,89 @@ func (s *assignmentService) Submit(
 		return nil, fmt.Errorf("AssignmentService.Submit find quiz: %w", err)
 	}
 
-	var historyItems []domains.AssignmentHistory
-	var totalEarned float64
+	matchingPairsByQuestion := make(map[int][]matchingPairEntry)
+	seenMatchingQuestion    := make(map[int]bool)
+
+	var historyItems  []domains.AssignmentHistory
+	var totalEarned   float64
 	var totalPossible float64
-	
+
 	for _, submitted := range req.Answer {
 		q, ok := qMap[submitted.QuestionID]
 		if !ok {
-			continue		// Ignore question that not in this quiz
-		}
-
-		totalPossible += q.Point
-
-		h := domains.AssignmentHistory {
-			AssignmentID: 		assignmentID,
-			QuestionID: 		submitted.QuestionID,
-			QuestionOptionID: 	submitted.QuestionOptionID,
-			MatchingCardID: 	submitted.MatchingCardID,
-			AnswerText: 		submitted.AnswerText,
-			QuestionText: 		q.QuestionText,
+			continue
 		}
 
 		switch q.QuestionType {
-		case domains.QuestionTypeMultipleChoice:
-			if submitted.QuestionOptionID != nil {
-				h.ScoreEarned = gradeMultipleChoice(q.Options, *submitted.QuestionOptionID, q.Point)
-			}
-
-		case domains.QuestionTypeShortAnswer:
-			if submitted.AnswerText != nil && q.CorrectAnswer != nil {
-				h.ScoreEarned = gradeShortAnswer(*q.CorrectAnswer, *submitted.AnswerText, q.Point)
-			}
 
 		case domains.QuestionTypeMatchingCard:
 			if submitted.MatchingCardID != nil && submitted.SelectedCard != nil {
-				h.ScoreEarned = gradeMatchingCard(q.MatchingCards, *submitted.MatchingCardID, *submitted.SelectedCard, q.Point)
+				matchingPairsByQuestion[q.ID] = append(
+					matchingPairsByQuestion[q.ID],
+					matchingPairEntry{
+						leftCardID:  *submitted.MatchingCardID,
+						rightCardID: *submitted.SelectedCard,
+					},
+				)
 			}
-		}
+			seenMatchingQuestion[q.ID] = true
 
-		h.IsCorrect = h.ScoreEarned > 0
-		totalEarned += h.ScoreEarned
+		case domains.QuestionTypeMultipleChoice:
+			totalPossible += q.Point
+
+			h := domains.AssignmentHistory{
+				AssignmentID:     assignmentID,
+				QuestionID:       submitted.QuestionID,
+				QuestionOptionID: submitted.QuestionOptionID,
+				QuestionText:     q.QuestionText,
+			}
+			if submitted.QuestionOptionID != nil {
+				h.ScoreEarned = gradeMultipleChoice(q.Options, *submitted.QuestionOptionID, q.Point)
+			}
+			h.IsCorrect   = h.ScoreEarned > 0
+			totalEarned  += h.ScoreEarned
+			historyItems  = append(historyItems, h)
+
+		case domains.QuestionTypeShortAnswer:
+			totalPossible += q.Point
+
+			h := domains.AssignmentHistory{
+				AssignmentID: assignmentID,
+				QuestionID:   submitted.QuestionID,
+				AnswerText:   submitted.AnswerText,
+				QuestionText: q.QuestionText,
+			}
+			if submitted.AnswerText != nil && q.CorrectAnswer != nil {
+				h.ScoreEarned = gradeShortAnswer(*q.CorrectAnswer, *submitted.AnswerText, q.Point)
+			}
+			h.IsCorrect   = h.ScoreEarned > 0
+			totalEarned  += h.ScoreEarned
+			historyItems  = append(historyItems, h)
+		}
+	}
+
+	for questionID := range seenMatchingQuestion {
+		q := qMap[questionID]
+
+		totalPossible += q.Point
+
+		submittedPairs := matchingPairsByQuestion[questionID]
+		totalPairs     := len(q.MatchingCards)
+		correctPairs   := gradeMatchingPairs(q.MatchingCards, submittedPairs)
+
+		scoreEarned := 0.0
+		if totalPairs > 0 {
+			scoreEarned = (float64(correctPairs) / float64(totalPairs)) * q.Point
+		}
+		totalEarned += scoreEarned
+
+		h := domains.AssignmentHistory{
+			AssignmentID: assignmentID,
+			QuestionID:   questionID,
+			QuestionText: q.QuestionText,
+			ScoreEarned:  scoreEarned,
+			IsCorrect: correctPairs == totalPairs,
+		}
 		historyItems = append(historyItems, h)
 	}
 
@@ -149,11 +205,13 @@ func (s *assignmentService) Submit(
 	}
 
 	now := time.Now().UTC()
-	if err := s.assignmentRepo.Finalise(ctx, assignmentID, totalEarned, now, domains.StatusCompleted); err != nil {
+	if err := s.assignmentRepo.Finalise(
+		ctx, assignmentID, totalPossible, totalEarned, now, domains.StatusCompleted,
+	); err != nil {
 		return nil, fmt.Errorf("AssignmentService.Submit Finalise: %w", err)
 	}
-	
-	return buildResultResponse(assignmentID, quiz.Title, totalEarned, totalPossible, historyItems, now), nil
+
+	return buildResultResponse(assignmentID, quiz.Title, totalEarned, totalPossible, historyItems, qMap, now), nil
 }
 
 func (s *assignmentService) GetResult(ctx context.Context, studentID string, assignmentID int) (*dto.AssignmentResultResponse, error) {
@@ -166,13 +224,13 @@ func (s *assignmentService) GetResult(ctx context.Context, studentID string, ass
 	}
 
 	if a.StudentID != studentID {
-		return nil ,ErrorForbidden
+		return nil, ErrorForbidden
 	}
 
 	history, err := s.assignmentRepo.FindHistoryByAssignmentID(ctx, assignmentID)
 	if err != nil {
 		return nil, fmt.Errorf("AssignmentService.GetResult history: %w", err)
-	} 
+	}
 
 	totalEarned := 0.0
 	for _, h := range history {
@@ -189,8 +247,7 @@ func (s *assignmentService) GetResult(ctx context.Context, studentID string, ass
 		totalPossible = *a.TotalPoint
 	}
 
-
-	return buildResultResponse(assignmentID, a.Quiz.Title, totalEarned, totalPossible, history, completedAt), nil
+	return buildResultResponse(assignmentID, a.Quiz.Title, totalEarned, totalPossible, history, map[int]domains.Question{}, completedAt), nil
 }
 
 func (s *assignmentService) GetHistory(ctx context.Context, studentID string) ([]dto.HistoryListResponse, error) {
@@ -198,52 +255,7 @@ func (s *assignmentService) GetHistory(ctx context.Context, studentID string) ([
 	if err != nil {
 		return nil, fmt.Errorf("AssignmentService.GetHistory: %w", err)
 	}
-
-	result := make([]dto.HistoryListResponse, 0, len(assignments))
-	for _, a := range assignments {
-		scoreEarned := 0.0 
-		totalPoint := 0.0
-		if a.TotalPoint != nil {
-			scoreEarned = *a.TotalPoint
-		}
-
-		if totalPoint == 0 {
-			totalPoint = scoreEarned
-		}
-
-		var completedAtStr *string
-		dateStr, timeStr := "", ""
-		if a.CompletedAt != nil {
-			d := a.CompletedAt.Format("23 April 2026")
-			t := a.CompletedAt.Format("10:30")
-			rfc := a.CompletedAt.Format(time.RFC3339)
-			dateStr = d
-			timeStr = t
-			completedAtStr = &rfc
-		}
-
-		scorePct := 0.0
-		if totalPoint > 0 {
-			scorePct = scoreEarned / totalPoint * 100
-		}
-
-		_ = scorePct
-
-		result = append(result, dto.HistoryListResponse{
-			AssignmentID: 	a.ID,
-			QuizTitle: 		a.Quiz.Title,
-			ScoreEarned: 	totalPoint,
-			TotalPoint: 	totalPoint,
-			ScorePct: 		scorePct,
-			Status: 		a.StatusName,
-			DateStr: 		dateStr,
-			TimeStr: 		timeStr,
-			CompletedAt: 	completedAtStr,
-		})
-	}
-
-	return result, nil
-
+	return s.buildHistoryResponse(assignments), nil
 }
 
 func (s *assignmentService) GetAllHistory(ctx context.Context) ([]dto.HistoryListResponse, error) {
@@ -251,7 +263,6 @@ func (s *assignmentService) GetAllHistory(ctx context.Context) ([]dto.HistoryLis
 	if err != nil {
 		return nil, fmt.Errorf("AssignmentService.GetAllHistory: %w", err)
 	}
-	
 	return s.buildHistoryResponse(assignments), nil
 }
 
@@ -259,29 +270,34 @@ func (s *assignmentService) buildHistoryResponse(assignments []domains.Assignmen
 	result := make([]dto.HistoryListResponse, 0, len(assignments))
 	for _, a := range assignments {
 		scoreEarned := 0.0
-		totalPoint := 0.0
-		if a.TotalPoint != nil {
-			scoreEarned = *a.TotalPoint
-			totalPoint = *a.TotalPoint
-		}
+		totalPoint  := 0.0
+		
+		if a.ScoreEarned != nil {
+            scoreEarned = *a.ScoreEarned
+        }
+        if a.TotalPoint != nil {
+            totalPoint = *a.TotalPoint
+        }
 
-		scorePct := 0.0
-		if totalPoint > 0 {
-			scorePct = scoreEarned / totalPoint * 100
-		}
+        scorePct := 0.0
+        if totalPoint > 0 {
+            scorePct = scoreEarned / totalPoint * 100
+        }
 
 		dateStr, timeStr := "", ""
 		var completedAtStr *string
 		if a.CompletedAt != nil {
 			dateStr = a.CompletedAt.Format("02 January 2006")
 			timeStr = a.CompletedAt.Format("15:04")
-			rfc := a.CompletedAt.Format(time.RFC3339)
+			rfc    := a.CompletedAt.Format(time.RFC3339)
 			completedAtStr = &rfc
 		}
 
 		result = append(result, dto.HistoryListResponse{
 			AssignmentID: a.ID,
+			QuizID:       a.QuizID,
 			QuizTitle:    a.Quiz.Title,
+			StudentName:  a.StudentName,
 			ScoreEarned:  scoreEarned,
 			TotalPoint:   totalPoint,
 			ScorePct:     scorePct,
@@ -291,7 +307,6 @@ func (s *assignmentService) buildHistoryResponse(assignments []domains.Assignmen
 			CompletedAt:  completedAtStr,
 		})
 	}
-
 	return result
 }
 
@@ -301,31 +316,39 @@ func gradeMultipleChoice(options []domains.QuestionOptions, selectedID int, poin
 			return point
 		}
 	}
-
 	return 0
 }
 
-func gradeShortAnswer(answerkey, studentAnswer string, point float64) float64 {
-	if strings.EqualFold(strings.TrimSpace(answerkey), strings.TrimSpace(studentAnswer)) {
+func gradeShortAnswer(answerKey, studentAnswer string, point float64) float64 {
+	if strings.EqualFold(strings.TrimSpace(answerKey), strings.TrimSpace(studentAnswer)) {
 		return point
 	}
 	return 0
 }
 
-func gradeMatchingCard(cards []domains.MatchingCard, leftCardID, rightCardID int, point float64) float64 {
-	if leftCardID == rightCardID {
-		return point
+func gradeMatchingPairs(cards []domains.MatchingCard, submitted []matchingPairEntry) int {
+	validIDs := make(map[int]bool, len(cards))
+	for _, c := range cards {
+		validIDs[c.ID] = true
 	}
-	return  0
+
+	correct := 0
+	for _, pair := range submitted {
+		if validIDs[pair.leftCardID] && pair.leftCardID == pair.rightCardID {
+			correct++
+		}
 	}
+	return correct
+}
 
 func buildResultResponse(
-	assignmentID	int,
-	quizTitle		string,
+	assignmentID  int,
+	quizTitle     string,
 	totalEarned,
-	totalPossible 	float64,
-	history			[]domains.AssignmentHistory,
-	completedAt		time.Time,
+	totalPossible float64,
+	history       []domains.AssignmentHistory,
+	qMap          map[int]domains.Question,
+	completedAt   time.Time,
 ) *dto.AssignmentResultResponse {
 	scorePct := 0.0
 	if totalPossible > 0 {
@@ -333,29 +356,40 @@ func buildResultResponse(
 	}
 
 	completedAtStr := completedAt.Format(time.RFC3339)
-	var answers []dto.AssignmentHistoryResponse
+
+	answers := make([]dto.AssignmentHistoryResponse, 0, len(history))
 	for _, h := range history {
 		yourAnswer := ""
 		if h.AnswerText != nil {
 			yourAnswer = *h.AnswerText
 		}
-		answers = append(answers, dto.AssignmentHistoryResponse{
-			QuestionText: 	h.QuestionText,
-			YourAnswer: 	yourAnswer,
-			IsCorrect: 		h.IsCorrect,
-			ScoreEarned: 	h.ScoreEarned,
-		})
+
+		item := dto.AssignmentHistoryResponse{
+			QuestionText: h.QuestionText,
+			YourAnswer:   yourAnswer,
+			IsCorrect:    h.IsCorrect,
+			ScoreEarned:  h.ScoreEarned,
+		}
+
+		if q, ok := qMap[h.QuestionID]; ok {
+			item.QuestionType = q.QuestionType
+			if q.QuestionType == domains.QuestionTypeMatchingCard {
+				item.TotalPairs = len(q.MatchingCards)
+			}
+		}
+
+		answers = append(answers, item)
 	}
 
 	return &dto.AssignmentResultResponse{
-		AssignmentID: 	assignmentID,
-		QuizTitle: 		quizTitle,
-		TotalPoint: 	totalPossible,
-		ScoreEarned: 	totalEarned,
-		ScorePct: 		scorePct,
-		Passed: 		scorePct > 70,
-		Status: 		"completed",
-		CompletedAt: 	&completedAtStr,
-		Answers: 		answers,
+		AssignmentID: assignmentID,
+		QuizTitle:    quizTitle,
+		TotalPoint:   totalPossible,
+		ScoreEarned:  totalEarned,
+		ScorePct:     scorePct,
+		Passed:       scorePct > 70,
+		Status:       "completed",
+		CompletedAt:  &completedAtStr,
+		Answers:      answers,
 	}
 }

@@ -28,6 +28,9 @@ func handleServiceError(w http.ResponseWriter, err error) {
 	case errors.Is(err, services.ErrorUsernameTaken):
 		response.BadRequest(w, err.Error())
 
+	case errors.Is(err, services.ErrorAlreadyCompleted):
+		response.Conflict(w, err.Error())
+
 	default:
 		log.Printf("[Handler] internal error: %v", err)
 		if isValidationError(err) {

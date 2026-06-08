@@ -1,0 +1,1 @@
+ALTER TABLE assignments ADD COLUMN score_earned FLOAT DEFAULT 0;

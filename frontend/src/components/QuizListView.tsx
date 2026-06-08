@@ -9,9 +9,10 @@ interface QuizListViewProps {
     onStart: (quizId: number) => void
     isStarting: boolean
     startError: string | null
+    isCompetedQuizId: Set<number>
 }
 
-export default function QuizListView({ quizzes, onStart, isStarting, startError }: QuizListViewProps) {
+export default function QuizListView({ quizzes, onStart, isStarting, startError, isCompetedQuizId }: QuizListViewProps) {
     return (
         <div className="p-4 md:p-6 max-w-5xl mx-auto">
             <div className="mb-8">
@@ -46,6 +47,7 @@ export default function QuizListView({ quizzes, onStart, isStarting, startError 
                       quiz={quiz}
                       onStart={onStart}
                       isStarted={isStarting}
+                      isCompleted={isCompetedQuizId.has(quiz.id)}
                     />
                   ))}
                 </div>

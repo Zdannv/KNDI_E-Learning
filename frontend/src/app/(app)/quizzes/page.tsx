@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { AlertCircle, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 
 import {
@@ -10,6 +10,7 @@ import {
   Quiz,
   Question,
   SubmitAnswer,
+  HistoryListItem,
 } from "@/app/lib/use-api";
 import { useAsync } from "@/hooks/useAsync";
 
@@ -36,13 +37,27 @@ function isAnswered(answer: StudentAnswer | undefined, question: Question): bool
   }
 }
 
-export default function KuisPage() {
+export default function QuizzesPage() {
   const fetchQuizzes = useCallback(() => quizApi.list(), []);
+  const fetchHistory = useCallback(() => assignmentApi.getHistory(), [])
   const {
     data: quizList,
     isLoading: quizzesLoading,
     error:     quizzesError,
   } = useAsync<Quiz[]>(fetchQuizzes);
+
+  const {
+    data: historyList,
+    isLoading: historyLoading
+  } = useAsync<HistoryListItem[]>(fetchHistory)
+
+  const completedQuizId = useMemo<Set<number>>(() => {
+    if (!historyList) {
+      return new Set()
+    }
+
+    return new Set(historyList.map((h) => h.quiz_id))
+  }, [historyList])
 
   const [activeQuiz,   setActiveQuiz]   = useState<Quiz | null>(null);
   const [assignmentId, setAssignmentId] = useState<number | null>(null);
@@ -73,7 +88,7 @@ export default function KuisPage() {
       setSubmitError(null);
     } catch (err) {
       setStartError(
-        err instanceof Error ? err.message : "Gagal memulai kuis. Coba lagi."
+        err instanceof Error ? err.message : "Failed to start quiz, Please try again"
       );
     } finally {
       setIsStarting(false);
@@ -86,17 +101,17 @@ export default function KuisPage() {
 
   const handleSubmit = async () => {
     if (!activeQuiz || assignmentId === null) return;
-
+ 
     setIsSubmitting(true);
     setSubmitError(null);
-
+ 
     try {
       const questions = activeQuiz.question ?? [];
       const payload: SubmitAnswer[] = [];
-
+ 
       for (const q of questions) {
         const studentAnswer = answers[q.id];
-
+ 
         if (q.question_type === 1) {
           if (studentAnswer?.selectedOptionId !== undefined) {
             payload.push({
@@ -111,14 +126,14 @@ export default function KuisPage() {
           });
         } else if (q.question_type === 3) {
           const matchedPairs = studentAnswer?.matchedPairs ?? {};
-          const entries = Object.entries(matchedPairs);
-
+          const entries      = Object.entries(matchedPairs);
+ 
           if (entries.length > 0) {
             for (const [leftCardId, rightCardId] of entries) {
               payload.push({
                 question_id:      q.id,
                 question_card_id: Number(leftCardId),
-                selected_card:    rightCardId,
+                selected_card:    Number(rightCardId),
               });
             }
           } else {
@@ -126,7 +141,7 @@ export default function KuisPage() {
           }
         }
       }
-
+ 
       const scored = await assignmentApi.submit(assignmentId, payload);
       setResult(scored);
     } catch (err) {
@@ -138,6 +153,7 @@ export default function KuisPage() {
     }
   };
 
+
   const handleReset = () => {
     setActiveQuiz(null);
     setAssignmentId(null);
@@ -148,7 +164,7 @@ export default function KuisPage() {
     setStartError(null);
   };
 
-  if (quizzesLoading) {
+  if (quizzesLoading || historyLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] flex-col gap-4">
         <Loader2 className="w-10 h-10 animate-spin text-indigo-500" />
@@ -179,6 +195,7 @@ export default function KuisPage() {
         onStart={handleStart}
         isStarting={isStarting}
         startError={startError}
+        isCompetedQuizId={completedQuizId}
       />
     );
   }

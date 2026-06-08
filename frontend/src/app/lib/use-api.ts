@@ -277,9 +277,11 @@ export interface AssignmentStart {
 
 export interface AssignmentHistoryAnswer {
   question_text: string;
+  question_type: 1 | 2 | 3
   your_answer: string;
   is_correct: boolean;
   score_earned: number;
+  total_pairs?: number
 }
 
 export interface AssignmentResult {
@@ -296,7 +298,9 @@ export interface AssignmentResult {
 
 export interface HistoryListItem {
   assignment_id: number;
+  quiz_id: number
   quiz_title: string;
+  student_name?: string
   score_earned: number;
   total_point: number;
   score_percent: number;

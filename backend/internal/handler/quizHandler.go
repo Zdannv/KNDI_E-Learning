@@ -19,7 +19,7 @@ func NewQuizHandler(service services.QuizService) *QuizHandler {
 }
 
 func (h *QuizHandler) FindAll(w http.ResponseWriter, r *http.Request) {
-	role := middleware.GetRole(r)
+	role   := middleware.GetRole(r)
 	userID := middleware.GetUserID(r)
 	quizzes, err := h.service.FindAll(r.Context(), role, userID)
 	if err != nil {
@@ -83,7 +83,7 @@ func (h *QuizHandler) Update(w http.ResponseWriter, r *http.Request) {
 	response.Success(w, http.StatusOK, quiz)
 }
 
-func (h *QuizHandler) Delete(w http.ResponseWriter, r*http.Request) {
+func (h *QuizHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := parseIntParam(r, "id")
 	if err != nil {
 		response.BadRequest(w, "Invalid quiz id")
@@ -111,9 +111,8 @@ func (h *QuizHandler) AddQuestion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var createdQuestions []any
-
 	senseiID := middleware.GetUserID(r)
+	var createdQuestions []any
 	for _, req := range reqs {
 		q, err := h.service.AddQuestion(r.Context(), quizID, senseiID, req)
 		if err != nil {
@@ -122,15 +121,36 @@ func (h *QuizHandler) AddQuestion(w http.ResponseWriter, r *http.Request) {
 		}
 		createdQuestions = append(createdQuestions, q)
 	}
-	
-	
+
 	response.Created(w, createdQuestions)
+}
+
+func (h *QuizHandler) UpdateQuestion(w http.ResponseWriter, r *http.Request) {
+	questionID, err := parseIntParam(r, "id")
+	if err != nil {
+		response.BadRequest(w, "Invalid question id")
+		return
+	}
+
+	var req dto.UpdateQuestionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.BadRequest(w, "Invalid request body")
+		return
+	}
+
+	senseiID := middleware.GetUserID(r)
+	q, err := h.service.UpdateQuestion(r.Context(), questionID, senseiID, req)
+	if err != nil {
+		handleServiceError(w, err)
+		return
+	}
+	response.Success(w, http.StatusOK, q)
 }
 
 func (h *QuizHandler) DeleteQuestion(w http.ResponseWriter, r *http.Request) {
 	id, err := parseIntParam(r, "id")
 	if err != nil {
-		response.BadRequest(w, "Invalid quiz id")
+		response.BadRequest(w, "Invalid question id")
 		return
 	}
 

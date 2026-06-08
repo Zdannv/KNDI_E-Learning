@@ -72,6 +72,7 @@ func Route(
 			r.Delete("/quizzes/{id}", quizHandler.Delete)
 
 			r.Post("/quizzes/{id}/questions", quizHandler.AddQuestion)
+			r.Put("/questions/{id}", quizHandler.UpdateQuestion)
 			r.Delete("/questions/{id}", quizHandler.DeleteQuestion)
 
 			r.Get("/assignments/all-history", assignmentHandler.GetAllHistory)
