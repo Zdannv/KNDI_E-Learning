@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { ClipboardList, PlayCircle, Trophy, Calendar, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
+import { ClipboardList, PlayCircle, Trophy, Calendar, ChevronLeft, ChevronRight, ArrowUpDown, Search } from "lucide-react";
 import { QuizData, MatchingPair } from "@/data/dummyKuis";
 
 interface MatchingStateEntry {
@@ -22,6 +22,7 @@ interface QuizListViewProps {
 }
 
 export default function QuizListView({ quizzes, onStart }: QuizListViewProps) {
+  const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"latest" | "oldest">("latest");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -48,8 +49,14 @@ export default function QuizListView({ quizzes, onStart }: QuizListViewProps) {
     onStart(quiz, newShuffled, initMatching);
   };
 
+  // Filter logic: search by title or description
+  const filteredQuizzes = quizzes.filter((quiz) =>
+    quiz.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    quiz.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   // Sort logic
-  const sortedQuizzes = [...quizzes].sort((a, b) => {
+  const sortedQuizzes = [...filteredQuizzes].sort((a, b) => {
     const dateA = a.createdAt || "2024-01-01";
     const dateB = b.createdAt || "2024-01-01";
     return sortBy === "latest"
@@ -95,55 +102,85 @@ export default function QuizListView({ quizzes, onStart }: QuizListViewProps) {
       </div>
 
       {/* Filter and Sort Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-        <div className="text-sm text-slate-500 font-medium">
-          Menampilkan <span className="font-bold text-slate-800">{Math.min(startIndex + 1, sortedQuizzes.length)}-{Math.min(startIndex + itemsPerPage, sortedQuizzes.length)}</span> dari <span className="font-bold text-slate-800">{sortedQuizzes.length}</span> kuis
+      <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+        {/* Search Bar */}
+        <div className="flex-grow flex items-center bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:bg-white focus-within:border-indigo-400 transition-all">
+          <Search className="w-4 h-4 text-slate-400 mr-2 shrink-0" />
+          <input
+            type="text"
+            placeholder="Cari kuis berdasarkan judul atau deskripsi..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="bg-transparent border-none outline-none text-sm w-full text-slate-700 placeholder:text-slate-400"
+          />
         </div>
-        
-        <div className="flex items-center space-x-2 w-full sm:w-auto">
-          <ArrowUpDown className="w-4 h-4 text-slate-400 shrink-0" />
-          <select
-            value={sortBy}
-            onChange={handleSortChange}
-            className="w-full sm:w-auto text-sm bg-slate-50 border border-slate-200 text-slate-700 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all cursor-pointer font-medium"
-          >
-            <option value="latest">Tanggal Dibuat: Terbaru</option>
-            <option value="oldest">Tanggal Dibuat: Terlama</option>
-          </select>
+
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          {/* Sort Date */}
+          <div className="flex items-center space-x-2 border border-slate-200 rounded-lg px-3 py-2 bg-slate-50">
+            <ArrowUpDown className="w-4 h-4 text-slate-400 shrink-0" />
+            <select
+              value={sortBy}
+              onChange={handleSortChange}
+              className="bg-transparent border-none outline-none text-sm text-slate-700 font-medium cursor-pointer"
+            >
+              <option value="latest">Tanggal Dibuat: Terbaru</option>
+              <option value="oldest">Tanggal Dibuat: Terlama</option>
+            </select>
+          </div>
+          
+          <div className="text-sm text-slate-500 font-medium self-center px-1">
+            Total: <span className="font-bold text-slate-800">{sortedQuizzes.length}</span> kuis
+          </div>
         </div>
       </div>
 
-      {/* Quizzes Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {paginatedQuizzes.map((quiz) => (
-          <div
-            key={quiz.id}
-            className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col transition-all hover:shadow-md hover:border-indigo-100 group"
-          >
-            <div className="flex justify-between items-start mb-4">
-              <div className="bg-indigo-50 w-12 h-12 rounded-xl flex items-center justify-center text-indigo-600">
-                <ClipboardList className="w-6 h-6" />
-              </div>
-              <div className="flex items-center text-xs font-semibold text-slate-400 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-100">
-                <Calendar className="w-3.5 h-3.5 mr-1.5 text-slate-400" />
-                <span>{formatDate(quiz.createdAt)}</span>
-              </div>
-            </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2 line-clamp-1 group-hover:text-indigo-600 transition-colors">{quiz.title}</h3>
-            <p className="text-slate-500 text-sm mb-6 line-clamp-2 min-h-[40px] leading-relaxed">{quiz.description}</p>
-            <div className="mt-auto flex items-center justify-between border-t border-slate-50 pt-4">
-              <span className="text-sm font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md">{quiz.questions.length} Soal</span>
-              <button
-                onClick={() => handleStart(quiz)}
-                className="flex items-center text-sm font-bold bg-indigo-600 text-white px-5 py-2.5 rounded-lg hover:bg-indigo-700 active:scale-95 transition-all shadow-sm shadow-indigo-100"
-              >
-                <PlayCircle className="w-4 h-4 mr-2" />
-                Mulai Kerjakan
-              </button>
-            </div>
+      {/* Quizzes Grid or Empty State */}
+      {sortedQuizzes.length === 0 ? (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-16 flex flex-col items-center justify-center text-center">
+          <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-full mb-6 text-indigo-400">
+            <ClipboardList className="w-12 h-12" />
           </div>
-        ))}
-      </div>
+          <h3 className="text-xl font-bold text-slate-800 mb-2">Kuis Tidak Ditemukan</h3>
+          <p className="text-slate-500 max-w-md pb-6 leading-relaxed">
+            Tidak ditemukan kuis yang sesuai dengan kata kunci pencarian Anda. Silakan coba kata kunci lain.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {paginatedQuizzes.map((quiz) => (
+            <div
+              key={quiz.id}
+              className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col transition-all hover:shadow-md hover:border-indigo-100 group"
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div className="bg-indigo-50 w-12 h-12 rounded-xl flex items-center justify-center text-indigo-600">
+                  <ClipboardList className="w-6 h-6" />
+                </div>
+                <div className="flex items-center text-xs font-semibold text-slate-400 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-100">
+                  <Calendar className="w-3.5 h-3.5 mr-1.5 text-slate-400" />
+                  <span>{formatDate(quiz.createdAt)}</span>
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 mb-2 line-clamp-1 group-hover:text-indigo-600 transition-colors">{quiz.title}</h3>
+              <p className="text-slate-500 text-sm mb-6 line-clamp-2 min-h-[40px] leading-relaxed">{quiz.description}</p>
+              <div className="mt-auto flex items-center justify-between border-t border-slate-50 pt-4">
+                <span className="text-sm font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md">{quiz.questions.length} Soal</span>
+                <button
+                  onClick={() => handleStart(quiz)}
+                  className="flex items-center text-sm font-bold bg-indigo-600 text-white px-5 py-2.5 rounded-lg hover:bg-indigo-700 active:scale-95 transition-all shadow-sm shadow-indigo-100"
+                >
+                  <PlayCircle className="w-4 h-4 mr-2" />
+                  Mulai Kerjakan
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Pagination Controls */}
       {totalPages > 1 && (
