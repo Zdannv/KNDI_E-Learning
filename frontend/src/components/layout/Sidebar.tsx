@@ -54,7 +54,7 @@ export default function Sidebar({ isOpen = false, setIsOpen }: SidebarProps) {
         />
       )}
       
-      <aside className={`fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-slate-200 h-screen flex flex-col shadow-sm transform transition-transform duration-300 md:sticky md:top-0 md:translate-x-0 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed inset-y-0 left-0 z-30 w-64 shrink-0 bg-white border-r border-slate-200 h-screen flex flex-col shadow-sm transform transition-transform duration-300 md:sticky md:top-0 md:translate-x-0 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="p-6 flex items-center justify-between gap-3 border-b border-slate-100">
           <div className="flex items-center gap-3">
           <div className="bg-indigo-600 p-2 rounded-lg text-white">

@@ -312,7 +312,8 @@ function BuatKuisForm() {
           id: "quiz-" + Date.now().toString(),
           title: formState.title,
           description: "Kuis bahasa Jepang dasar.", 
-          questions: formState.questions
+          questions: formState.questions,
+          createdAt: new Date().toISOString().split("T")[0]
         };
         setStoredQuizzes(prev => [newQuiz, ...prev]);
         setFormState({ title: "", questions: [] });

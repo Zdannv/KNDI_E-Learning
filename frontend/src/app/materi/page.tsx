@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Presentation, Download, Calendar, FileText, CheckCircle2, Eye, X } from 'lucide-react';
+import { Presentation, Download, Calendar, FileText, CheckCircle2, Eye, X, ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react';
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 
 interface Material {
@@ -41,6 +41,62 @@ const materiPembelajaran: Material[] = [
     description: "Cara dan etika memperkenalkan diri dengan sopan di depan rekan kerja atau atasan baru.",
     uploadDate: "2024-03-15",
     fileName: "Bab_4_Jikoshoukai.pdf"
+  },
+  {
+    id: "m05",
+    title: "Bab 5: Kata Kerja Golongan 1, 2, dan 3",
+    description: "Klasifikasi kata kerja bahasa Jepang ke dalam tiga golongan utama untuk perubahan bentuk (conjugation).",
+    uploadDate: "2024-03-20",
+    fileName: "Bab_5_Kata_Kerja_Golongan.pdf"
+  },
+  {
+    id: "m06",
+    title: "Bab 6: Perubahan Bentuk -Te (Te-Form)",
+    description: "Materi perubahan kata kerja ke bentuk -te untuk menyatakan hubungan sebab-akibat, permintaan sopan, dan aksi beruntun.",
+    uploadDate: "2024-03-25",
+    fileName: "Bab_6_Bentuk_Te_Form.pptx"
+  },
+  {
+    id: "m07",
+    title: "Bab 7: Kata Sifat Golongan -I dan -Na",
+    description: "Perbedaan mendasar antara kata sifat -i dan kata sifat -na serta cara memodifikasi kata benda.",
+    uploadDate: "2024-03-28",
+    fileName: "Bab_7_Kata_Sifat.pdf"
+  },
+  {
+    id: "m08",
+    title: "Bab 8: Struktur Kalimat Dasar (SOV)",
+    description: "Pola penyusunan kalimat sederhana menggunakan Subjek, Objek, dan Kata Kerja (Verb).",
+    uploadDate: "2024-04-01",
+    fileName: "Bab_8_Struktur_Kalimat.pptx"
+  },
+  {
+    id: "m09",
+    title: "Bab 9: Penunjukan Jam dan Menit (Jikan)",
+    description: "Cara menanyakan dan menginformasikan jam serta menit beserta pengecualian pelafalan angka.",
+    uploadDate: "2024-04-05",
+    fileName: "Bab_9_Waktu_Jikan.pdf"
+  },
+  {
+    id: "m10",
+    title: "Bab 10: Hari, Tanggal, dan Bulan (Koyomi)",
+    description: "Penguasaan nama-nama hari, tanggal-tanggal khusus dalam satu bulan, dan nama bulan dalam setahun.",
+    uploadDate: "2024-04-08",
+    fileName: "Bab_10_Kalender.pdf"
+  },
+  {
+    id: "m11",
+    title: "Bab 11: Kata Depan dan Penunjuk Lokasi",
+    description: "Penggunaan kosakata posisi seperti atas, bawah, dalam, luar, depan, dan belakang dalam kalimat.",
+    uploadDate: "2024-04-12",
+    fileName: "Bab_11_Penunjuk_Lokasi.pptx"
+  },
+  {
+    id: "m12",
+    title: "Bab 12: Pengenalan Kanji Dasar (50 Karakter N5)",
+    description: "Pengenalan coretan kanji dasar tingkat pemula beserta cara baca Onyomi dan Kunyomi.",
+    uploadDate: "2024-04-15",
+    fileName: "Bab_12_Kanji_Dasar_N5.pdf"
   }
 ];
 
@@ -49,9 +105,12 @@ export default function MateriPage() {
   const [viewingMateri, setViewingMateri] = useState<Material | null>(null);
   const [storedMateri, , isClient] = useLocalStorage<Material[]>("kndi_materi", materiPembelajaran);
 
+  const [sortBy, setSortBy] = useState<"latest" | "oldest">("latest");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const handleDownload = (materi: Material) => {
     if (materi.fileDataUrl) {
-      // Execute Real Content Download via Anchor DOM Method
       const link = document.createElement("a");
       link.href = materi.fileDataUrl;
       link.download = materi.fileName;
@@ -62,7 +121,6 @@ export default function MateriPage() {
       setToastMessage(`Berhasil mengunduh file: ${materi.fileName}`);
       setTimeout(() => setToastMessage(null), 4000);
     } else {
-      // Simulate for mock data and dummy PPTX files
       setToastMessage(`Mensimulasikan unduhan untuk: ${materi.fileName}... (Data dummy)`);
       setTimeout(() => setToastMessage(null), 4000);
     }
@@ -70,17 +128,64 @@ export default function MateriPage() {
 
   if (!isClient) return <div className="p-6 h-screen w-full" />; // Hydration guard
 
+  // Sort logic by date
+  const sortedMateri = [...storedMateri].sort((a, b) => {
+    const timeA = new Date(a.uploadDate).getTime();
+    const timeB = new Date(b.uploadDate).getTime();
+    return sortBy === "latest" ? timeB - timeA : timeA - timeB;
+  });
+
+  // Pagination logic
+  const totalPages = Math.ceil(sortedMateri.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedMateri = sortedMateri.slice(startIndex, startIndex + itemsPerPage);
+
+  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSortBy(e.target.value as "latest" | "oldest");
+    setCurrentPage(1);
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    });
+  };
+
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto">
-      <div className="mb-8">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="mb-4">
         <h1 className="text-3xl font-bold text-slate-800 mb-2">Materi Pembelajaran</h1>
         <p className="text-slate-600">
           Akses dan pelajari materi presentasi atau PDF secara mandiri langsung dari browser Anda.
         </p>
       </div>
 
+      {/* Filter and Sort Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+        <div className="text-sm text-slate-500 font-medium">
+          Menampilkan <span className="font-bold text-slate-800">{Math.min(startIndex + 1, sortedMateri.length)}-{Math.min(startIndex + itemsPerPage, sortedMateri.length)}</span> dari <span className="font-bold text-slate-800">{sortedMateri.length}</span> materi
+        </div>
+        
+        <div className="flex items-center space-x-2 w-full sm:w-auto">
+          <ArrowUpDown className="w-4 h-4 text-slate-400 shrink-0" />
+          <select
+            value={sortBy}
+            onChange={handleSortChange}
+            className="w-full sm:w-auto text-sm bg-slate-50 border border-slate-200 text-slate-700 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all cursor-pointer font-medium"
+          >
+            <option value="latest">Tanggal Upload: Terbaru</option>
+            <option value="oldest">Tanggal Upload: Terlama</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Materials Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {storedMateri.map((materi) => (
+        {paginatedMateri.map((materi) => (
           <div 
             key={materi.id} 
             className="group bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-lg hover:border-blue-200 transition-all duration-300 flex flex-col h-full"
@@ -96,7 +201,7 @@ export default function MateriPage() {
                 </div>
               </div>
               
-              <h3 className="text-lg font-bold text-slate-800 mb-2 line-clamp-2">
+              <h3 className="text-lg font-bold text-slate-800 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
                 {materi.title}
               </h3>
               
@@ -107,7 +212,7 @@ export default function MateriPage() {
               <div className="flex flex-col space-y-2 mt-auto">
                 <div className="flex items-center text-xs text-slate-500 font-medium">
                   <Calendar className="h-4 w-4 mr-2 text-slate-400" />
-                  <span>{materi.uploadDate}</span>
+                  <span>{formatDate(materi.uploadDate)}</span>
                 </div>
                 <div className="flex items-center text-xs text-slate-500 font-medium">
                   <FileText className="h-4 w-4 mr-2 text-slate-400" />
@@ -119,14 +224,14 @@ export default function MateriPage() {
             <div className="p-4 border-t border-slate-100 bg-slate-50 mt-auto grid grid-cols-2 gap-3">
               <button
                 onClick={() => setViewingMateri(materi)}
-                className="w-full flex items-center justify-center space-x-1.5 bg-blue-600 text-white hover:bg-blue-700 font-semibold py-2.5 px-3 rounded-lg transition-colors duration-300 active:scale-95 cursor-pointer text-sm"
+                className="w-full flex items-center justify-center space-x-1.5 bg-blue-600 text-white hover:bg-blue-700 font-semibold py-2.5 px-3 rounded-lg transition-colors duration-300 active:scale-95 cursor-pointer text-sm shadow-sm"
               >
                 <Eye className="h-4 w-4" />
                 <span>Lihat</span>
               </button>
               <button
                 onClick={() => handleDownload(materi)}
-                className="w-full flex items-center justify-center space-x-1.5 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-800 font-semibold py-2.5 px-3 rounded-lg transition-colors duration-300 active:scale-95 cursor-pointer text-sm"
+                className="w-full flex items-center justify-center space-x-1.5 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-800 font-semibold py-2.5 px-3 rounded-lg transition-colors duration-300 active:scale-95 cursor-pointer text-sm shadow-sm"
               >
                 <Download className="h-4 w-4" />
                 <span>Unduh</span>
@@ -135,6 +240,49 @@ export default function MateriPage() {
           </div>
         ))}
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-slate-100 pt-6 mt-4">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="flex items-center space-x-1 px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            <span>Sebelumnya</span>
+          </button>
+          
+          <div className="hidden sm:flex items-center space-x-1.5">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`w-9 h-9 rounded-lg text-sm font-bold transition-all ${
+                  currentPage === page
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-50 border border-transparent hover:border-slate-100"
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+          </div>
+
+          <span className="sm:hidden text-sm font-semibold text-slate-500">
+            Halaman {currentPage} dari {totalPages}
+          </span>
+
+          <button
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="flex items-center space-x-1 px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+          >
+            <span>Selanjutnya</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Viewer Modal */}
       {viewingMateri && (
@@ -165,7 +313,6 @@ export default function MateriPage() {
 
             {/* Modal Body - Document Simulator */}
             <div className="flex-1 bg-slate-100 p-4 sm:p-8 overflow-y-auto flex flex-col items-center justify-center relative">
-               {/* Background Watermark/Placeholder */}
                <div className="absolute inset-0 flex flex-col items-center justify-center opacity-40 pointer-events-none select-none">
                   {viewingMateri.fileName.endsWith('.pdf') ? (
                     <FileText className="w-32 h-32 text-slate-300 mb-4" />
@@ -175,7 +322,6 @@ export default function MateriPage() {
                   <p className="text-slate-400 font-bold text-xl uppercase tracking-widest">Mode Pratinjau Dokumen</p>
                </div>
                
-               {/* Document Canvas (Page 1 Simulator or True PDF iframe) */}
                {viewingMateri.fileDataUrl && viewingMateri.fileName.endsWith('.pdf') ? (
                  <iframe 
                    src={viewingMateri.fileDataUrl} 
@@ -199,7 +345,7 @@ export default function MateriPage() {
             {/* Modal Footer actions */}
             <div className="bg-white px-6 py-4 border-t border-slate-100 flex justify-between items-center shrink-0">
                <div className="text-sm font-medium text-slate-500 hidden sm:block">
-                 Diunggah pada: <span className="text-slate-700">{viewingMateri.uploadDate}</span>
+                 Diunggah pada: <span className="text-slate-700">{formatDate(viewingMateri.uploadDate)}</span>
                </div>
                <div className="flex space-x-3 w-full sm:w-auto">
                  <button 

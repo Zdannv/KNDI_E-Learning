@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
-import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
+import React, { useState, useEffect, Suspense } from "react";
+import { ArrowLeft, ArrowRight, CheckCircle2, X, Loader2 } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { QuizData, QuizHistoryRecord, fallbackMockQuizzes, MatchingPair } from "@/data/dummyKuis";
+import { useRole } from "@/context/RoleContext";
+import { useSearchParams } from "next/navigation";
 
 import QuizListView from "@/components/kuis/QuizListView";
 import QuizResultView from "@/components/kuis/QuizResultView";
@@ -29,7 +31,11 @@ function normalizeQuizzes(quizzes: QuizData[]): QuizData[] {
   }));
 }
 
-export default function UserKuisPage() {
+function KuisPageContent() {
+  const { currentRole } = useRole();
+  const searchParams = useSearchParams();
+  const startQuizId = searchParams.get("start");
+
   const [rawStoredQuizzes, , isClient] = useLocalStorage<QuizData[]>("kndi_quizzes_v2", fallbackMockQuizzes);
   const storedQuizzes = normalizeQuizzes(rawStoredQuizzes);
   const [storedHistory, setStoredHistory] = useLocalStorage<QuizHistoryRecord[]>("kndi_history", []);
@@ -42,6 +48,41 @@ export default function UserKuisPage() {
   const [checkedQuestions, setCheckedQuestions] = useState<string[]>([]);
   const [shuffledPairs, setShuffledPairs] = useState<Record<string, { left: MatchingPair[]; right: MatchingPair[] }>>({});
   const [matchingState, setMatchingState] = useState<Record<string, MatchingStateEntry>>({});
+
+  // Automatically start quiz from URL query param
+  useEffect(() => {
+    if (isClient && startQuizId && storedQuizzes.length > 0 && !selectedQuiz) {
+      const quiz = storedQuizzes.find((q) => q.id === startQuizId);
+      if (quiz) {
+        const newShuffled: Record<string, { left: MatchingPair[]; right: MatchingPair[] }> = {};
+        const initMatching: Record<string, MatchingStateEntry> = {};
+
+        quiz.questions.forEach((q) => {
+          if (q.type === "matching") {
+            newShuffled[q.id] = {
+              left: [...q.pairs].sort(() => Math.random() - 0.5),
+              right: [...q.pairs].sort(() => Math.random() - 0.5),
+            };
+            initMatching[q.id] = {
+              matchedPairIds: [],
+              leftSelected: null,
+              rightSelected: null,
+              flashRed: false,
+            };
+          }
+        });
+
+        setSelectedQuiz(quiz);
+        setAnswers({});
+        setCurrentIndex(0);
+        setIsSubmitted(false);
+        setScore(0);
+        setCheckedQuestions([]);
+        setShuffledPairs(newShuffled);
+        setMatchingState(initMatching);
+      }
+    }
+  }, [isClient, startQuizId, storedQuizzes, selectedQuiz]);
 
   if (!isClient) return <div className="p-6 h-screen w-full" />;
 
@@ -163,6 +204,7 @@ export default function UserKuisPage() {
     setIsSubmitted(true);
     
     const now = new Date();
+    const studentName = currentRole === "sensei" ? "Sensei Taro" : "Siswa Budi";
     setStoredHistory((prev) => [
       {
         id: "h" + Date.now(),
@@ -171,6 +213,7 @@ export default function UserKuisPage() {
         score: calculatedScore,
         dateStr: now.toISOString().split("T")[0],
         timeStr: now.toTimeString().split(" ")[0],
+        studentName: studentName,
       },
       ...prev,
     ]);
@@ -189,9 +232,22 @@ export default function UserKuisPage() {
     <div className="p-4 md:p-6 max-w-3xl mx-auto h-full flex flex-col justify-center min-h-[80vh]">
       {/* Progress */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-800 mb-1">{selectedQuiz.title}</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
+          <h1 className="text-2xl font-bold text-slate-800">{selectedQuiz.title}</h1>
+          <button
+            onClick={() => {
+              if (confirm("Apakah Anda yakin ingin membatalkan kuis ini? Semua jawaban yang belum dikirim akan hilang.")) {
+                resetQuiz();
+              }
+            }}
+            className="flex items-center space-x-1 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-bold transition-all border border-rose-100 shrink-0"
+          >
+            <X className="w-3.5 h-3.5" />
+            <span>Batalkan Kuis</span>
+          </button>
+        </div>
         <p className="text-slate-500 text-sm">{selectedQuiz.description}</p>
-        <div className="mt-8 flex items-center justify-between text-sm font-semibold text-slate-500 mb-2">
+        <div className="mt-6 flex items-center justify-between text-sm font-semibold text-slate-500 mb-2">
           <span>Soal {currentIndex + 1} dari {totalQuestions}</span>
           <span>{Math.round(progressPercent)}%</span>
         </div>
@@ -246,5 +302,13 @@ export default function UserKuisPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function UserKuisPage() {
+  return (
+    <Suspense fallback={<div className="p-6 max-w-5xl mx-auto h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>}>
+      <KuisPageContent />
+    </Suspense>
   );
 }
