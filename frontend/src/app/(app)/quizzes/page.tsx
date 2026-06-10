@@ -44,18 +44,13 @@ function QuizzesPageContent() {
     setRemedialQuizId(new Set(historyList.filter((h) => h.score_percent < 60).map((h) => h.quiz_id)));
   }, [historyList]);
 
-  const {
-    data: historyList,
-    isLoading: historyLoading
-  } = useAsync<HistoryListItem[]>(fetchHistory)
+  const { data: quizList, isLoading: quizzesLoading, error: quizzesError } = useAsync<Quiz[]>(fetchQuizzes);
+  const { data: historyList, isLoading: historyLoading } = useAsync<HistoryListItem[]>(fetchHistory);
 
   const completedQuizId = useMemo<Set<number>>(() => {
-    if (!historyList) {
-      return new Set()
-    }
-
-    return new Set(historyList.map((h) => h.quiz_id))
-  }, [historyList])
+    if (!historyList) return new Set();
+    return new Set(historyList.map((h) => h.quiz_id));
+  }, [historyList]);
 
   const [activeQuiz,   setActiveQuiz]   = useState<Quiz | null>(null);
   const [assignmentId, setAssignmentId] = useState<number | null>(null);
@@ -118,11 +113,11 @@ function QuizzesPageContent() {
     if (!activeQuiz || assignmentId === null) return;
     setIsSubmitting(true);
     setSubmitError(null);
- 
+
     try {
       const questions = activeQuiz.question ?? [];
       const payload: SubmitAnswer[] = [];
- 
+
       for (const q of questions) {
         const a = answers[q.id];
         if (q.question_type === 1) {
@@ -142,7 +137,7 @@ function QuizzesPageContent() {
           payload.push({ question_id: q.id, answer_text: a?.answerText?.trim() ?? "" });
         }
       }
- 
+
       const scored = await assignmentApi.submit(assignmentId, payload);
 
       if (scored.score_percent >= 60) {
@@ -160,7 +155,6 @@ function QuizzesPageContent() {
       setIsSubmitting(false);
     }
   };
-
 
   const handleReset = () => {
     setActiveQuiz(null);
