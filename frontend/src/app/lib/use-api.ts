@@ -169,7 +169,7 @@ export interface Question {
   id: number;
   quiz_id: number;
   question_text: string;
-  question_type: 1 | 2 | 3;
+  question_type: 1 | 2 | 3 | 4;
   correct_answer: string | null;
   image_url: string | null;
   audio_url: string | null;
@@ -208,7 +208,7 @@ export interface CreateMatchingCardPayload {
 
 export interface CreateQuestionPayload {
   question_text: string;
-  question_type: 1 | 2 | 3;
+  question_type: 1 | 2 | 3 | 4;
   correct_answer?: string;
   image_url?: string;
   audio_url?: string;
@@ -277,11 +277,12 @@ export interface AssignmentStart {
 
 export interface AssignmentHistoryAnswer {
   question_text: string;
-  question_type: 1 | 2 | 3
+  question_type: 1 | 2 | 3 | 4
   your_answer: string;
   is_correct: boolean;
   score_earned: number;
   total_pairs?: number
+  pending_grade?: boolean
 }
 
 export interface AssignmentResult {
@@ -318,6 +319,18 @@ export interface SubmitAnswer {
   answer_text?: string;
 }
 
+export interface EssayPendingItem {
+  assignment_id: number;
+  assignment_history_id: number;
+  student_name: string;
+  quiz_title: string;
+  question_id: number;
+  question_text: string;
+  max_point: number;
+  student_answer: string;
+}
+
+
 export const assignmentApi = {
   start: (quizId: number): Promise<AssignmentStart> =>
     apiFetch<AssignmentStart>("/api/assignment", {
@@ -342,6 +355,15 @@ export const assignmentApi = {
 
   getAllHistory: (): Promise<HistoryListItem[]> =>
     apiFetch<HistoryListItem[]>("/api/assignment/all-history"),
+
+  getPendingEssays: (): Promise<EssayPendingItem[]> =>
+    apiFetch<EssayPendingItem[]>("/api/assignment/pending-essay"),
+
+  gradeEssay: (assignmentId: number, historyId: number, score: number): Promise<void> =>
+    apiFetch<void>(`/api/assignment/${assignmentId}/essay/${historyId}`, {
+      method: "PUT",
+      body:   { score },
+    }),
 };
 
 export interface StudentUser {

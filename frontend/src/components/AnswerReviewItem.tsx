@@ -1,13 +1,12 @@
 "use client"
 
 import { AssignmentHistoryAnswer } from "@/app/lib/use-api"
-import { CheckCircle2, Shuffle, XCircle } from "lucide-react"
+import { CheckCircle2, Clock, FileText, Shuffle, XCircle } from "lucide-react"
 
 interface AnswerReviewItemProps {
     answer: AssignmentHistoryAnswer
-    index: number
+    index:  number
 }
-
 
 interface MatchingCardResultProps {
     scoreEarned: number
@@ -41,8 +40,7 @@ function MatchingCardResult({ scoreEarned, totalPairs, isCorrect }: MatchingCard
                 {Array.from({ length: correct }).map((_, i) => (
                     <span
                         key={`correct-${i}`}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full
-                                   bg-green-100 text-green-700 text-xs font-medium"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium"
                     >
                         <CheckCircle2 className="w-3 h-3" />
                         Pair {i + 1}
@@ -51,8 +49,7 @@ function MatchingCardResult({ scoreEarned, totalPairs, isCorrect }: MatchingCard
                 {Array.from({ length: wrong }).map((_, i) => (
                     <span
                         key={`wrong-${i}`}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full
-                                   bg-red-100 text-red-700 text-xs font-medium"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-medium"
                     >
                         <XCircle className="w-3 h-3" />
                         Pair {correct + i + 1}
@@ -64,11 +61,19 @@ function MatchingCardResult({ scoreEarned, totalPairs, isCorrect }: MatchingCard
 }
 
 export default function AnswerReviewItem({ answer, index }: AnswerReviewItemProps) {
+    const isEssay       = answer.question_type === 4
     const isMatchingCard = answer.question_type === 3
+    const isPending     = isEssay && answer.pending_grade === true
 
+    // ── Card color ────────────────────────────────────────────────────────────
     const cardColor = (() => {
+        if (isEssay) {
+            return isPending
+                ? "bg-amber-50 border-amber-200"   // waiting for sensei
+                : "bg-blue-50 border-blue-200"     // graded
+        }
         if (isMatchingCard) {
-            if (answer.is_correct) return "bg-green-50 border-green-100"
+            if (answer.is_correct)      return "bg-green-50 border-green-100"
             if (answer.score_earned > 0) return "bg-amber-50 border-amber-100"
             return "bg-red-50 border-red-100"
         }
@@ -77,29 +82,59 @@ export default function AnswerReviewItem({ answer, index }: AnswerReviewItemProp
             : "bg-red-50 border-red-100"
     })()
 
-    const iconColor = (() => {
-        if (isMatchingCard) {
-            if (answer.is_correct) return "text-green-500"
-            if (answer.score_earned > 0) return "text-amber-500"
-            return "text-red-500"
+    // ── Icon ──────────────────────────────────────────────────────────────────
+    const icon = (() => {
+        if (isEssay) {
+            return isPending
+                ? <Clock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                : <FileText className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
         }
-        return answer.is_correct ? "text-green-500" : "text-red-500"
+        if (isMatchingCard) {
+            return <Shuffle className={`w-5 h-5 shrink-0 mt-0.5 ${
+                answer.is_correct ? "text-green-500" : answer.score_earned > 0 ? "text-amber-500" : "text-red-500"
+            }`} />
+        }
+        return answer.is_correct
+            ? <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+            : <XCircle      className="w-5 h-5 text-red-500   shrink-0 mt-0.5" />
     })()
 
     return (
         <div className={`flex items-start gap-3 p-4 rounded-xl border ${cardColor}`}>
-            <span className={`shrink-0 mt-0.5 ${iconColor}`}>
-                {isMatchingCard ? (
-                    <Shuffle className="w-5 h-5" />
-                ) : answer.is_correct ? (
-                    <CheckCircle2 className="w-5 h-5" />
-                ) : (
-                    <XCircle className="w-5 h-5" />
-                )}
-            </span>
+            {icon}
 
-            <div className="flex-1 min-w-0">
-                {isMatchingCard ? (
+            <div className="flex-1 min-w-0 space-y-1">
+                {/* Question text */}
+                <p className="text-sm font-semibold text-slate-700">
+                    {answer.question_text}
+                </p>
+
+                {/* Answer body per type */}
+                {isEssay ? (
+                    isPending ? (
+                        // ── Pending essay ─────────────────────────────────────
+                        <div className="space-y-2">
+                            <p className="text-sm text-slate-600 italic whitespace-pre-wrap">
+                                {answer.your_answer || "—"}
+                            </p>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-bold border border-amber-200">
+                                <Clock className="w-3 h-3" />
+                                Menunggu penilaian Sensei
+                            </span>
+                        </div>
+                    ) : (
+                        // ── Graded essay ──────────────────────────────────────
+                        <div className="space-y-2">
+                            <p className="text-sm text-slate-600 italic whitespace-pre-wrap">
+                                {answer.your_answer || "—"}
+                            </p>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold border border-blue-200">
+                                <CheckCircle2 className="w-3 h-3" />
+                                Nilai: {answer.score_earned.toFixed(2)} poin
+                            </span>
+                        </div>
+                    )
+                ) : isMatchingCard ? (
                     <MatchingCardResult
                         scoreEarned={answer.score_earned}
                         totalPairs={answer.total_pairs ?? 0}
