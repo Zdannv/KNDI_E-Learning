@@ -431,7 +431,7 @@ function HistoryRow({
           </span>
         </div>
       </div>
- 
+
       {/* ── Status badge ── */}
       <div className="md:col-span-2 flex md:justify-center">
         <span

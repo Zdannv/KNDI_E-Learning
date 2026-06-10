@@ -10,6 +10,8 @@ import {
 import Link from "next/link";
 import { useCallback, useState } from "react";
 
+// ─── Skeletons ────────────────────────────────────────────────────────────────
+
 function CardSkeleton() {
   return (
     <div className="bg-white rounded-2xl p-6 border border-slate-200 animate-pulse h-52">
@@ -39,6 +41,8 @@ function TableSkeleton() {
   );
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function getWeightLabel(maxPoint: number): string {
   if (maxPoint >= 3) return "Tinggi";
   if (maxPoint >= 2) return "Sedang";
@@ -50,6 +54,8 @@ function getWeightColor(maxPoint: number): string {
   if (maxPoint >= 2) return "bg-purple-100 text-purple-700";
   return "bg-blue-100 text-blue-700";
 }
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminQuizzesPage() {
   const [activeTab, setActiveTab] = useState<"kuis" | "penilaian">("kuis");
