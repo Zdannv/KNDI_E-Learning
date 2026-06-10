@@ -37,9 +37,21 @@ type AssignmentHistory struct {
 	MatchingCardID		*int				`json:"matching_card_id"`
 	AnswerText			*string				`json:"answer_text"`
 	ScoreEarned			float64				`json:"score_earned"`
+	IsGraded			bool				`json:"is_graded"`
 	CreatedAt			time.Time			`json:"created_at"`
 	UpdatedAt			time.Time			`json:"updated_at"`
 
 	QuestionText		string				`json:"question_text,omitempty"`
 	IsCorrect			bool				`json:"is_correct,omitempty"`
+}
+
+type PendingEssay struct {
+	AssignmentID			int				`json:"assignment_id"`
+	AssignmentHistoryID		int				`json:"assignment_history_id"`
+	StudentName				string			`json:"student_name"`
+	QuizTitle				string			`json:"quiz_title"`
+	QuestionID				int				`json:"question_id"`
+	QuestionText			string			`json:"question_text"`
+	MaxPoint				float64			`json:"max_point"`
+	StudentAnswer			string			`json:"student_answer"`
 }

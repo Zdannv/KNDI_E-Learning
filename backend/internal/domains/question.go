@@ -4,6 +4,7 @@ const (
 	QuestionTypeMultipleChoice	= 1
 	QuestionTypeShortAnswer		= 2
 	QuestionTypeMatchingCard	= 3
+	QuestionTypeEssay			= 4
 )
 
 type QuestionType struct {

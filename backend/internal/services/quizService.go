@@ -9,8 +9,6 @@ import (
 	"fmt"
 )
 
-// ─── Interface ────────────────────────────────────────────────────────────────
-
 type QuizService interface {
 	Create(ctx context.Context, senseiID string, req dto.CreateQuizRequest) (*domains.Quiz, error)
 	FindAll(ctx context.Context, role, senseiID string) ([]domains.Quiz, error)
@@ -21,8 +19,6 @@ type QuizService interface {
 	UpdateQuestion(ctx context.Context, questionID int, senseiID string, req dto.UpdateQuestionRequest) (*domains.Question, error)
 	DeleteQuestion(ctx context.Context, questionID int) error
 }
-
-// ─── Implementation ───────────────────────────────────────────────────────────
 
 type quizService struct {
 	repo repository.QuizRepository
@@ -171,17 +167,7 @@ func (s *quizService) AddQuestion(ctx context.Context, quizID int, senseiID stri
 	return q, nil
 }
 
-// UpdateQuestion persists changes to an existing question's content.
-//
-// Why we fetch the question first:
-//   UpdateQuestionRequest intentionally omits question_type — the type is
-//   set at creation and cannot change afterward (it would invalidate stored
-//   student answers and break the scoring logic). However, the repo's
-//   UpdateQuestion and validateQuestionChildren both switch on QuestionType
-//   to know which child rows to touch. We therefore load the stored row to
-//   read the type, then apply all other fields from the request.
 func (s *quizService) UpdateQuestion(ctx context.Context, questionID int, senseiID string, req dto.UpdateQuestionRequest) (*domains.Question, error) {
-	// 1. Load the existing question to get its immutable QuestionType.
 	existing, err := s.repo.FindQuestionByID(ctx, questionID)
 	if err != nil {
 		if errors.Is(err, repository.ErrorNotFound) {
@@ -190,7 +176,6 @@ func (s *quizService) UpdateQuestion(ctx context.Context, questionID int, sensei
 		return nil, fmt.Errorf("QuizService.UpdateQuestion find: %w", err)
 	}
 
-	// 2. Validate the incoming text fields.
 	if req.QuestionText == "" {
 		return nil, fmt.Errorf("Question text is required")
 	}
@@ -198,11 +183,10 @@ func (s *quizService) UpdateQuestion(ctx context.Context, questionID int, sensei
 		req.Point = 1
 	}
 
-	// 3. Build the update struct using the stored type + new request fields.
 	q := &domains.Question{
 		ID:            questionID,
-		QuizID:        existing.QuizID,       // kept for completeness
-		QuestionType:  existing.QuestionType, // read from DB — not from request
+		QuizID:        existing.QuizID,
+		QuestionType:  existing.QuestionType,
 		QuestionText:  req.QuestionText,
 		CorrectAnswer: req.CorrectAnswer,
 		ImageURL:      req.ImageURL,
@@ -231,12 +215,10 @@ func (s *quizService) UpdateQuestion(ctx context.Context, questionID int, sensei
 		})
 	}
 
-	// 4. Validate child rows now that QuestionType is correctly set.
 	if err := validateQuestionChildren(q); err != nil {
 		return nil, err
 	}
 
-	// 5. Persist.
 	if err := s.repo.UpdateQuestion(ctx, q); err != nil {
 		if errors.Is(err, repository.ErrorNotFound) {
 			return nil, ErrorNotFound
@@ -256,13 +238,11 @@ func (s *quizService) DeleteQuestion(ctx context.Context, questionID int) error 
 	return nil
 }
 
-// ─── Private helpers ──────────────────────────────────────────────────────────
-
 func validateQuestionRequest(text string, qType int) error {
 	if text == "" {
 		return fmt.Errorf("Question text is required")
 	}
-	if qType < 1 || qType > 3 {
+	if qType < 1 || qType > 4 {
 		return fmt.Errorf("Question type must be 1 (multiple_choice), 2 (short_answer), or 3 (matching_card)")
 	}
 	return nil

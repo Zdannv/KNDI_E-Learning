@@ -75,8 +75,9 @@ func Route(
 			r.Delete("/questions/{id}", quizHandler.DeleteQuestion)
 
 			r.Get("/assignments/all-history", assignmentHandler.GetAllHistory)
+			r.Get("/assignments/pending-essay", assignmentHandler.GetPendingEssay)
+			r.Put("/assignments/{id}/essay/{historyId}", assignmentHandler.GradeEssay)
 
-			// Student management routes
 			r.Get("/students", authHandler.ListStudents)
 			r.Post("/students", authHandler.CreateStudent)
 			r.Delete("/students/{id}", authHandler.DeleteStudent)

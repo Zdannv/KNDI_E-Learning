@@ -92,3 +92,41 @@ func (h *AssignmentHandler) GetAllHistory(w http.ResponseWriter, r *http.Request
 	}
 	response.Success(w, http.StatusOK, history)
 }
+
+func (h *AssignmentHandler) GetPendingEssay(w http.ResponseWriter, r *http.Request) {
+	item, err := h.service.GetPendingEssays(r.Context())
+	if err != nil {
+		log.Printf("[Assignment] GetPendingEssay: %v", err)
+		response.InternalError(w)
+		return
+	}
+
+	response.Success(w, http.StatusOK, item)
+}
+
+func (h *AssignmentHandler) GradeEssay(w http.ResponseWriter, r *http.Request) {
+	assignmentID, err := parseIntParam(r, "id")
+	if err != nil {
+		response.BadRequest(w, "Invalid assignment ID")
+		return
+	}
+
+	historyID, err := parseIntParam(r, "historyId")
+	if err != nil {
+		response.BadRequest(w, "Invalid history ID")
+		return
+	}
+
+	var req dto.GradeEssayRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.BadRequest(w, "Invalid body request")
+		return
+	}
+
+	if err := h.service.GradeEssay(r.Context(), assignmentID, historyID, req); err != nil {
+		handleServiceError(w, err)
+		return
+	}
+
+	response.Success(w, http.StatusOK, map[string]string{ "message": "Essay graded successfully" })
+}
