@@ -185,6 +185,7 @@ func (s *assignmentService) Submit(
 		}
 	}
 
+	// Grade matching questions accumulated across multiple submitted rows.
 	for questionID := range seenMatchingQuestion {
 		q := qMap[questionID]
 		totalPossible += q.Point
@@ -224,6 +225,8 @@ func (s *assignmentService) Submit(
 	return buildResultResponse(assignmentID, quiz.Title, totalEarned, totalPossible, historyItems, qMap, now), nil
 }
 
+// ─── GetResult ────────────────────────────────────────────────────────────────
+
 func (s *assignmentService) GetResult(ctx context.Context, studentID string, assignmentID int) (*dto.AssignmentResultResponse, error) {
 	a, err := s.assignmentRepo.FindByID(ctx, assignmentID)
 	if err != nil {
@@ -259,6 +262,8 @@ func (s *assignmentService) GetResult(ctx context.Context, studentID string, ass
 
 	return buildResultResponse(assignmentID, a.Quiz.Title, totalEarned, totalPossible, history, map[int]domains.Question{}, completedAt), nil
 }
+
+// ─── History ──────────────────────────────────────────────────────────────────
 
 func (s *assignmentService) GetHistory(ctx context.Context, studentID string) ([]dto.HistoryListResponse, error) {
 	assignments, err := s.assignmentRepo.FindHistoryByStudentID(ctx, studentID)
@@ -401,25 +406,24 @@ func (s *assignmentService) buildHistoryResponse(assignments []domains.Assignmen
 	for _, a := range assignments {
 		scoreEarned := 0.0
 		totalPoint  := 0.0
-		
 		if a.ScoreEarned != nil {
-            scoreEarned = *a.ScoreEarned
-        }
-        if a.TotalPoint != nil {
-            totalPoint = *a.TotalPoint
-        }
+			scoreEarned = *a.ScoreEarned
+		}
+		if a.TotalPoint != nil {
+			totalPoint = *a.TotalPoint
+		}
 
-        scorePct := 0.0
-        if totalPoint > 0 {
-            scorePct = scoreEarned / totalPoint * 100
-        }
+		scorePct := 0.0
+		if totalPoint > 0 {
+			scorePct = scoreEarned / totalPoint * 100
+		}
 
 		dateStr, timeStr := "", ""
 		var completedAtStr *string
 		if a.CompletedAt != nil {
 			dateStr = a.CompletedAt.Format("02 January 2006")
 			timeStr = a.CompletedAt.Format("15:04")
-			rfc    := a.CompletedAt.Format(time.RFC3339)
+			rfc     := a.CompletedAt.Format(time.RFC3339)
 			completedAtStr = &rfc
 		}
 

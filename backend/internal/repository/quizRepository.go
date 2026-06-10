@@ -10,8 +10,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// ─── SQL constants ────────────────────────────────────────────────────────────
-
 const (
 	insertQuiz = `
 		INSERT INTO quizzes (sensei_id, title, description)
@@ -122,8 +120,6 @@ const (
 	deleteQuestion = `DELETE FROM questions WHERE id = $1`
 )
 
-// ─── Interface ────────────────────────────────────────────────────────────────
-
 type QuizRepository interface {
 	Create(ctx context.Context, q *domains.Quiz) error
 	FindByID(ctx context.Context, id int) (*domains.Quiz, error)
@@ -141,8 +137,6 @@ type QuizRepository interface {
 	LoadQuestionForQuiz(ctx context.Context, quizID int) ([]domains.Question, error)
 	LoadQuestionsForQuizzes(ctx context.Context, quizIDs []int) (map[int][]domains.Question, error)
 }
-
-// ─── Implementation ───────────────────────────────────────────────────────────
 
 type quizRepository struct {
 	pool *pgxpool.Pool
