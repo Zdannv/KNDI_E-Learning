@@ -35,6 +35,8 @@ type UserRepository interface {
 	FindByUsername(ctx context.Context, username string) (*domains.User, error)
 	UsernameExists(ctx context.Context, username string) (bool, error)
 	EmailExists(ctx context.Context, email string) (bool, error)
+	FindAllStudents(ctx context.Context) ([]*domains.User, error)
+	Delete(ctx context.Context, id string) error
 }
 
 type userRepository struct {
@@ -100,4 +102,34 @@ func (r *userRepository) EmailExists(ctx context.Context, email string) (bool, e
 		return false, fmt.Errorf("userRepo.EmailExists: %w", err)
 	}
 	return exists, nil
+}
+
+func (r *userRepository) FindAllStudents(ctx context.Context) ([]*domains.User, error) {
+	rows, err := r.pool.Query(ctx, "SELECT id, username, email, password, role, created_at, updated_at FROM users WHERE role = 'student' ORDER BY username ASC")
+	if err != nil {
+		return nil, fmt.Errorf("UserRepo.FindAllStudents: %w", err)
+	}
+	defer rows.Close()
+
+	var students []*domains.User
+	for rows.Next() {
+		u := &domains.User{}
+		err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.Password, &u.Role, &u.CreatedAt, &u.UpdatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("UserRepo.FindAllStudents scan: %w", err)
+		}
+		students = append(students, u)
+	}
+	return students, nil
+}
+
+func (r *userRepository) Delete(ctx context.Context, id string) error {
+	commandTag, err := r.pool.Exec(ctx, "DELETE FROM users WHERE id = $1 AND role = 'student'", id)
+	if err != nil {
+		return fmt.Errorf("UserRepo.Delete: %w", err)
+	}
+	if commandTag.RowsAffected() == 0 {
+		return ErrorNotFound
+	}
+	return nil
 }

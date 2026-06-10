@@ -43,7 +43,6 @@ func Route(
 
 	r.Route("/", func(r chi.Router) {
 		r.Route("/auth", func(r chi.Router) {
-			r.Post("/register", authHandler.Register)
 			r.Post("/login", authHandler.Login)
 		})
 
@@ -76,6 +75,11 @@ func Route(
 			r.Delete("/questions/{id}", quizHandler.DeleteQuestion)
 
 			r.Get("/assignments/all-history", assignmentHandler.GetAllHistory)
+
+			// Student management routes
+			r.Get("/students", authHandler.ListStudents)
+			r.Post("/students", authHandler.CreateStudent)
+			r.Delete("/students/{id}", authHandler.DeleteStudent)
 		})
 
 		r.Group(func(r chi.Router) {
