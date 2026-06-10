@@ -419,34 +419,29 @@ func (s *assignmentService) buildHistoryResponse(assignments []domains.Assignmen
 	result := make([]dto.HistoryListResponse, 0, len(assignments))
 	for _, a := range assignments {
 		scoreEarned := 0.0
-		totalPoint  := 0.0
-		
-		if a.ScoreEarned != nil {
-            scoreEarned = *a.ScoreEarned
-        }
-        if a.TotalPoint != nil {
-            totalPoint = *a.TotalPoint
-        }
+		totalPoint := 0.0
+		if a.TotalPoint != nil {
+			scoreEarned = *a.TotalPoint
+			totalPoint = *a.TotalPoint
+		}
 
-        scorePct := 0.0
-        if totalPoint > 0 {
-            scorePct = scoreEarned / totalPoint * 100
-        }
+		scorePct := 0.0
+		if totalPoint > 0 {
+			scorePct = scoreEarned / totalPoint * 100
+		}
 
 		dateStr, timeStr := "", ""
 		var completedAtStr *string
 		if a.CompletedAt != nil {
 			dateStr = a.CompletedAt.Format("02 January 2006")
 			timeStr = a.CompletedAt.Format("15:04")
-			rfc    := a.CompletedAt.Format(time.RFC3339)
+			rfc := a.CompletedAt.Format(time.RFC3339)
 			completedAtStr = &rfc
 		}
 
 		result = append(result, dto.HistoryListResponse{
 			AssignmentID: a.ID,
-			QuizID:       a.QuizID,
 			QuizTitle:    a.Quiz.Title,
-			StudentName:  a.StudentName,
 			ScoreEarned:  scoreEarned,
 			TotalPoint:   totalPoint,
 			ScorePct:     scorePct,
@@ -456,6 +451,7 @@ func (s *assignmentService) buildHistoryResponse(assignments []domains.Assignmen
 			CompletedAt:  completedAtStr,
 		})
 	}
+
 	return result
 }
 
