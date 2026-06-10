@@ -1,4 +1,7 @@
-export type QuestionType = "multiple_choice" | "short_answer" | "matching";
+// src/types/quiz-type.ts
+// Changes: added EssayQuestion + "essay" to unions; added weight to FormQuestionBase
+
+export type QuestionType = "multiple_choice" | "short_answer" | "matching" | "essay"; // <-- added "essay"
 
 export interface MediaFields {
   imageUrl?: string;
@@ -9,10 +12,13 @@ export interface MultipleChoiceOption extends MediaFields {
   text: string;
 }
 
+export type QuestionWeight = 1 | 2 | 3;
+
 export interface FormQuestionBase extends MediaFields {
   id: string;
   type: QuestionType;
   questionText: string;
+  weight: QuestionWeight;
 }
 
 export interface MultipleChoiceQuestion extends FormQuestionBase {
@@ -41,7 +47,18 @@ export interface MatchingQuestion extends FormQuestionBase {
   pairs: MatchingPair[];
 }
 
-export type FormQuestion = MultipleChoiceQuestion | ShortAnswerQuestion | MatchingQuestion;
+// ── NEW ───────────────────────────────────────────────────────────────────────
+export interface EssayQuestion extends FormQuestionBase {
+  type: "essay";
+  // No correct answer — scored manually by sensei
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type FormQuestion =
+  | MultipleChoiceQuestion
+  | ShortAnswerQuestion
+  | MatchingQuestion
+  | EssayQuestion; // <-- added
 
 export interface QuizFormState {
   title: string;

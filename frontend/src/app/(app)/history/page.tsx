@@ -114,41 +114,7 @@ export default function HistoryPage() {
           </p>
         </div>
       </div>
- 
-      {!authLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          <StatCard
-            label="Total Courses"
-            value={stats.total}
-            icon={ClipboardList}
-            color="bg-indigo-100 text-indigo-600"
-          />
- 
-          <StatCard
-            label="Passed"
-            value={`${stats.passedCount} / ${stats.total}`}
-            icon={Trophy}
-            color="bg-green-100 text-green-600"
-          />
- 
-          {isSensei ? (
-            <StatCard
-              label="Student Active"
-              value={stats.uniqueStats}
-              icon={Users}
-              color="bg-violet-100 text-violet-600"
-            />
-          ) : (
-            <StatCard
-              label="Rata-rata Nilai"
-              value={`${stats.averagePct}%`}
-              icon={BookOpen}
-              color="bg-amber-100 text-amber-600"
-            />
-          )}
-        </div>
-      )}
-
+      
       {isLoading && <HistorySkeleton />}
 
       {!isLoading && error && (
@@ -160,7 +126,7 @@ export default function HistoryPage() {
           </div>
         </div>
       )}
- 
+
       {/* ── Empty state ── */}
       {!isLoading && !error && (!history || history.length === 0) && (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-12 text-center">
@@ -216,7 +182,7 @@ export default function HistoryPage() {
             <div className="col-span-2 text-center">Score</div>
             <div className="col-span-2 text-center">Status</div>
           </div>
- 
+  
           <div className="divide-y divide-slate-50">
             {history.map((item, index) => (
               <HistoryRow
@@ -291,7 +257,7 @@ function HistoryRow({
           </span>
         </div>
       </div>
- 
+
       {/* ── Status badge ── */}
       <div className="md:col-span-2 flex md:justify-center">
         <span

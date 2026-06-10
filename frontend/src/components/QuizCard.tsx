@@ -1,77 +1,112 @@
-"use client"
+"use client";
 
 import { Quiz } from "@/app/lib/use-api";
-import { BookIcon, CheckCircle2, FileQuestion, Loader2, PlayCircle } from "lucide-react";
+import {
+    BookOpen,
+    CheckCircle2,
+    Clock,
+    Loader2,
+    Play,
+} from "lucide-react";
 
 interface QuizCardProps {
-    quiz: Quiz
-    onStart: (quizId: number) => void
-    isStarted: boolean
-    isCompleted: boolean
+    quiz: Quiz;
+    onStart: (quizId: number) => void;
+    isStarted: boolean;
+    isCompleted: boolean;
+    accentIndex: number;
 }
 
-export default function QuizCard({ quiz, onStart, isStarted, isCompleted }: QuizCardProps) {
-    const questionCount = quiz.question?.length ?? 0
-    
+const ACCENTS = [
+    { stripe: "bg-violet-500", badge: "bg-violet-50", icon: "text-violet-600", btn: "bg-violet-600 hover:bg-violet-700", ring: "ring-violet-100" },
+    { stripe: "bg-rose-500",   badge: "bg-rose-50",   icon: "text-rose-600",   btn: "bg-rose-600   hover:bg-rose-700",   ring: "ring-rose-100"   },
+    { stripe: "bg-amber-500",  badge: "bg-amber-50",  icon: "text-amber-600",  btn: "bg-amber-600  hover:bg-amber-700",  ring: "ring-amber-100"  },
+    { stripe: "bg-teal-500",   badge: "bg-teal-50",   icon: "text-teal-600",   btn: "bg-teal-600   hover:bg-teal-700",   ring: "ring-teal-100"   },
+    { stripe: "bg-sky-500",    badge: "bg-sky-50",    icon: "text-sky-600",    btn: "bg-sky-600    hover:bg-sky-700",    ring: "ring-sky-100"    },
+    { stripe: "bg-emerald-500",badge: "bg-emerald-50",icon: "text-emerald-600",btn: "bg-emerald-600 hover:bg-emerald-700",ring: "ring-emerald-100"},
+] as const;
+
+export default function QuizCard({
+    quiz,
+    onStart,
+    isStarted,
+    isCompleted,
+    accentIndex,
+}: QuizCardProps) {
+    const accent = ACCENTS[accentIndex % ACCENTS.length];
+    const questionCount = quiz.question?.length ?? 0;
+
     return (
-        <div className="bg-white rounded-xl border-slate-200 shadow-sm hover:shadow-md hover:bg-indigo-50 transition-all flex flex-col">
-            <div className="p-6 flex-1">
-                <div className="flex items-start justify-between mb-4">
-                    <div className="p-3 rounded-xl w-fit bg-indigo-50 text-indigo-600">
-                        <BookIcon />
+        <div className="group relative bg-white rounded-2xl border border-slate-100 flex flex-col overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+            <div className={`h-1.5 w-full ${accent.stripe}`} />
+                <div className="p-6 flex flex-col flex-1">
+                    <div className="flex items-start justify-between mb-5">
+                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${accent.badge}`}>
+                            <BookOpen className={`w-5 h-5 ${accent.icon}`} />
+                        </div>
+
+                        {isCompleted && (
+                            <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-xs font-bold px-3 py-1 rounded-full border border-green-100">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                Selesai
+                            </span>
+                        )}
                     </div>
-                    {isCompleted && (
-                        <span className="inline-flex items-center gap-1.5 bg-green-200 text-green-700 text-xs font-bold px-3 py-1 rounded-full border border-green-200">
-                            <CheckCircle2 className="w-4 h-4" />
-                            Completed
-                        </span>
+
+                    <span className="text-xs font-bold tracking-widest text-slate-300 uppercase mb-1.5">
+                        Kuis {String(accentIndex + 1).padStart(2, "0")}
+                    </span>
+
+                    <h3 className="text-base font-bold text-slate-800 leading-snug mb-2 line-clamp-2">
+                        {quiz.title}
+                    </h3>
+
+                    {quiz.description ? (
+                        <p className="text-sm text-slate-500 leading-relaxed line-clamp-2 flex-1 mb-5">
+                            {quiz.description}
+                        </p>
+                    ) : (
+                        <p className="text-sm text-slate-300 italic flex-1 mb-5">Tidak ada deskripsi.</p>
+                    )}
+
+                    <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
+                            <Clock className="w-3.5 h-3.5" />
+                            
+                            {questionCount > 0 ? `${questionCount} soal` : "—"}
+                        </div>
+                    
+                        {isCompleted ? (
+                        <div className="flex items-center gap-1.5 text-xs font-bold bg-green-50 text-green-600 border border-green-100 px-4 py-2 rounded-lg cursor-not-allowed select-none">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            Selesai
+                        </div>
+                        ) : (
+                        <button
+                            onClick={() => onStart(quiz.id)}
+                            disabled={isStarted}
+                            className={`
+                                flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-lg
+                                ${accent.btn} text-white
+                                disabled:opacity-60 disabled:cursor-not-allowed
+                                active:scale-95 transition-all duration-150
+                            `}
+                        >
+                            {isStarted ? (
+                                <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    Memulai...
+                                </>
+                            ) : (
+                                <>
+                                    <Play className="w-3.5 h-3.5 fill-current" />
+                                    Mulai
+                                </>
+                            )}
+                        </button>
                     )}
                 </div>
-
-                <h3 className="text-lg font-bold text-slate-800 mb-2 leading-snug">
-                    {quiz.title}
-                </h3>
-
-                {quiz.description && (
-                    <p className="text-sm text-slate-500 leading-relaxed line-clamp-2 mb-4">
-                        {quiz.description}
-                    </p>
-                )}
-
-                {questionCount > 0 && (
-                    <div className="">
-                        <FileQuestion className="w-4 h-4" />
-                        <span>{questionCount} questions</span>
-                    </div>
-                )}
-            </div>
-
-            <div className="px-6 pb-6">
-                {isCompleted ? (
-                    <div className="w-full flex items-center justify-center gap-2 bg-green-200 text-green-700 border border-green-200 font-bold py-3 px-4 rounded-xl text-sm cursor-not-allowed select-none">
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span>Completed</span>
-                    </div>
-                ) : (
-                    <button
-                        onClick={() => onStart(quiz.id)}
-                        disabled={isStarted || isCompleted}
-                        className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-xl text-sm transition-all"
-                    >
-                        {isStarted ? (
-                            <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Starting... 
-                            </>
-                        ) : (
-                            <>
-                                <PlayCircle className="w-4 h-4" />
-                                Start Quiz
-                            </>
-                        )}
-                    </button>
-                )}
             </div>
         </div>
-    )
+    );
 }
