@@ -3,6 +3,7 @@ package main
 import (
 	"KNDI_E-LEARNING/database"
 	"KNDI_E-LEARNING/internal/config"
+	"KNDI_E-LEARNING/internal/domains"
 	"KNDI_E-LEARNING/internal/repository"
 	"KNDI_E-LEARNING/internal/router"
 	"KNDI_E-LEARNING/internal/services"
@@ -17,11 +18,12 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func main() {
 	if err := godotenv.Load(); err != nil {
-		log.Fatalf("[Main] No env file found")
+		log.Printf("[Main] No env file found, using system environment variables")
 	}
 
 	// Config - This will crash if env variable is missing
@@ -36,6 +38,9 @@ func main() {
 	materialRepo 	:= repository.NewMaterialRepository(pool)
 	quizRepo 		:= repository.NewQuizRepository(pool)
 	assignmentRepo 	:= repository.NewAssignmentRepository(pool)
+
+	// Seed starter account (adi / @kndi)
+	seedStarterAccount(ctx, userRepo)
 
 	authSvc 		:= services.NewAuthService(userRepo, cfg)
 	materialSvc		:= services.NewMaterialService(materialRepo)
@@ -79,5 +84,31 @@ func main() {
 			log.Fatalf("[Main] Graceful shutdown failed: %v", err)
 		}
 		log.Fatalf("[Main] Server stop cleanly")
+	}
+}
+
+func seedStarterAccount(ctx context.Context, repo repository.UserRepository) {
+	exists, err := repo.UsernameExists(ctx, "adi")
+	if err != nil {
+		log.Printf("[Seed] Error checking if starter account exists: %v", err)
+		return
+	}
+	if !exists {
+		hash, err := bcrypt.GenerateFromPassword([]byte("@kndi"), bcrypt.DefaultCost)
+		if err != nil {
+			log.Printf("[Seed] Error hashing password: %v", err)
+			return
+		}
+		u := &domains.User{
+			Username: "adi",
+			Email:    "adi@kndi.co.id",
+			Password: string(hash),
+			Role:     "sensei",
+		}
+		if err := repo.Create(ctx, u); err != nil {
+			log.Printf("[Seed] Error creating starter account: %v", err)
+		} else {
+			log.Printf("[Seed] Starter account 'adi' (role: sensei) created successfully")
+		}
 	}
 }

@@ -343,3 +343,23 @@ export const assignmentApi = {
   getAllHistory: (): Promise<HistoryListItem[]> =>
     apiFetch<HistoryListItem[]>("/api/assignment/all-history"),
 };
+
+export interface StudentUser {
+  id: string;
+  username: string;
+  email: string;
+  role: "student";
+  created_at: string;
+  updated_at: string;
+}
+
+export const studentApi = {
+  list: (): Promise<StudentUser[]> =>
+    apiFetch<StudentUser[]>("/api/students"),
+
+  create: (payload: { username: string; email: string; password: string }): Promise<StudentUser> =>
+    apiFetch<StudentUser>("/api/students", { method: "POST", body: payload }),
+
+  delete: (id: string): Promise<void> =>
+    apiFetch<void>(`/api/students/${id}`, { method: "DELETE" }),
+};

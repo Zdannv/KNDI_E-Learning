@@ -10,7 +10,7 @@ import {
   LayoutDashboard,
   Library,
   FileQuestion,
-  GraduationCap,
+  Users,
   X,
 } from "lucide-react";
 import { useRole } from "@/context/RoleContext";
@@ -41,6 +41,7 @@ const senseiSection: NavSection = {
     { name: "Dashboard Sensei", href: "/admin", icon: LayoutDashboard },
     { name: "Courses Management", href: "/admin/courses", icon: Library },
     { name: "Quizzes Management", href: "/admin/quizzes", icon: FileQuestion },
+    { name: "Students Management", href: "/admin/students", icon: Users },
   ],
 };
 
@@ -119,8 +120,8 @@ export default function Sidebar({ isOpen = false, setIsOpen }: SidebarProps) {
         <div className="p-6 flex items-center justify-between gap-3 border-b border-slate-100 shrink-0">
           <div>
             <a href="/dashboard" className="flex items-center gap-3">
-              <div className="bg-indigo-600 p-2 rounded-lg text-white shrink-0">
-                <GraduationCap size={24} />
+              <div className="p-1 rounded-lg shrink-0">
+                <img src="/icon_kndi.svg" alt="Logo KNDI" className="w-8 h-8 object-contain" />
               </div>
               <span className="text-xl font-bold bg-linear-to-r from-indigo-600 to-indigo-800 bg-clip-text text-transparent">
                 KNDI Learning

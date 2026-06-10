@@ -43,6 +43,8 @@ type AuthService interface {
 	Register(ctx context.Context, req dto.RegisterRequest) (*dto.AuthResponse, error)
 	Login(ctx context.Context, req dto.LoginRequest) (*dto.AuthResponse, error)
 	ParseToken(tokenStr string) (*Claims, error)
+	ListStudents(ctx context.Context) ([]*domains.User, error)
+	DeleteStudent(ctx context.Context, id string) error
 }
 
 type authService struct {
@@ -210,4 +212,23 @@ func buildAuthResponse(u *domains.User, token string) *dto.AuthResponse {
 			Role: 		u.Role,
 		},
 	}
+}
+
+func (s *authService) ListStudents(ctx context.Context) ([]*domains.User, error) {
+	students, err := s.userRepo.FindAllStudents(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("AuthService.ListStudents: %w", err)
+	}
+	return students, nil
+}
+
+func (s *authService) DeleteStudent(ctx context.Context, id string) error {
+	err := s.userRepo.Delete(ctx, id)
+	if err != nil {
+		if errors.Is(err, repository.ErrorNotFound) {
+			return ErrorNotFound
+		}
+		return fmt.Errorf("AuthService.DeleteStudent: %w", err)
+	}
+	return nil
 }
