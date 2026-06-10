@@ -17,6 +17,8 @@ type AssignmentService interface {
 	GetResult(ctx context.Context, studentID string, assignmentID int) (*dto.AssignmentResultResponse, error)
 	GetHistory(ctx context.Context, studentID string) ([]dto.HistoryListResponse, error)
 	GetAllHistory(ctx context.Context) ([]dto.HistoryListResponse, error)
+	GetPendingEssays(ctx context.Context) ([]dto.EssayPendingItem, error)
+	GradeEssay(ctx context.Context, assignmentID, historyID int, req dto.GradeEssayRequest) error
 }
 
 type assignmentService struct {
@@ -60,16 +62,11 @@ func (s *assignmentService) Start(ctx context.Context, studentID string, req dto
 	if err != nil {
 		return nil, fmt.Errorf("AssignmentService.Start check: %w", err)
 	}
-
 	if alreadyDone {
 		return nil, ErrorAlreadyCompleted
 	}
 
-	a := &domains.Assignment{
-		StudentID: studentID,
-		QuizID:    req.QuizID,
-	}
-
+	a := &domains.Assignment{StudentID: studentID, QuizID: req.QuizID}
 	if err := s.assignmentRepo.Create(ctx, a); err != nil {
 		return nil, fmt.Errorf("AssignmentService.Start: %w", err)
 	}
@@ -129,6 +126,38 @@ func (s *assignmentService) Submit(
 
 		switch q.QuestionType {
 
+		case domains.QuestionTypeMultipleChoice:
+			totalPossible += q.Point
+			h := domains.AssignmentHistory{
+				AssignmentID:     assignmentID,
+				QuestionID:       submitted.QuestionID,
+				QuestionOptionID: submitted.QuestionOptionID,
+				QuestionText:     q.QuestionText,
+				IsGraded:         true, // auto-graded
+			}
+			if submitted.QuestionOptionID != nil {
+				h.ScoreEarned = gradeMultipleChoice(q.Options, *submitted.QuestionOptionID, q.Point)
+			}
+			h.IsCorrect  = h.ScoreEarned > 0
+			totalEarned += h.ScoreEarned
+			historyItems = append(historyItems, h)
+
+		case domains.QuestionTypeShortAnswer:
+			totalPossible += q.Point
+			h := domains.AssignmentHistory{
+				AssignmentID: assignmentID,
+				QuestionID:   submitted.QuestionID,
+				AnswerText:   submitted.AnswerText,
+				QuestionText: q.QuestionText,
+				IsGraded:     true, // auto-graded
+			}
+			if submitted.AnswerText != nil && q.CorrectAnswer != nil {
+				h.ScoreEarned = gradeShortAnswer(*q.CorrectAnswer, *submitted.AnswerText, q.Point)
+			}
+			h.IsCorrect  = h.ScoreEarned > 0
+			totalEarned += h.ScoreEarned
+			historyItems = append(historyItems, h)
+
 		case domains.QuestionTypeMatchingCard:
 			if submitted.MatchingCardID != nil && submitted.SelectedCard != nil {
 				matchingPairsByQuestion[q.ID] = append(
@@ -141,43 +170,28 @@ func (s *assignmentService) Submit(
 			}
 			seenMatchingQuestion[q.ID] = true
 
-		case domains.QuestionTypeMultipleChoice:
+		case domains.QuestionTypeEssay:
+			// Essay is not auto-graded. Store the student's answer and mark
+			// is_graded = FALSE. Sensei grades it later via GradeEssay.
+			// Point counts toward totalPossible so score_percent is correct.
 			totalPossible += q.Point
-
-			h := domains.AssignmentHistory{
-				AssignmentID:     assignmentID,
-				QuestionID:       submitted.QuestionID,
-				QuestionOptionID: submitted.QuestionOptionID,
-				QuestionText:     q.QuestionText,
-			}
-			if submitted.QuestionOptionID != nil {
-				h.ScoreEarned = gradeMultipleChoice(q.Options, *submitted.QuestionOptionID, q.Point)
-			}
-			h.IsCorrect   = h.ScoreEarned > 0
-			totalEarned  += h.ScoreEarned
-			historyItems  = append(historyItems, h)
-
-		case domains.QuestionTypeShortAnswer:
-			totalPossible += q.Point
-
 			h := domains.AssignmentHistory{
 				AssignmentID: assignmentID,
 				QuestionID:   submitted.QuestionID,
 				AnswerText:   submitted.AnswerText,
 				QuestionText: q.QuestionText,
+				ScoreEarned:  0,
+				IsGraded:     false, // sensei grades later
+				IsCorrect:    false,
 			}
-			if submitted.AnswerText != nil && q.CorrectAnswer != nil {
-				h.ScoreEarned = gradeShortAnswer(*q.CorrectAnswer, *submitted.AnswerText, q.Point)
-			}
-			h.IsCorrect   = h.ScoreEarned > 0
-			totalEarned  += h.ScoreEarned
-			historyItems  = append(historyItems, h)
+			// totalEarned is NOT incremented — essay contributes 0 until graded.
+			historyItems = append(historyItems, h)
 		}
 	}
 
+	// Grade matching questions accumulated across multiple submitted rows.
 	for questionID := range seenMatchingQuestion {
 		q := qMap[questionID]
-
 		totalPossible += q.Point
 
 		submittedPairs := matchingPairsByQuestion[questionID]
@@ -195,7 +209,8 @@ func (s *assignmentService) Submit(
 			QuestionID:   questionID,
 			QuestionText: q.QuestionText,
 			ScoreEarned:  scoreEarned,
-			IsCorrect: correctPairs == totalPairs,
+			IsCorrect:    correctPairs == totalPairs,
+			IsGraded:     true, // auto-graded
 		}
 		historyItems = append(historyItems, h)
 	}
@@ -208,11 +223,13 @@ func (s *assignmentService) Submit(
 	if err := s.assignmentRepo.Finalise(
 		ctx, assignmentID, totalPossible, totalEarned, now, domains.StatusCompleted,
 	); err != nil {
-		return nil, fmt.Errorf("AssignmentService.Submit Finalise: %w", err)
+		return nil, fmt.Errorf("AssignmentService.Submit finalise: %w", err)
 	}
 
 	return buildResultResponse(assignmentID, quiz.Title, totalEarned, totalPossible, historyItems, qMap, now), nil
 }
+
+// ─── GetResult ────────────────────────────────────────────────────────────────
 
 func (s *assignmentService) GetResult(ctx context.Context, studentID string, assignmentID int) (*dto.AssignmentResultResponse, error) {
 	a, err := s.assignmentRepo.FindByID(ctx, assignmentID)
@@ -250,6 +267,8 @@ func (s *assignmentService) GetResult(ctx context.Context, studentID string, ass
 	return buildResultResponse(assignmentID, a.Quiz.Title, totalEarned, totalPossible, history, map[int]domains.Question{}, completedAt), nil
 }
 
+// ─── History ──────────────────────────────────────────────────────────────────
+
 func (s *assignmentService) GetHistory(ctx context.Context, studentID string) ([]dto.HistoryListResponse, error) {
 	assignments, err := s.assignmentRepo.FindHistoryByStudentID(ctx, studentID)
 	if err != nil {
@@ -266,30 +285,103 @@ func (s *assignmentService) GetAllHistory(ctx context.Context) ([]dto.HistoryLis
 	return s.buildHistoryResponse(assignments), nil
 }
 
+// ─── Essay grading ────────────────────────────────────────────────────────────
+
+func (s *assignmentService) GetPendingEssays(ctx context.Context) ([]dto.EssayPendingItem, error) {
+	items, err := s.assignmentRepo.FindPendingEssays(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("AssignmentService.GetPendingEssays: %w", err)
+	}
+
+	result := make([]dto.EssayPendingItem, 0, len(items))
+	for _, item := range items {
+		result = append(result, dto.EssayPendingItem{
+			AssignmentID:        item.AssignmentID,
+			AssignmentHistoryID: item.AssignmentHistoryID,
+			StudentName:         item.StudentName,
+			QuizTitle:           item.QuizTitle,
+			QuestionID:          item.QuestionID,
+			QuestionText:        item.QuestionText,
+			MaxPoint:            item.MaxPoint,
+			StudentAnswer:       item.StudentAnswer,
+		})
+	}
+	return result, nil
+}
+
+func (s *assignmentService) GradeEssay(
+	ctx          context.Context,
+	assignmentID int,
+	historyID    int,
+	req          dto.GradeEssayRequest,
+) error {
+	// 1. Validate range: score must be 0–100.
+	if req.Score < 0 || req.Score > 100 {
+		return fmt.Errorf("Score must be between 0 and 100")
+	}
+
+	// 2. Verify the assignment exists.
+	if _, err := s.assignmentRepo.FindByID(ctx, assignmentID); err != nil {
+		if errors.Is(err, repository.ErrorNotFound) {
+			return ErrorNotFound
+		}
+		return fmt.Errorf("AssignmentService.GradeEssay find assignment: %w", err)
+	}
+
+	// 3. Load the question to get its point value for the conversion.
+	question, err := s.quizRepo.FindQuestionByHistoryID(ctx, historyID, assignmentID)
+	if err != nil {
+		if errors.Is(err, repository.ErrorNotFound) {
+			return ErrorNotFound
+		}
+		return fmt.Errorf("AssignmentService.GradeEssay find question: %w", err)
+	}
+
+	// 4. Convert percentage to actual points.
+	//    e.g. sensei gives 78, question point = 2 → actual = (78/100) * 2 = 1.56
+	actualScore := (req.Score / 100) * question.Point
+
+	// 5. Persist: set score_earned = actualScore, is_graded = TRUE.
+	if err := s.assignmentRepo.UpdateEssayScore(ctx, historyID, assignmentID, actualScore); err != nil {
+		if errors.Is(err, repository.ErrorNotFound) {
+			return ErrorNotFound
+		}
+		return fmt.Errorf("AssignmentService.GradeEssay update: %w", err)
+	}
+
+	// 6. Recompute assignments.score_earned = SUM of all history rows.
+	if err := s.assignmentRepo.RecalcAssignmentScore(ctx, assignmentID); err != nil {
+		return fmt.Errorf("AssignmentService.GradeEssay recalc: %w", err)
+	}
+
+	return nil
+}
+
+// ─── Private helpers ──────────────────────────────────────────────────────────
+
 func (s *assignmentService) buildHistoryResponse(assignments []domains.Assignment) []dto.HistoryListResponse {
 	result := make([]dto.HistoryListResponse, 0, len(assignments))
 	for _, a := range assignments {
 		scoreEarned := 0.0
 		totalPoint  := 0.0
-		
 		if a.ScoreEarned != nil {
-            scoreEarned = *a.ScoreEarned
-        }
-        if a.TotalPoint != nil {
-            totalPoint = *a.TotalPoint
-        }
+			scoreEarned = *a.ScoreEarned
+		}
+		if a.TotalPoint != nil {
+			totalPoint = *a.TotalPoint
+		}
 
-        scorePct := 0.0
-        if totalPoint > 0 {
-            scorePct = scoreEarned / totalPoint * 100
-        }
+		scorePct := 0.0
+		if totalPoint > 0 {
+			scorePct = scoreEarned / totalPoint * 100
+		}
 
 		dateStr, timeStr := "", ""
 		var completedAtStr *string
 		if a.CompletedAt != nil {
 			dateStr = a.CompletedAt.Format("02 January 2006")
 			timeStr = a.CompletedAt.Format("15:04")
-			rfc    := a.CompletedAt.Format(time.RFC3339)
+			rfc     := a.CompletedAt.Format(time.RFC3339)
 			completedAtStr = &rfc
 		}
 
@@ -331,7 +423,6 @@ func gradeMatchingPairs(cards []domains.MatchingCard, submitted []matchingPairEn
 	for _, c := range cards {
 		validIDs[c.ID] = true
 	}
-
 	correct := 0
 	for _, pair := range submitted {
 		if validIDs[pair.leftCardID] && pair.leftCardID == pair.rightCardID {
@@ -344,7 +435,7 @@ func gradeMatchingPairs(cards []domains.MatchingCard, submitted []matchingPairEn
 func buildResultResponse(
 	assignmentID  int,
 	quizTitle     string,
-	totalEarned,
+	totalEarned   float64,
 	totalPossible float64,
 	history       []domains.AssignmentHistory,
 	qMap          map[int]domains.Question,
@@ -375,6 +466,9 @@ func buildResultResponse(
 			item.QuestionType = q.QuestionType
 			if q.QuestionType == domains.QuestionTypeMatchingCard {
 				item.TotalPairs = len(q.MatchingCards)
+			}
+			if q.QuestionType == domains.QuestionTypeEssay {
+				item.PendingGrade = !h.IsGraded
 			}
 		}
 
