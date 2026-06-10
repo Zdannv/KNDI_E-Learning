@@ -429,9 +429,7 @@ func (s *assignmentService) buildHistoryResponse(assignments []domains.Assignmen
 
 		result = append(result, dto.HistoryListResponse{
 			AssignmentID: a.ID,
-			QuizID:       a.QuizID,
 			QuizTitle:    a.Quiz.Title,
-			StudentName:  a.StudentName,
 			ScoreEarned:  scoreEarned,
 			TotalPoint:   totalPoint,
 			ScorePct:     scorePct,
@@ -441,6 +439,7 @@ func (s *assignmentService) buildHistoryResponse(assignments []domains.Assignmen
 			CompletedAt:  completedAtStr,
 		})
 	}
+
 	return result
 }
 

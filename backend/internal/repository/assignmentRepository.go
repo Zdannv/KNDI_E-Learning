@@ -276,7 +276,6 @@ func (r *assignmentRepository) FindAllHistory(ctx context.Context) ([]domains.As
 	defer rows.Close()
 
 	var assignments []domains.Assignment
-	var studentName string
 	for rows.Next() {
 		a := domains.Assignment{Quiz: &domains.Quiz{}}
 		var quizTitle, studentName string
