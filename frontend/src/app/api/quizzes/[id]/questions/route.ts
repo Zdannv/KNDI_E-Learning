@@ -17,7 +17,7 @@ interface OptionsBody {
 
 interface QuestionRequestBody {
     question_text: string
-    question_type: 1 | 2 | 3
+    question_type: 1 | 2 | 3 | 4
     correct_answer?: string
     url?: string
     point: number
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
                 return badRequest(`Question text is required at question ${i}`)
             }
 
-            if (![1, 2, 3].includes(q.question_type)) {
+            if (![1, 2, 3, 4].includes(q.question_type)) {
                 return badRequest(`Question type must be matching card, short answer, or mulitple choice at question ${i}`)
             }
         }

@@ -1,25 +1,14 @@
-import {
-  CreateQuestionPayload,
-  Question as BackendQuestion,
-  UpdateQuestionPayload,
-} from "@/app/lib/use-api";
-
-import {
-  FormQuestion,
-  MultipleChoiceOption,
-  MatchingPair,
-  mediaOrUndefined,
-  generateId,
-} from "@/types/quiz-type";
+import { CreateQuestionPayload, Question as BackendQuestion, UpdateQuestionPayload } from "@/app/lib/use-api";
+import { FormQuestion, MultipleChoiceOption, MatchingPair, mediaOrUndefined, generateId } from "@/types/quiz-type";
 
 export function toBackendQuestions(questions: FormQuestion[]): CreateQuestionPayload[] {
   return questions.map((q, index): CreateQuestionPayload => {
     const base = {
       question_text: q.questionText,
-      image_url:     mediaOrUndefined(q.imageUrl),
-      audio_url:     mediaOrUndefined(q.audioUrl),
-      point:         1,
-      order_number:  index + 1,
+      image_url: mediaOrUndefined(q.imageUrl),
+      audio_url: mediaOrUndefined(q.audioUrl),
+      point: q.weight,
+      order_number: index + 1,
     };
 
     switch (q.type) {
@@ -29,16 +18,16 @@ export function toBackendQuestions(questions: FormQuestion[]): CreateQuestionPay
           question_type: 1,
           options: q.options.map((o, i) => ({
             option_text: o.text,
-            image_url:   mediaOrUndefined(o.imageUrl),
-            audio_url:   mediaOrUndefined(o.audioUrl),
-            is_correct:  i === q.correctOptionIndex,
+            image_url: mediaOrUndefined(o.imageUrl),
+            audio_url: mediaOrUndefined(o.audioUrl),
+            is_correct: i === q.correctOptionIndex,
           })),
         };
 
       case "short_answer":
         return {
           ...base,
-          question_type:  2,
+          question_type: 2,
           correct_answer: q.correctAnswerText,
         };
 
@@ -47,31 +36,31 @@ export function toBackendQuestions(questions: FormQuestion[]): CreateQuestionPay
           ...base,
           question_type:  3,
           matching_cards: q.pairs.map((p) => ({
-            left_text:        p.leftContent.text,
-            left_image_url:   mediaOrUndefined(p.leftContent.imageUrl),
-            left_audio_url:   mediaOrUndefined(p.leftContent.audioUrl),
-            right_text:       p.rightContent.text,
-            right_image_url:  mediaOrUndefined(p.rightContent.imageUrl),
-            right_audio_url:  mediaOrUndefined(p.rightContent.audioUrl),
+            left_text: p.leftContent.text,
+            left_image_url: mediaOrUndefined(p.leftContent.imageUrl),
+            left_audio_url: mediaOrUndefined(p.leftContent.audioUrl),
+            right_text: p.rightContent.text,
+            right_image_url: mediaOrUndefined(p.rightContent.imageUrl),
+            right_audio_url: mediaOrUndefined(p.rightContent.audioUrl),
           })),
+        };
+
+      case "essay":
+        return {
+          ...base,
+          question_type: 4,
         };
     }
   });
 }
 
-// ─── Frontend → Backend (update) ─────────────────────────────────────────────
-
-/**
- * Converts a frontend FormQuestion to UpdateQuestionPayload for PUT /questions/:id.
- * Omits question_type — the type is immutable after creation.
- */
 export function toUpdatePayload(q: FormQuestion, index: number): UpdateQuestionPayload {
   const base = {
     question_text: q.questionText,
-    image_url:     mediaOrUndefined(q.imageUrl),
-    audio_url:     mediaOrUndefined(q.audioUrl),
-    point:         1,
-    order_number:  index + 1,
+    image_url: mediaOrUndefined(q.imageUrl),
+    audio_url: mediaOrUndefined(q.audioUrl),
+    point: q.weight,
+    order_number: index + 1,
   };
 
   switch (q.type) {
@@ -80,9 +69,9 @@ export function toUpdatePayload(q: FormQuestion, index: number): UpdateQuestionP
         ...base,
         options: q.options.map((o, i) => ({
           option_text: o.text,
-          image_url:   mediaOrUndefined(o.imageUrl),
-          audio_url:   mediaOrUndefined(o.audioUrl),
-          is_correct:  i === q.correctOptionIndex,
+          image_url: mediaOrUndefined(o.imageUrl),
+          audio_url: mediaOrUndefined(o.audioUrl),
+          is_correct: i === q.correctOptionIndex,
         })),
       };
 
@@ -96,30 +85,28 @@ export function toUpdatePayload(q: FormQuestion, index: number): UpdateQuestionP
       return {
         ...base,
         matching_cards: q.pairs.map((p) => ({
-          left_text:       p.leftContent.text,
-          left_image_url:  mediaOrUndefined(p.leftContent.imageUrl),
-          left_audio_url:  mediaOrUndefined(p.leftContent.audioUrl),
-          right_text:      p.rightContent.text,
+          left_text: p.leftContent.text,
+          left_image_url: mediaOrUndefined(p.leftContent.imageUrl),
+          left_audio_url: mediaOrUndefined(p.leftContent.audioUrl),
+          right_text: p.rightContent.text,
           right_image_url: mediaOrUndefined(p.rightContent.imageUrl),
           right_audio_url: mediaOrUndefined(p.rightContent.audioUrl),
         })),
       };
+
+    case "essay":
+      return { ...base };
   }
 }
 
-// ─── Backend → Frontend ───────────────────────────────────────────────────────
-
-/**
- * Converts backend Question[] (from GET /quizzes/:id) to the frontend
- * FormQuestion union type used by the form.
- */
 export function toFrontendQuestions(backendQuestions: BackendQuestion[]): FormQuestion[] {
   return backendQuestions.map((bq): FormQuestion => {
     const id = String(bq.id);
+    const weight = (Math.min(Math.max(bq.point ?? 1, 1), 3)) as 1 | 2 | 3;
 
     if (bq.question_type === 1) {
       const options = (bq.question_options ?? []).map((o) => ({
-        text:     o.option_text,
+        text: o.option_text,
         imageUrl: o.image_url ?? undefined,
         audioUrl: o.audio_url ?? undefined,
       }));
@@ -130,11 +117,12 @@ export function toFrontendQuestions(backendQuestions: BackendQuestion[]): FormQu
 
       return {
         id,
-        type:               "multiple_choice",
-        questionText:       bq.question_text,
-        imageUrl:           bq.image_url ?? undefined,
-        audioUrl:           bq.audio_url ?? undefined,
-        options:            options as [MultipleChoiceOption, MultipleChoiceOption, MultipleChoiceOption, MultipleChoiceOption],
+        type: "multiple_choice",
+        questionText: bq.question_text,
+        weight,
+        imageUrl: bq.image_url ?? undefined,
+        audioUrl: bq.audio_url ?? undefined,
+        options: options as [MultipleChoiceOption, MultipleChoiceOption, MultipleChoiceOption, MultipleChoiceOption],
         correctOptionIndex: correctIdx >= 0 ? correctIdx : 0,
       };
     }
@@ -142,24 +130,35 @@ export function toFrontendQuestions(backendQuestions: BackendQuestion[]): FormQu
     if (bq.question_type === 2) {
       return {
         id,
-        type:              "short_answer",
-        questionText:      bq.question_text,
-        imageUrl:          bq.image_url ?? undefined,
-        audioUrl:          bq.audio_url ?? undefined,
+        type: "short_answer",
+        questionText: bq.question_text,
+        weight,
+        imageUrl: bq.image_url ?? undefined,
+        audioUrl: bq.audio_url ?? undefined,
         correctAnswerText: bq.correct_answer ?? "",
       };
     }
 
-    // Matching card
+    if (bq.question_type === 4) {
+      return {
+        id,
+        type: "essay",
+        questionText: bq.question_text,
+        weight,
+        imageUrl: bq.image_url ?? undefined,
+        audioUrl: bq.audio_url ?? undefined,
+      };
+    }
+
     const pairs: MatchingPair[] = (bq.matching_card ?? []).map((c) => ({
-      id:           String(c.id),
+      id: String(c.id),
       leftContent:  {
-        text:     c.left_text,
+        text: c.left_text,
         imageUrl: c.left_image_url  ?? undefined,
         audioUrl: c.left_audio_url  ?? undefined,
       },
       rightContent: {
-        text:     c.right_text,
+        text: c.right_text,
         imageUrl: c.right_image_url ?? undefined,
         audioUrl: c.right_audio_url ?? undefined,
       },
@@ -167,10 +166,11 @@ export function toFrontendQuestions(backendQuestions: BackendQuestion[]): FormQu
 
     return {
       id,
-      type:         "matching",
+      type: "matching",
       questionText: bq.question_text,
-      imageUrl:     bq.image_url ?? undefined,
-      audioUrl:     bq.audio_url ?? undefined,
+      weight,
+      imageUrl: bq.image_url ?? undefined,
+      audioUrl: bq.audio_url ?? undefined,
       pairs: pairs.length > 0 ? pairs : [
         { id: generateId(), leftContent: { text: "" }, rightContent: { text: "" } },
         { id: generateId(), leftContent: { text: "" }, rightContent: { text: "" } },
