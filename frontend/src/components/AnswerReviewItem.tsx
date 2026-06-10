@@ -8,10 +8,6 @@ interface AnswerReviewItemProps {
     index:  number
 }
 
-<<<<<<< HEAD
-=======
-
->>>>>>> f369d0f (fix: fixing score result bug that always showing 100 or 0)
 interface MatchingCardResultProps {
     scoreEarned: number
     totalPairs:  number
