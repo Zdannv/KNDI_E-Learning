@@ -110,11 +110,11 @@ function QuizzesPageContent() {
     if (!activeQuiz || assignmentId === null) return;
     setIsSubmitting(true);
     setSubmitError(null);
- 
+
     try {
       const questions = activeQuiz.question ?? [];
       const payload: SubmitAnswer[] = [];
- 
+
       for (const q of questions) {
         const a = answers[q.id];
         if (q.question_type === 1) {
@@ -134,7 +134,7 @@ function QuizzesPageContent() {
           payload.push({ question_id: q.id, answer_text: a?.answerText?.trim() ?? "" });
         }
       }
- 
+
       const scored = await assignmentApi.submit(assignmentId, payload);
 
       if (scored.score_percent >= 60) {
@@ -152,7 +152,6 @@ function QuizzesPageContent() {
       setIsSubmitting(false);
     }
   };
-
 
   const handleReset = () => {
     setActiveQuiz(null);
@@ -254,6 +253,7 @@ function QuizzesPageContent() {
         </div>
       )}
 
+      {/* Navigation */}
       <div className="mt-6 flex items-center justify-between gap-4">
         {currentIndex > 0 ? (
           <button onClick={() => setCurrentIndex((i) => i - 1)} className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition-all">
