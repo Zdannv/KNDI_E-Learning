@@ -29,7 +29,7 @@ export async function PUT(
         }
 
         const body: GradeEssayBody = await req.json()
-        if (typeof body.score !== "number" || body.score <= 0 || body.score >= 100) {
+        if (typeof body.score !== "number" || body.score < 0 || body.score > 100) {
             return badRequest("Score must be a number between 0 and 100")
         }
 
