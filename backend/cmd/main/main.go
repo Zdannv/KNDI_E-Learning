@@ -26,7 +26,6 @@ func main() {
 		log.Printf("[Main] No env file found, using system environment variables")
 	}
 
-	// Config - This will crash if env variable is missing
 	cfg := config.Load()
 
 	// DATABASE POOL
