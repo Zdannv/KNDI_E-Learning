@@ -51,14 +51,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             return badRequest("Invalid material id!")
         }
 
-        const body: UpdateRequestBody = await req.json()
-        if (!body.name?.trim()) {
+        const formData = await req.formData()
+        const name = formData.get("name") as string | null
+        if (!name) {
             return badRequest("Material name is required!")
         }
 
         const data = await apiRequest(`/materials/${id}`, {
             method: "PUT",
-            body,
+            body: formData,
             token
         })
 
