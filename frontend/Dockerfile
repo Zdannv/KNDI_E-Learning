@@ -21,4 +21,5 @@ COPY --from=builder /app/package.json ./package.json
 RUN addgroup -g 1001 -S nodejs && adduser -u 1001 -S nextjs
 USER nextjs
 EXPOSE 3000
+
 CMD ["npm", "start"]
