@@ -9,12 +9,18 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /server ./cmd/main/main.go
 # Stage 2: Production image
 FROM alpine:latest
 WORKDIR /app
-# Copy binary dari builder
+
 COPY --from=builder /server /server
 
-# Jalankan sebagai non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN mkdir -p /app/storage/materials \
+    && mkdir -p /app/storage/questions/audio \
+    && mkdir -p /app/storage/questions/images \
+    && addgroup -S appgroup && adduser -S appuser -G appgroup \
+    && chown -R appuser:appgroup /app/storage \
+    && chmod -R 755 /app/storage
+
 USER appuser
 
 EXPOSE 8080
+
 CMD [ "/server" ]

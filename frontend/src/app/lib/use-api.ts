@@ -354,7 +354,7 @@ export const assignmentApi = {
     apiFetch<HistoryListItem[]>("/api/assignment/history"),
 
   getAllHistory: (): Promise<HistoryListItem[]> =>
-    apiFetch<HistoryListItem[]>("/api/assignment/all-history"),
+    apiFetch<HistoryListItem[]>("/api/assignments/all-history"),
 
   getPendingEssays: (): Promise<EssayPendingItem[]> =>
     apiFetch<EssayPendingItem[]>("/api/assignment/pending-essay"),

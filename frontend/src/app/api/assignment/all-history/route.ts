@@ -1,6 +1,5 @@
 import { apiRequest, extractBearerToken } from "@/app/lib/api-client";
-import { handleRouteError, ok } from "@/app/lib/route-helper";
-import { unauthorized } from "next/navigation";
+import { handleRouteError, ok, unauthorized } from "@/app/lib/route-helper";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest): Promise<NextResponse> {

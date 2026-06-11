@@ -41,7 +41,6 @@ func Route(
 	storageDir := http.Dir("./storage")
 	r.Handle("/storage/*", http.StripPrefix("/storage", http.FileServer(storageDir)))
 
-// Ubah baris ini menjadi /api
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/login", authHandler.Login)
@@ -49,7 +48,6 @@ func Route(
 
 		r.Group(func(r chi.Router) {
 			r.Use(appMiddleware.Authentication(authSvc))
-            // ... (kode lainnya tetap sama)
 			r.Get("/materials", materialHandler.FindAll)
 			r.Get("/materials/{id}", materialHandler.FindByID)
 

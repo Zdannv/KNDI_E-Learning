@@ -3,11 +3,9 @@ services:
     build: 
       context: ./frontend
       dockerfile: Dockerfile
-# Tambahkan 2 baris ini:
       args:
         - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-    restart: unless-stopped
-    # ... (sisanya biarkan sama seperti sebelumnya)   
+    restart: unless-stopped 
     depends_on:
       - backend
     environment:
