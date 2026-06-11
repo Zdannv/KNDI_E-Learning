@@ -1,0 +1,1 @@
+ALTER TABLE assignment_history ADD COLUMN is_graded BOOLEAN NOT NULL DEFAULT TRUE;

@@ -35,6 +35,7 @@ type AssignmentHistoryResponse struct {
 	IsCorrect			bool			`json:"is_correct"`
 	ScoreEarned			float64			`json:"score_earned"`
 	TotalPairs			int				`json:"total_pairs,omitempty"`
+	PendingGrade		bool			`json:"pending_grade,omitempty"`
 }
 
 type HistoryListResponse struct {
@@ -49,4 +50,19 @@ type HistoryListResponse struct {
 	DateStr      		string  		`json:"date_str"`
 	TimeStr      		string  		`json:"time_str"`
 	CompletedAt  		*string 		`json:"completed_at"`
+}
+
+type GradeEssayRequest struct {
+	Score				float64			`json:"score"`
+}
+
+type EssayPendingItem struct {
+	AssignmentID		int				`json:"assignment_id"`
+	AssignmentHistoryID int				`json:"assignment_history_id"`
+	StudentName			string			`json:"student_name"`
+	QuizTitle			string			`json:"quiz_title"`
+	QuestionID          int     		`json:"question_id"`
+	QuestionText        string  		`json:"question_text"`
+	MaxPoint            float64 		`json:"max_point"`
+	StudentAnswer       string  		`json:"student_answer"`
 }

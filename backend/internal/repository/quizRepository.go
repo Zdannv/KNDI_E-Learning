@@ -10,8 +10,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// ─── SQL constants ────────────────────────────────────────────────────────────
-
 const (
 	insertQuiz = `
 		INSERT INTO quizzes (sensei_id, title, description)
@@ -49,21 +47,27 @@ const (
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id`
 
-	// selectQuestionByID fetches scalar columns for a single question.
-	// Used by UpdateQuestion to read the stored question_type before applying
-	// the update, since UpdateQuestionRequest does not carry the type.
 	selectQuestionByID = `
 		SELECT id, quiz_id, question_text, question_type, correct_answer, image_url, audio_url, point, order_number
 		FROM questions WHERE id = $1`
 
+	selectQuestionByHistoryID = `
+	SELECT q.id, q.quiz_id, q.question_text, q.question_type,
+		q.correct_answer, q.image_url, q.audio_url, q.point, q.order_number
+	FROM assignment_history ah
+	JOIN questions q ON q.id = ah.question_id
+	WHERE ah.id = $1
+		AND ah.assignment_id = $2`
+
+
 	updateQuestionCore = `
 		UPDATE questions
 		SET question_text = $1,
-		    correct_answer = $2,
-		    image_url = $3,
-		    audio_url = $4,
-		    point = $5,
-		    order_number = $6
+			correct_answer = $2,
+			image_url = $3,
+			audio_url = $4,
+			point = $5,
+			order_number = $6
 		WHERE id = $7`
 
 	insertOption = `
@@ -71,21 +75,11 @@ const (
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id`
 
-	// updateOption updates an existing option row in-place by its primary key.
-	// We NEVER delete option rows that have been referenced by assignment_history
-	// (student answers hold a FK to question_options.id). Updating in-place
-	// preserves those foreign key references.
 	updateOption = `
 		UPDATE question_options
 		SET option_text = $1, image_url = $2, audio_url = $3, is_correct = $4
 		WHERE id = $5`
 
-	// deleteOptionByID removes a single option row that was excess (i.e. the
-	// incoming payload has fewer options than the stored count). Only safe to
-	// call for options that have never been selected by a student — we rely on
-	// the ON DELETE CASCADE on assignment_history being set to SET NULL or the
-	// caller checking first. In practice, multiple-choice quizzes always keep
-	// the same option count (4), so this path is rarely hit.
 	deleteOptionByID = `DELETE FROM question_options WHERE id = $1`
 
 	insertMatchingCard = `
@@ -93,13 +87,10 @@ const (
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id`
 
-	// updateMatchingCard updates a matching card in-place by primary key.
-	// Same reasoning as updateOption — matching_card_id is referenced in
-	// assignment_history so we cannot delete-and-reinsert.
 	updateMatchingCard = `
 		UPDATE matching_cards
 		SET left_text = $1, left_image_url = $2, left_audio_url = $3,
-		    right_text = $4, right_image_url = $5, right_audio_url = $6
+			right_text = $4, right_image_url = $5, right_audio_url = $6
 		WHERE id = $7`
 
 	deleteMatchingCardByID = `DELETE FROM matching_cards WHERE id = $1`
@@ -129,8 +120,6 @@ const (
 	deleteQuestion = `DELETE FROM questions WHERE id = $1`
 )
 
-// ─── Interface ────────────────────────────────────────────────────────────────
-
 type QuizRepository interface {
 	Create(ctx context.Context, q *domains.Quiz) error
 	FindByID(ctx context.Context, id int) (*domains.Quiz, error)
@@ -139,6 +128,7 @@ type QuizRepository interface {
 	Update(ctx context.Context, q *domains.Quiz) error
 	Delete(ctx context.Context, id int, senseiID string) error
 
+	FindQuestionByHistoryID(ctx context.Context, historyID, assignmentID int) (*domains.Question, error)
 	AddQuestion(ctx context.Context, q *domains.Question) error
 	FindQuestionByID(ctx context.Context, id int) (*domains.Question, error)
 	UpdateQuestion(ctx context.Context, q *domains.Question) error
@@ -147,8 +137,6 @@ type QuizRepository interface {
 	LoadQuestionForQuiz(ctx context.Context, quizID int) ([]domains.Question, error)
 	LoadQuestionsForQuizzes(ctx context.Context, quizIDs []int) (map[int][]domains.Question, error)
 }
-
-// ─── Implementation ───────────────────────────────────────────────────────────
 
 type quizRepository struct {
 	pool *pgxpool.Pool
@@ -176,8 +164,6 @@ func (r *quizRepository) FindByID(ctx context.Context, id int) (*domains.Quiz, e
 	return q, nil
 }
 
-// FindQuestionByID fetches the scalar row for a single question.
-// Does not load options or matching cards.
 func (r *quizRepository) FindQuestionByID(ctx context.Context, id int) (*domains.Question, error) {
 	q := &domains.Question{}
 	err := r.pool.QueryRow(ctx, selectQuestionByID, id).
@@ -223,6 +209,21 @@ func (r *quizRepository) Delete(ctx context.Context, id int, senseiID string) er
 	return nil
 }
 
+func (r *quizRepository) FindQuestionByHistoryID(ctx context.Context, historyID, assignmentID int) (*domains.Question, error) {
+	q := &domains.Question{}
+	err := r.pool.QueryRow(ctx, selectQuestionByHistoryID, historyID, assignmentID).
+		Scan(&q.ID, &q.QuizID, &q.QuestionText, &q.QuestionType,
+			&q.CorrectAnswer, &q.ImageURL, &q.AudioURL, &q.Point, &q.OrderNumber)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrorNotFound
+		}
+		return nil, fmt.Errorf("QuizRepo.FindQuestionByHistoryID: %w", err)
+	}
+	return q, nil
+}
+
+
 func (r *quizRepository) AddQuestion(ctx context.Context, q *domains.Question) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -245,34 +246,6 @@ func (r *quizRepository) AddQuestion(ctx context.Context, q *domains.Question) e
 	return tx.Commit(ctx)
 }
 
-// UpdateQuestion updates a question's scalar fields and syncs its child rows
-// (options / matching cards) in-place within a single transaction.
-//
-// WHY IN-PLACE UPDATES INSTEAD OF DELETE + REINSERT:
-//
-//   assignment_history stores student answers with FK references:
-//     - question_option_id  → question_options.id
-//     - matching_card_id    → matching_cards.id
-//
-//   Deleting option or card rows violates these constraints (SQLSTATE 23503)
-//   because the history rows still point to them. Updating rows in-place by
-//   their primary key preserves every FK reference while still reflecting the
-//   sensei's edits to text and correctness.
-//
-// SYNC STRATEGY (by index position):
-//
-//   Let existing = rows currently in the DB, ordered by id ASC
-//   Let incoming = rows sent from the frontend, ordered by position
-//
-//   For i < min(len(existing), len(incoming)):
-//     UPDATE existing[i] with incoming[i]   ← always safe, FK intact
-//
-//   If incoming has MORE rows than existing:
-//     INSERT the extra rows                 ← new options the sensei added
-//
-//   If incoming has FEWER rows than existing:
-//     DELETE the surplus existing rows      ← rows never referenced (new quiz
-//     or options the sensei removed before any student answered)
 func (r *quizRepository) UpdateQuestion(ctx context.Context, q *domains.Question) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -280,7 +253,6 @@ func (r *quizRepository) UpdateQuestion(ctx context.Context, q *domains.Question
 	}
 	defer tx.Rollback(ctx)
 
-	// 1. Update the question's own scalar columns.
 	tag, err := tx.Exec(ctx, updateQuestionCore,
 		q.QuestionText, q.CorrectAnswer, q.ImageURL, q.AudioURL,
 		q.Point, q.OrderNumber, q.ID,
@@ -292,7 +264,6 @@ func (r *quizRepository) UpdateQuestion(ctx context.Context, q *domains.Question
 		return ErrorNotFound
 	}
 
-	// 2. Sync child rows based on question type.
 	switch q.QuestionType {
 	case domains.QuestionTypeMultipleChoice:
 		if err := r.syncOptions(ctx, tx, q); err != nil {
@@ -386,12 +357,7 @@ func (r *quizRepository) LoadQuestionsForQuizzes(ctx context.Context, quizIDs []
 	return result, nil
 }
 
-// ─── Private helpers ──────────────────────────────────────────────────────────
-
-// syncOptions updates existing option rows in-place, inserts extras, and
-// deletes surplus rows — all within the caller's transaction.
 func (r *quizRepository) syncOptions(ctx context.Context, tx pgx.Tx, q *domains.Question) error {
-	// Load the existing option rows ordered by id ASC (stable order).
 	existingRows, err := r.loadExistingOptions(ctx, tx, q.ID)
 	if err != nil {
 		return err
@@ -403,7 +369,6 @@ func (r *quizRepository) syncOptions(ctx context.Context, tx pgx.Tx, q *domains.
 		minLen = len(incoming)
 	}
 
-	// UPDATE existing rows that map to an incoming option by position.
 	for i := 0; i < minLen; i++ {
 		if _, err := tx.Exec(ctx, updateOption,
 			incoming[i].OptionText,
@@ -416,7 +381,6 @@ func (r *quizRepository) syncOptions(ctx context.Context, tx pgx.Tx, q *domains.
 		}
 	}
 
-	// INSERT extra incoming options (sensei added new options).
 	for i := minLen; i < len(incoming); i++ {
 		var newID int
 		if err := tx.QueryRow(ctx, insertOption,
@@ -430,12 +394,6 @@ func (r *quizRepository) syncOptions(ctx context.Context, tx pgx.Tx, q *domains.
 		}
 	}
 
-	// DELETE surplus existing rows (sensei removed an option).
-	// These rows were not yet referenced by assignment_history because
-	// a student answer points to a specific option ID, and any surplus
-	// rows beyond the incoming count were never chosen by students
-	// (they would have been removed before the quiz was answered, or
-	// the quiz was newly created with no submissions yet).
 	for i := minLen; i < len(existingRows); i++ {
 		if _, err := tx.Exec(ctx, deleteOptionByID, existingRows[i].ID); err != nil {
 			return fmt.Errorf("QuizRepo.syncOptions delete surplus: %w", err)
@@ -445,8 +403,6 @@ func (r *quizRepository) syncOptions(ctx context.Context, tx pgx.Tx, q *domains.
 	return nil
 }
 
-// syncMatchingCards updates existing matching card rows in-place, inserts
-// extras, and deletes surplus — all within the caller's transaction.
 func (r *quizRepository) syncMatchingCards(ctx context.Context, tx pgx.Tx, q *domains.Question) error {
 	existingRows, err := r.loadExistingMatchingCards(ctx, tx, q.ID)
 	if err != nil {
@@ -459,7 +415,6 @@ func (r *quizRepository) syncMatchingCards(ctx context.Context, tx pgx.Tx, q *do
 		minLen = len(incoming)
 	}
 
-	// UPDATE existing rows in-place by position.
 	for i := 0; i < minLen; i++ {
 		if _, err := tx.Exec(ctx, updateMatchingCard,
 			incoming[i].LeftText,
@@ -474,7 +429,6 @@ func (r *quizRepository) syncMatchingCards(ctx context.Context, tx pgx.Tx, q *do
 		}
 	}
 
-	// INSERT extra incoming cards (sensei added new pairs).
 	for i := minLen; i < len(incoming); i++ {
 		var newID int
 		if err := tx.QueryRow(ctx, insertMatchingCard,
@@ -486,7 +440,6 @@ func (r *quizRepository) syncMatchingCards(ctx context.Context, tx pgx.Tx, q *do
 		}
 	}
 
-	// DELETE surplus existing cards.
 	for i := minLen; i < len(existingRows); i++ {
 		if _, err := tx.Exec(ctx, deleteMatchingCardByID, existingRows[i].ID); err != nil {
 			return fmt.Errorf("QuizRepo.syncMatchingCards delete surplus: %w", err)
@@ -496,8 +449,6 @@ func (r *quizRepository) syncMatchingCards(ctx context.Context, tx pgx.Tx, q *do
 	return nil
 }
 
-// loadExistingOptions fetches current option rows for a question inside a
-// transaction, ordered by id ASC, used by syncOptions.
 func (r *quizRepository) loadExistingOptions(ctx context.Context, tx pgx.Tx, questionID int) ([]domains.QuestionOptions, error) {
 	rows, err := tx.Query(ctx, selectOptionsByQuestionID, questionID)
 	if err != nil {
@@ -516,8 +467,6 @@ func (r *quizRepository) loadExistingOptions(ctx context.Context, tx pgx.Tx, que
 	return opts, rows.Err()
 }
 
-// loadExistingMatchingCards fetches current matching card rows for a question
-// inside a transaction, ordered by id ASC, used by syncMatchingCards.
 func (r *quizRepository) loadExistingMatchingCards(ctx context.Context, tx pgx.Tx, questionID int) ([]domains.MatchingCard, error) {
 	rows, err := tx.Query(ctx, selectMatchingCardsByQuestionID, questionID)
 	if err != nil {
@@ -540,8 +489,6 @@ func (r *quizRepository) loadExistingMatchingCards(ctx context.Context, tx pgx.T
 	return cards, rows.Err()
 }
 
-// insertChildren inserts all option or matching card rows for a new question.
-// Used by AddQuestion only.
 func (r *quizRepository) insertChildren(ctx context.Context, tx pgx.Tx, q *domains.Question) error {
 	switch q.QuestionType {
 	case domains.QuestionTypeMultipleChoice:

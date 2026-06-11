@@ -3,24 +3,24 @@
 import React from "react"
 import { Trash2, Image as ImageIcon, Music } from "lucide-react"
 
-import { FormQuestion, QuestionType, MultipleChoiceOption, MatchingContent } from "@/types/quiz-type"
+import { FormQuestion, QuestionType, MultipleChoiceOption, MatchingContent, QuestionWeight } from "@/types/quiz-type"
 import MultipleChoiceEditor from "./MultipleChoiceEditor"
-import ShortAnswerEditor    from "./ShortAnswerEditor"
-import MatchingEditor       from "./MatchingCardEditor"
+import ShortAnswerEditor from "./ShortAnswerEditor"
+import MatchingEditor from "./MatchingCardEditor"
 
 interface QuestionCardProps {
-  question:         FormQuestion
-  index:            number
-  isSubmitting:     boolean
-  isExisting:       boolean
-  onRemove:         () => void
+  question: FormQuestion
+  index: number
+  isSubmitting: boolean
+  isExisting: boolean
+  onRemove: () => void
   onUpdateQuestion: (updates: Partial<FormQuestion>) => void
-  onSwitchType:     (newType: QuestionType) => void
-  onUpdateOption:   (index: number, field: keyof MultipleChoiceOption, value: string | undefined) => void
-  onAddPair:        () => void
-  onRemovePair:     (pairId: string) => void
-  onUpdatePair:     (pairId: string, side: "leftContent" | "rightContent", field: keyof MatchingContent, value: string | undefined) => void
-  onFileUpload:     (e: React.ChangeEvent<HTMLInputElement>, callback: (base64: string) => void) => void
+  onSwitchType: (newType: QuestionType) => void
+  onUpdateOption: (index: number, field: keyof MultipleChoiceOption, value: string | undefined) => void
+  onAddPair: () => void
+  onRemovePair: (pairId: string) => void
+  onUpdatePair: (pairId: string, side: "leftContent" | "rightContent", field: keyof MatchingContent, value: string | undefined) => void
+  onFileUpload: (e: React.ChangeEvent<HTMLInputElement>, callback: (base64: string) => void) => void
 }
 
 export default function QuestionCard(props : QuestionCardProps) {
@@ -133,6 +133,7 @@ export default function QuestionCard(props : QuestionCardProps) {
               <option value="multiple_choice">Multiple Choice</option>
               <option value="short_answer">Short Answer</option>
               <option value="matching">Matching Card</option>
+              <option value="essay">Essay</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
               <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20">
@@ -140,11 +141,34 @@ export default function QuestionCard(props : QuestionCardProps) {
               </svg>
             </div>
           </div>
+
           {props.isExisting && (
             <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">
               Tipe tidak dapat diubah setelah disimpan.
             </p>
           )}
+
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-700">Bobot Soal</label>
+            <div className="relative">
+              <select
+                value={q.weight}
+                onChange={(e) => props.onUpdateQuestion({ weight: parseInt(e.target.value) as QuestionWeight })}
+                disabled={props.isSubmitting}
+                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer pr-10 disabled:opacity-60"
+              >
+                <option value={1}>1 - Rendah</option>
+                <option value={2}>2 - Sedang</option>
+                <option value={3}>3 - Tinggi</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20">
+                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-xs text-slate-500">Bobot menentukan kontribusi soal terhadap nilai total.</p>
+          </div>
         </div>
       </div>
       
@@ -176,6 +200,14 @@ export default function QuestionCard(props : QuestionCardProps) {
             onUpdatePair={(pairId, side, field, value) => props.onUpdatePair(pairId, side, field, value)}
             onFileUpload={props.onFileUpload}
           />
+        )}
+
+        {q.type === "essay" && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <p className="text-sm text-amber-800 font-medium">
+              <span className="font-bold">Catatan:</span> Tipe soal ini tidak dinilai otomatis 
+            </p>
+          </div>
         )}
       </div>
     </div>

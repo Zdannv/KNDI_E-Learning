@@ -1,35 +1,21 @@
 "use client";
 
-import React, { Suspense } from "react";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Plus, Save, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 
 import { useQuizForm } from "@/hooks/useQuizForm";
-import QuizMetaCard   from "@/components/QuizMetaCard";
-import QuestionCard   from "@/components/QuestionCard";
+import QuizMetaCard from "@/components/QuizMetaCard";
+import QuestionCard from "@/components/QuestionCard";
 
 function CreateQuizForm() {
   const searchParams = useSearchParams();
-  const editId       = searchParams.get("edit");
+  const editId = searchParams.get("edit");
 
   const {
-    formState,
-    existingQuestionIds,
-    isLoadingQuiz,
-    isSubmitting,
-    toastSuccess,
-    errorMsg,
-    setFormState,
-    addQuestion,
-    removeQuestion,
-    updateQuestion,
-    switchType,
-    updateOption,
-    addPair,
-    removePair,
-    updatePair,
-    handleFileUpload,
-    handleSubmit,
+    formState, existingQuestionIds, isLoadingQuiz, isSubmitting,toastSuccess, errorMsg,
+    setFormState, addQuestion, removeQuestion, updateQuestion, switchType, updateOption,
+    addPair, removePair, updatePair, handleFileUpload, handleSubmit,
   } = useQuizForm(editId);
 
   if (isLoadingQuiz) {
@@ -134,7 +120,7 @@ function CreateQuizForm() {
   );
 }
 
-export default function BuatKuisPage() {
+export default function CreateQuizPage() {
   return (
     <Suspense
       fallback={

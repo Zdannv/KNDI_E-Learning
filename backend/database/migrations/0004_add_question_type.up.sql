@@ -1,0 +1,1 @@
+INSERT INTO question_types (name) VALUES ('essay') ON CONFLICT DO NOTHING;

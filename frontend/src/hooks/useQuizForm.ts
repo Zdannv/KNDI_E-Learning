@@ -4,32 +4,23 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ClientApiError, quizApi } from "@/app/lib/use-api";
 
-import {
-  FormQuestion,
-  QuizFormState,
-  QuestionType,
-  MultipleChoiceQuestion,
-  MultipleChoiceOption,
-  MatchingContent,
-  EMPTY_FORM,
-  generateId,
-} from "@/types/quiz-type";
+import { FormQuestion, QuizFormState, QuestionType, MultipleChoiceQuestion, MultipleChoiceOption, MatchingContent, EMPTY_FORM, generateId } from "@/types/quiz-type";
 import { toBackendQuestions, toUpdatePayload, toFrontendQuestions } from "@/services/quizConverter";
 import { validateQuizForm } from "@/services/quizValidators";
 
 export interface UseQuizFormReturn {
-  formState:           QuizFormState;
+  formState: QuizFormState;
   existingQuestionIds: Record<string, number>;
-  isLoadingQuiz:       boolean;
-  isSubmitting:        boolean;
-  toastSuccess:        boolean;
-  errorMsg:            string | null;
+  isLoadingQuiz: boolean;
+  isSubmitting: boolean;
+  toastSuccess: boolean;
+  errorMsg: string | null;
   setFormState: React.Dispatch<React.SetStateAction<QuizFormState>>;
 
-  addQuestion:    () => void;
+  addQuestion: () => void;
   removeQuestion: (id: string) => void;
   updateQuestion: (id: string, updates: Partial<FormQuestion>) => void;
-  switchType:     (id: string, newType: QuestionType) => void;
+  switchType: (id: string, newType: QuestionType) => void;
 
   updateOption: (
     questionId: string,
@@ -38,7 +29,7 @@ export interface UseQuizFormReturn {
     value: string | undefined
   ) => void;
 
-  addPair:    (questionId: string) => void;
+  addPair: (questionId: string) => void;
   removePair: (questionId: string, pairId: string) => void;
   updatePair: (
     questionId: string,
@@ -59,12 +50,12 @@ export interface UseQuizFormReturn {
 export function useQuizForm(editId: string | null): UseQuizFormReturn {
   const router = useRouter();
 
-  const [formState,           setFormState]           = useState<QuizFormState>(EMPTY_FORM);
+  const [formState, setFormState] = useState<QuizFormState>(EMPTY_FORM);
   const [existingQuestionIds, setExistingQuestionIds] = useState<Record<string, number>>({});
-  const [isLoadingQuiz,       setIsLoadingQuiz]       = useState(false);
-  const [isSubmitting,        setIsSubmitting]        = useState(false);
-  const [toastSuccess,        setToastSuccess]        = useState(false);
-  const [errorMsg,            setErrorMsg]            = useState<string | null>(null);
+  const [isLoadingQuiz, setIsLoadingQuiz] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toastSuccess, setToastSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (!editId) return;
@@ -83,10 +74,10 @@ export function useQuizForm(editId: string | null): UseQuizFormReturn {
         });
 
         setFormState({
-          title:       backendQuiz.title,
+          title: backendQuiz.title,
           description: backendQuiz.description ?? "",
           isPublished: backendQuiz.is_published,
-          questions:   frontendQuestions,
+          questions: frontendQuestions,
         });
         setExistingQuestionIds(idMap);
       })
@@ -100,10 +91,11 @@ export function useQuizForm(editId: string | null): UseQuizFormReturn {
 
   const addQuestion = () => {
     const newQ: MultipleChoiceQuestion = {
-      id:                 generateId(),
       type:               "multiple_choice",
-      questionText:       "",
-      options:            [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
+      id: generateId(),
+      questionText: "",
+      weight: 1,
+      options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
       correctOptionIndex: 0,
     };
     setFormState((p) => ({ ...p, questions: [...p.questions, newQ] }));
@@ -128,26 +120,31 @@ export function useQuizForm(editId: string | null): UseQuizFormReturn {
       ...p,
       questions: p.questions.map((q): FormQuestion => {
         if (q.id !== id || q.type === newType) return q;
-        const base = { id: q.id, questionText: q.questionText, imageUrl: q.imageUrl, audioUrl: q.audioUrl };
+        const base = { id: q.id, questionText: q.questionText, weight: q.weight, imageUrl: q.imageUrl, audioUrl: q.audioUrl };
 
         if (newType === "multiple_choice") {
           return {
             ...base,
-            type:               "multiple_choice",
-            options:            [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
+            type: "multiple_choice",
+            options: [{ text: "" }, { text: "" }, { text: "" }, { text: "" }],
             correctOptionIndex: 0,
           };
         }
         if (newType === "matching") {
           return {
             ...base,
-            type:  "matching",
+            type: "matching",
             pairs: [
               { id: generateId(), leftContent: { text: "" }, rightContent: { text: "" } },
               { id: generateId(), leftContent: { text: "" }, rightContent: { text: "" } },
             ],
           };
         }
+        // ── NEW ──────────────────────────────────────────────────────────────
+        if (newType === "essay") {
+          return { ...base, type: "essay" };
+        }
+        // ────────────────────────────────────────────────────────────────────
         return { ...base, type: "short_answer", correctAnswerText: "" };
       }),
     }));
