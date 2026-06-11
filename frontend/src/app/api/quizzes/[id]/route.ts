@@ -71,7 +71,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
             return unauthorized()
         }
 
-        const id = getQuizId(params)
+        const id = await getQuizId(params)
         if (!id) {
             return badRequest("Invalid quiz id!")
         }
