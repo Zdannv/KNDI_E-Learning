@@ -104,7 +104,7 @@ func (h *MaterialHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	var filePath *string
 	uploadedPath, uploadErr := utils.UploadFile(r, "file_path", "./storage/materials")
-	if uploadErr != nil {
+	if uploadErr == nil {
 		filePath = uploadedPath
 	} else if uploadErr.Error() != "File must uploaded" {
 		response.BadRequest(w, uploadErr.Error())
