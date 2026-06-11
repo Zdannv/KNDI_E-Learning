@@ -30,4 +30,5 @@ RUN mkdir -p /app/storage/materials \
 USER appuser
 
 EXPOSE 8080
+
 CMD [ "/server" ]
