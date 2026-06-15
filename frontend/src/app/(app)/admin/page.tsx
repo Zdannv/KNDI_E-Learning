@@ -24,8 +24,6 @@ import {
   ArrowUpRight,
   AlertCircle,
   RefreshCw,
-  CheckCircle2,
-  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -37,15 +35,11 @@ import {
 } from "@/app/lib/use-api";
 import { useAsync } from "@/hooks/useAsync";
 
-// ─── Combined fetch ────────────────────────────────────────────────────────────
-
 interface DashboardData {
   totalMateri: number;
   totalKuis:   number;
   history:     HistoryListItem[];
 }
-
-// ─── Loading skeletons ────────────────────────────────────────────────────────
 
 function StatSkeleton() {
   return (
@@ -79,7 +73,11 @@ function TableRowSkeleton() {
   );
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+function scoreColorBg(pct: number) {
+  if (pct >= 80) return "bg-green-50 text-green-600";
+  if (pct >= 60) return "bg-amber-50 text-amber-600";
+  return "bg-red-50 text-red-600";
+}
 
 function scoreColorText(pct: number) {
   if (pct >= 80) return "text-green-600";
@@ -87,28 +85,7 @@ function scoreColorText(pct: number) {
   return "text-red-500";
 }
 
-function scoreColorBg(pct: number) {
-  if (pct >= 80) return "bg-green-50 text-green-600";
-  if (pct >= 60) return "bg-amber-50 text-amber-600";
-  return "bg-red-50 text-red-600";
-}
-
-function displayName(assignmentId: number) {
-  return `Siswa #${String(assignmentId).padStart(4, "0")}`;
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
 export default function AdminDashboardPage() {
-  /**
-   * Each API call is individually wrapped with a fallback so that:
-   *   - If materials returns null/throws → default to []
-   *   - If quizzes returns null/throws   → default to []
-   *   - If history returns null/throws   → default to []
-   *
-   * This means the dashboard always renders something useful even if
-   * one endpoint is temporarily unavailable or returns no data.
-   */
   const fetchAll = useCallback(
     async (): Promise<DashboardData> => {
       const [materials, quizzes, history] = await Promise.all([
@@ -128,22 +105,21 @@ export default function AdminDashboardPage() {
 
   const { data, isLoading, error, refetch } = useAsync<DashboardData>(fetchAll);
 
-  // ── Derived stats — always safe to compute ─────────────────────────────────
   const stats = useMemo(() => {
-    const history       = data?.history ?? [];
-    const totalAttempts = history.length;
-    const avgPct        = totalAttempts > 0
-      ? (history.reduce((acc, h) => acc + h.score_percent, 0) / totalAttempts).toFixed(1)
+    const history        = data?.history ?? [];
+    const totalPengerjaan = history.length;
+    const avgScore       = totalPengerjaan > 0
+      ? (history.reduce((acc, h) => acc + h.score_percent, 0) / totalPengerjaan).toFixed(1)
       : "0.0";
-    const passRate      = totalAttempts > 0
-      ? ((history.filter((h) => h.score_percent >= 60).length / totalAttempts) * 100).toFixed(0)
+    const passRate       = totalPengerjaan > 0
+      ? ((history.filter((h) => h.score_percent >= 60).length / totalPengerjaan) * 100).toFixed(0)
       : "0";
 
     return {
-      totalMateri:  data?.totalMateri  ?? 0,
-      totalKuis:    data?.totalKuis    ?? 0,
-      totalAttempts,
-      avgPct,
+      totalMateri:    data?.totalMateri ?? 0,
+      totalKuis:      data?.totalKuis   ?? 0,
+      totalPengerjaan,
+      avgScore,
       passRate,
     };
   }, [data]);
@@ -161,7 +137,6 @@ export default function AdminDashboardPage() {
     [data]
   );
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6 md:space-y-8">
 
@@ -169,11 +144,11 @@ export default function AdminDashboardPage() {
       <div>
         <h1 className="text-3xl font-bold text-slate-800 mb-2">Dashboard Analitik</h1>
         <p className="text-slate-600">
-          Pantau ringkasan performa siswa, total materi, dan tingkat partisipasi kuis.
+          Pantau ringkasan performa siswa, jumlah materi yang dikuasai, dan tingkat partisipasi kuis secara langsung.
         </p>
       </div>
 
-      {/* Non-fatal error banner — still shows the rest of the page */}
+      {/* Non-fatal error banner */}
       {error && (
         <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 text-amber-800 px-5 py-4 rounded-xl">
           <div className="flex items-center gap-3">
@@ -191,90 +166,109 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* ── Stat cards — always rendered, show 0 when no data ── */}
+      {/* ── Metric Cards Grid ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {isLoading ? (
           <>{[...Array(4)].map((_, i) => <StatSkeleton key={i} />)}</>
         ) : (
           <>
-            {/* Total Materi */}
+            {/* Card 1 — Total Materi */}
             <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group hover:border-blue-200 transition-colors">
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500" />
-              <div className="relative z-10">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500 ease-out" />
+              <div className="relative z-10 flex flex-col h-full">
                 <div className="flex items-center justify-between mb-4">
                   <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
                     <FileText className="w-6 h-6" />
                   </div>
                   <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">Aktif</span>
                 </div>
-                <p className="text-slate-500 font-medium text-sm mb-1">Total Materi</p>
+                <h3 className="text-slate-500 font-medium text-sm mb-1">Total Materi Tersedia</h3>
                 <div className="text-3xl font-black text-slate-800">{stats.totalMateri}</div>
-                {stats.totalMateri === 0 && (
-                  <p className="text-xs text-slate-400 mt-1">Belum ada materi</p>
-                )}
               </div>
             </div>
 
-            {/* Total Kuis */}
+            {/* Card 2 — Total Kuis */}
             <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group hover:border-indigo-200 transition-colors">
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-indigo-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500" />
-              <div className="relative z-10">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-indigo-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500 ease-out" />
+              <div className="relative z-10 flex flex-col h-full">
                 <div className="flex items-center justify-between mb-4">
                   <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl">
                     <BookOpen className="w-6 h-6" />
                   </div>
                 </div>
-                <p className="text-slate-500 font-medium text-sm mb-1">Total Kuis</p>
+                <h3 className="text-slate-500 font-medium text-sm mb-1">Total Kuis Tersedia</h3>
                 <div className="text-3xl font-black text-slate-800">{stats.totalKuis}</div>
-                {stats.totalKuis === 0 && (
-                  <p className="text-xs text-slate-400 mt-1">Belum ada kuis</p>
-                )}
               </div>
             </div>
 
-            {/* Total Partisipasi */}
+            {/* Card 3 — Partisipasi */}
             <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group hover:border-emerald-200 transition-colors">
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500" />
-              <div className="relative z-10">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500 ease-out" />
+              <div className="relative z-10 flex flex-col h-full">
                 <div className="flex items-center justify-between mb-4">
                   <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl">
                     <Users className="w-6 h-6" />
                   </div>
-                  {stats.totalAttempts > 0 && (
+                  {stats.totalPengerjaan > 0 && (
                     <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
                       Lulus: {stats.passRate}%
                     </span>
                   )}
                 </div>
-                <p className="text-slate-500 font-medium text-sm mb-1">Total Pengerjaan Kuis</p>
-                <div className="text-3xl font-black text-slate-800">{stats.totalAttempts}</div>
-                {stats.totalAttempts === 0 && (
-                  <p className="text-xs text-slate-400 mt-1">Belum ada siswa mengerjakan</p>
-                )}
+                <h3 className="text-slate-500 font-medium text-sm mb-1">Partisipasi Kuis (Riwayat)</h3>
+                <div className="text-3xl font-black text-slate-800">{stats.totalPengerjaan}</div>
               </div>
             </div>
 
-            {/* Rata-rata Nilai */}
+            {/* Card 4 — Rata-rata Nilai */}
             <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group hover:border-amber-200 transition-colors">
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-amber-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500" />
-              <div className="relative z-10">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-amber-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500 ease-out" />
+              <div className="relative z-10 flex flex-col h-full">
                 <div className="flex items-center justify-between mb-4">
                   <div className="p-3 bg-amber-100 text-amber-600 rounded-xl">
                     <Target className="w-6 h-6" />
                   </div>
                 </div>
-                <p className="text-slate-500 font-medium text-sm mb-1">Rata-Rata Nilai</p>
-                <div className="flex items-baseline gap-1">
-                  <div className="text-3xl font-black text-slate-800">{stats.avgPct}</div>
-                  <span className="text-sm font-semibold text-slate-400">%</span>
+                <h3 className="text-slate-500 font-medium text-sm mb-1">Rata-Rata Nilai Siswa</h3>
+                <div className="flex items-baseline space-x-1">
+                  <div className="text-3xl font-black text-slate-800">{stats.avgScore}</div>
+                  <span className="text-sm font-semibold text-slate-400">/ 100</span>
                 </div>
-                {stats.totalAttempts === 0 && (
-                  <p className="text-xs text-slate-400 mt-1">Belum ada data</p>
-                )}
               </div>
             </div>
           </>
         )}
+      </div>
+
+      {/* ── Quick Actions ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Link
+          href="/admin/courses"
+          className="bg-linear-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white hover:shadow-lg transition-all active:scale-95 group"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="p-3 bg-white/20 rounded-lg">
+              <FileText className="w-6 h-6" />
+            </div>
+            <ArrowUpRight className="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <h3 className="text-lg font-bold mb-1">Kelola Materi</h3>
+          <p className="text-sm text-blue-100">Buat dan edit materi pembelajaran</p>
+        </Link>
+
+        <Link
+          href="/admin/quizzes"
+          className="bg-linear-to-br from-indigo-500 to-indigo-600 rounded-xl p-6 text-white hover:shadow-lg transition-all active:scale-95 group"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="p-3 bg-white/20 rounded-lg">
+              <BookOpen className="w-6 h-6" />
+            </div>
+            <ArrowUpRight className="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <h3 className="text-lg font-bold mb-1">Kelola Kuis & Penilaian</h3>
+          <p className="text-sm text-indigo-100">Buat kuis dan nilai jawaban esai</p>
+        </Link>
       </div>
 
       {/* ── Leaderboard + Recent Activity ── */}
@@ -282,68 +276,66 @@ export default function AdminDashboardPage() {
 
         {/* Leaderboard */}
         <div className="lg:col-span-2 bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-          <div className="p-6 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
-            <div className="bg-yellow-100 p-2 rounded-lg text-yellow-600">
-              <Trophy className="w-5 h-5" />
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div className="flex items-center space-x-3">
+              <div className="bg-yellow-100 p-2 rounded-lg text-yellow-600">
+                <Trophy className="w-5 h-5" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-800">Bintang Kelas (Top 5 Nilai)</h2>
             </div>
-            <h2 className="text-xl font-bold text-slate-800">Bintang Kelas (Top 5 Nilai)</h2>
           </div>
 
-          <div className="flex-1 overflow-x-auto">
+          <div className="flex-1 p-0 overflow-x-auto">
             {isLoading ? (
               <table className="w-full">
                 <tbody>{[...Array(3)].map((_, i) => <TableRowSkeleton key={i} />)}</tbody>
               </table>
             ) : topPerformers.length === 0 ? (
-              /* Empty state — NOT an error, just no data yet */
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="bg-slate-50 p-5 rounded-full mb-4 border border-slate-100">
-                  <Trophy className="w-10 h-10 text-slate-300" />
-                </div>
-                <p className="font-semibold text-slate-700 mb-1">Belum Ada Data</p>
-                <p className="text-sm text-slate-400 max-w-xs">
-                  Leaderboard akan tampil setelah ada siswa yang menyelesaikan kuis.
-                </p>
+              <div className="h-full flex flex-col items-center justify-center p-12 text-center text-slate-500">
+                <TrendingUpIcon className="w-12 h-12 text-slate-300 mb-4" />
+                <p>Belum ada satupun siswa yang mengerjakan kuis.</p>
               </div>
             ) : (
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="text-slate-400 text-xs uppercase tracking-wider border-b border-slate-100">
-                    <th className="px-6 py-4 font-semibold w-20 text-center">Rank</th>
-                    <th className="px-6 py-4 font-semibold">Siswa</th>
-                    <th className="px-6 py-4 font-semibold">Kuis</th>
-                    <th className="px-6 py-4 font-semibold text-right">Skor</th>
+                  <tr className="bg-white text-slate-400 text-xs uppercase tracking-wider border-b border-slate-100">
+                    <th className="px-6 py-4 font-semibold w-24 text-center">Peringkat</th>
+                    <th className="px-6 py-4 font-semibold">Nama Siswa</th>
+                    <th className="px-6 py-4 font-semibold">Kuis yang Dikerjakan</th>
+                    <th className="px-6 py-4 font-semibold text-right">Skor Akhir</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {topPerformers.map((record, index) => (
                     <tr key={record.assignment_id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4 text-center">
-                        {index === 0 && <Medal className="w-6 h-6 text-yellow-500 fill-yellow-100 mx-auto" />}
-                        {index === 1 && <Medal className="w-6 h-6 text-slate-400 fill-slate-100 mx-auto" />}
-                        {index === 2 && <Medal className="w-6 h-6 text-amber-700 fill-amber-100 mx-auto" />}
-                        {index > 2   && <span className="font-bold text-slate-400">#{index + 1}</span>}
+                        <div className="flex justify-center">
+                          {index === 0 && <Medal className="w-6 h-6 text-yellow-500 fill-yellow-100" />}
+                          {index === 1 && <Medal className="w-6 h-6 text-slate-400 fill-slate-100" />}
+                          {index === 2 && <Medal className="w-6 h-6 text-amber-700 fill-amber-100" />}
+                          {index > 2 && <span className="font-bold text-slate-400 text-lg">#{index + 1}</span>}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center space-x-3">
                           <div className="w-8 h-8 rounded-full bg-linear-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-xs shrink-0">
-                            {String(record.assignment_id).slice(-1)}
+                            {(record.student_name ?? "?").charAt(0).toUpperCase()}
                           </div>
                           <span className="font-semibold text-slate-700">
-                            {displayName(record.assignment_id)}
+                            {record.student_name ?? `Siswa #${String(record.assignment_id).padStart(4, "0")}`}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <span
-                          className="text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1 rounded-md line-clamp-1 max-w-45 block"
+                          className="text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1 rounded-md line-clamp-1 max-w-50 block"
                           title={record.quiz_title}
                         >
                           {record.quiz_title}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <span className={`inline-flex items-center justify-center font-bold text-base px-3 py-1 rounded-lg ${scoreColorBg(record.score_percent)}`}>
+                        <span className={`inline-flex items-center justify-center font-bold text-lg px-3 py-1 rounded-lg ${scoreColorBg(record.score_percent)}`}>
                           {record.score_percent.toFixed(1)}%
                         </span>
                       </td>
@@ -355,9 +347,9 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Recent activity */}
+        {/* Recent Activity Timeline */}
         <div className="bg-white border border-slate-100 rounded-2xl shadow-sm flex flex-col">
-          <div className="p-6 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
+          <div className="p-6 border-b border-slate-100 flex items-center space-x-3 bg-slate-50/50">
             <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600">
               <Activity className="w-5 h-5" />
             </div>
@@ -378,60 +370,81 @@ export default function AdminDashboardPage() {
                 ))}
               </div>
             ) : recentActivities.length === 0 ? (
-              /* Empty state — not an error */
-              <div className="flex-1 flex flex-col items-center justify-center text-center py-8">
-                <div className="bg-slate-50 p-4 rounded-full mb-3 border border-slate-100">
-                  <Clock className="w-8 h-8 text-slate-300" />
-                </div>
-                <p className="font-semibold text-slate-700 text-sm mb-1">Belum Ada Aktivitas</p>
-                <p className="text-xs text-slate-400 max-w-45">
-                  Aktivitas akan muncul setelah siswa mengerjakan kuis.
-                </p>
+              <div className="flex-1 flex flex-col items-center justify-center text-slate-500 text-center py-8">
+                <Clock className="w-10 h-10 text-slate-300 mb-3" />
+                <p className="text-sm">Belum ada aktivitas pengerjaan kuis terbaru di sistem.</p>
               </div>
             ) : (
-              <div className="space-y-5">
+              <div className="space-y-6">
                 {recentActivities.map((activity, i) => (
-                  <div key={activity.assignment_id} className="relative flex gap-4">
+                  <div key={activity.assignment_id} className="relative flex space-x-4">
+                    {/* Timeline line */}
                     {i !== recentActivities.length - 1 && (
-                      <div className="absolute left-4 top-10 -bottom-5 w-0.5 bg-slate-100" />
+                      <div className="absolute left-4 top-10 -bottom-6 w-0.5 bg-slate-100" />
                     )}
+
                     <div className="relative shrink-0">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 border-white ring-1 ring-slate-100 z-10 ${
-                        activity.score_percent >= 60 ? "bg-green-50" : "bg-red-50"
-                      }`}>
-                        {activity.score_percent >= 60
-                          ? <CheckCircle2 className="w-4 h-4 text-green-500" />
-                          : <XCircle className="w-4 h-4 text-red-400" />
-                        }
+                      <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center border-2 border-white ring-1 ring-slate-100 z-10">
+                        <CheckCircleIcon className={`w-4 h-4 ${activity.score_percent >= 60 ? "text-green-500" : "text-amber-500"}`} />
                       </div>
                     </div>
+
                     <div className="flex-1 pb-1">
                       <div className="flex justify-between items-start">
-                        <p className="text-sm font-bold text-slate-800">
-                          {displayName(activity.assignment_id)}
-                        </p>
-                        <span className="text-xs text-slate-400 whitespace-nowrap ml-2">
+                        <h4 className="text-sm font-bold text-slate-800 line-clamp-1">
+                          {activity.student_name ?? `Siswa #${String(activity.assignment_id).padStart(4, "0")}`}
+                        </h4>
+                        <span className="text-xs font-semibold text-slate-400 whitespace-nowrap ml-2">
                           {activity.time_str}
                         </span>
                       </div>
-                      <p className="text-sm text-slate-600 mt-0.5">
-                        Menyelesaikan{" "}
+                      <p className="text-sm text-slate-600 mt-1 line-clamp-2">
+                        Baru saja menyelesaikan kuis{" "}
                         <span className="font-semibold text-slate-700">
                           &ldquo;{activity.quiz_title}&rdquo;
                         </span>{" "}
-                        dengan nilai{" "}
+                        dengan nilai akhir{" "}
                         <span className={`font-bold ${scoreColorText(activity.score_percent)}`}>
                           {activity.score_percent.toFixed(1)}%
-                        </span>
+                        </span>.
                       </p>
                     </div>
                   </div>
                 ))}
               </div>
             )}
+
+            <div className="mt-6 pt-4 border-t border-slate-100 text-center">
+              <Link
+                href="/admin/quizzes"
+                className="inline-flex items-center text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                <span>Kelola Kuis</span>
+                <ArrowUpRight className="w-4 h-4 ml-1" />
+              </Link>
+            </div>
           </div>
         </div>
+
       </div>
     </div>
+  );
+}
+
+function TrendingUpIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props} xmlns="http://www.w3.org/2000/svg">
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+      <polyline points="17 6 23 6 23 12" />
+    </svg>
+  );
+}
+
+function CheckCircleIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props} xmlns="http://www.w3.org/2000/svg">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
   );
 }

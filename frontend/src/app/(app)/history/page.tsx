@@ -14,8 +14,6 @@ import { useAuth } from "@/context/AuthContext";
 
 const ITEMS_PER_PAGE = 10;
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
 function scoreColorClass(pct: number) {
   if (pct >= 80) return "text-green-600";
   if (pct >= 60) return "text-amber-500";
@@ -33,8 +31,6 @@ function scoreLabel(pct: number) {
   if (pct >= 60) return "Lulus";
   return "Remedial";
 }
-
-// ── Skeleton ──────────────────────────────────────────────────────────────────
 
 function HistorySkeleton() {
   return (
@@ -54,8 +50,6 @@ function HistorySkeleton() {
   );
 }
 
-// ── Stat card ─────────────────────────────────────────────────────────────────
-
 function StatCard({
   label, value, icon: Icon, color,
 }: {
@@ -74,8 +68,6 @@ function StatCard({
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
-
 export default function HistoryPage() {
   const { user, isLoading: authLoading } = useAuth();
   const isSensei = user?.role === "sensei";
@@ -88,12 +80,10 @@ export default function HistoryPage() {
   const { data: history, isLoading: dataLoading, error } = useAsync<HistoryListItem[]>(fetchHistory);
   const isLoading = authLoading || dataLoading;
 
-  // ── Search / sort / pagination state ──────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy,      setSortBy]      = useState<"latest" | "oldest">("latest");
   const [currentPage, setCurrentPage] = useState(1);
 
-  // ── Stats (derived from full list, before filter) ─────────────────────────
   const stats = useMemo(() => {
     const list = history ?? [];
     const total        = list.length;
@@ -107,7 +97,6 @@ export default function HistoryPage() {
     return { total, passedCount, averagePct, uniqueStudents };
   }, [history, isSensei]);
 
-  // ── Filter ────────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     const q = searchQuery.toLowerCase();
     return (history ?? []).filter((item) => {
@@ -118,7 +107,6 @@ export default function HistoryPage() {
     });
   }, [history, searchQuery, isSensei]);
 
-  // ── Sort ──────────────────────────────────────────────────────────────────
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
       const timeA = new Date(a.completed_at ?? 0).getTime();
@@ -127,7 +115,6 @@ export default function HistoryPage() {
     });
   }, [filtered, sortBy]);
 
-  // ── Pagination ────────────────────────────────────────────────────────────
   const totalPages  = Math.max(1, Math.ceil(sorted.length / ITEMS_PER_PAGE));
   const safePage    = Math.min(currentPage, totalPages);
   const startIndex  = (safePage - 1) * ITEMS_PER_PAGE;
@@ -166,7 +153,7 @@ export default function HistoryPage() {
           <StatCard label="Lulus"            value={stats.passedCount} icon={CheckCircle2}  color="bg-green-50 text-green-600"   />
           <StatCard label="Rata-rata Nilai"  value={`${stats.averagePct}%`} icon={Trophy}   color="bg-amber-50 text-amber-600"  />
           {isSensei && (
-            <StatCard label="Siswa Unik" value={stats.uniqueStudents} icon={Users} color="bg-purple-50 text-purple-600" />
+            <StatCard label="Siswa" value={stats.uniqueStudents} icon={Users} color="bg-purple-50 text-purple-600" />
           )}
         </div>
       )}
