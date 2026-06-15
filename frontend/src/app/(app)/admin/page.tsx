@@ -1,16 +1,5 @@
 "use client";
 
-/**
- * src/app/(app)/admin/page.tsx
- *
- * Sensei analytics dashboard.
- *
- * Fixes:
- *   - Each API call is individually wrapped so one failure doesn't break
- *     the whole dashboard. Materials/quizzes with null response default to [].
- *   - Stats are computed with null-safe defaults so the page always renders.
- */
-
 import React, { useCallback, useMemo } from "react";
 import {
   BookOpen,
@@ -182,29 +171,35 @@ export default function AdminDashboardPage() {
                   </div>
                   <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">Aktif</span>
                 </div>
-                <h3 className="text-slate-500 font-medium text-sm mb-1">Total Materi Tersedia</h3>
+                <p className="text-slate-500 font-medium text-sm mb-1">Total Materi</p>
                 <div className="text-3xl font-black text-slate-800">{stats.totalMateri}</div>
+                {stats.totalMateri === 0 && (
+                  <p className="text-xs text-slate-400 mt-1">Belum ada materi</p>
+                )}
               </div>
             </div>
 
-            {/* Card 2 — Total Kuis */}
+            {/* Total Kuis */}
             <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group hover:border-indigo-200 transition-colors">
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-indigo-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500 ease-out" />
-              <div className="relative z-10 flex flex-col h-full">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-indigo-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500" />
+              <div className="relative z-10">
                 <div className="flex items-center justify-between mb-4">
                   <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl">
                     <BookOpen className="w-6 h-6" />
                   </div>
                 </div>
-                <h3 className="text-slate-500 font-medium text-sm mb-1">Total Kuis Tersedia</h3>
+                <p className="text-slate-500 font-medium text-sm mb-1">Total Kuis</p>
                 <div className="text-3xl font-black text-slate-800">{stats.totalKuis}</div>
+                {stats.totalKuis === 0 && (
+                  <p className="text-xs text-slate-400 mt-1">Belum ada kuis</p>
+                )}
               </div>
             </div>
 
-            {/* Card 3 — Partisipasi */}
+            {/* Total Partisipasi */}
             <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group hover:border-emerald-200 transition-colors">
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500 ease-out" />
-              <div className="relative z-10 flex flex-col h-full">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500" />
+              <div className="relative z-10">
                 <div className="flex items-center justify-between mb-4">
                   <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl">
                     <Users className="w-6 h-6" />

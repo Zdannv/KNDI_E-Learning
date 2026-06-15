@@ -14,7 +14,6 @@ interface MateriFormState {
   description: string
   file: File | null
 }
-
 const EMPTY_FORM: MateriFormState = { name: "", description: "", file: null };
 
 function isPdf(filepath: string | null | undefined): boolean {

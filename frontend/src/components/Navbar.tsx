@@ -1,6 +1,10 @@
 "use client";
 
+<<<<<<< HEAD
 import { useState } from "react";
+=======
+import React, { useState } from "react";
+>>>>>>> origin/main
 import { Bell, LogOut, Menu, Search, UserCircle2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import ConfirmDialog from "./ConfirmDialog";
@@ -13,8 +17,17 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
   const { user, logout } = useAuth();
   const [showDialogLogout, setShowDialogLogout] = useState(false);
 
+<<<<<<< HEAD
   return (
     <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-10 flex items-center justify-between px-4 md:px-8 shadow-sm transition-all duration-300">
+=======
+  const handleLogoutConfirm = () => {
+    logout()
+  }
+
+  return (
+    <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-10 flex items-center justify-between px-4 md:px-8 shadow-sm">
+>>>>>>> origin/main
       <div className="flex items-center gap-2 md:gap-4">
         {/* Mobile hamburger */}
         <button
@@ -51,6 +64,10 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
             <span className="text-sm font-semibold text-slate-800">
               {user?.username}
             </span>
+<<<<<<< HEAD
+=======
+            {/* Role badge */}
+>>>>>>> origin/main
             <span
               className={`text-xs font-semibold px-2 py-0.5 rounded-full mt-0.5 ${
                 user?.role === "sensei"
@@ -88,7 +105,11 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         confirmLabel="Logout"
         cancelLabel="Cancel"
         variant="danger"
+<<<<<<< HEAD
         onConfirm={logout}
+=======
+        onConfirm={handleLogoutConfirm}
+>>>>>>> origin/main
         onCancel={() => setShowDialogLogout(false)}
       />
     </header>

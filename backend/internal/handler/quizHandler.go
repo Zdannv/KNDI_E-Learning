@@ -19,7 +19,13 @@ func NewQuizHandler(service services.QuizService) *QuizHandler {
 }
 
 func (h *QuizHandler) FindAll(w http.ResponseWriter, r *http.Request) {
+<<<<<<< HEAD
 	quizzes, err := h.service.FindAll(r.Context())
+=======
+	role   := middleware.GetRole(r)
+	userID := middleware.GetUserID(r)
+	quizzes, err := h.service.FindAll(r.Context(), role, userID)
+>>>>>>> origin/main
 	if err != nil {
 		log.Printf("[Quiz] FindAll: %v", err)
 		response.InternalError(w)

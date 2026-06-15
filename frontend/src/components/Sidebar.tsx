@@ -50,7 +50,17 @@ interface SidebarProps {
   setIsOpen?: (open: boolean) => void;
 }
 
+<<<<<<< HEAD
 function NavLink({ item, onClick }: { item: NavItem; onClick?: () => void }) {
+=======
+function NavLink({
+  item,
+  onClick,
+}: {
+  item: NavItem;
+  onClick?: () => void;
+}) {
+>>>>>>> origin/main
   const pathname = usePathname();
 
   const isActive =
@@ -72,7 +82,15 @@ function NavLink({ item, onClick }: { item: NavItem; onClick?: () => void }) {
     >
       <Icon
         size={20}
+<<<<<<< HEAD
         className={isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"}
+=======
+        className={
+          isActive
+            ? "text-indigo-600"
+            : "text-slate-400 group-hover:text-slate-600"
+        }
+>>>>>>> origin/main
       />
       <span className="text-sm">{item.name}</span>
     </Link>
@@ -93,7 +111,11 @@ export default function Sidebar({ isOpen = false, setIsOpen }: SidebarProps) {
     <>
       {isOpen && (
         <div
+<<<<<<< HEAD
           className="fixed inset-0 bg-slate-900/50 z-20 md:hidden transition-opacity"
+=======
+          className="fixed inset-0 bg-slate-900/50 z-20 md:hidden"
+>>>>>>> origin/main
           onClick={closeMenu}
         />
       )}
@@ -108,6 +130,7 @@ export default function Sidebar({ isOpen = false, setIsOpen }: SidebarProps) {
         `}
       >
         <div className="p-6 flex items-center justify-between gap-3 border-b border-slate-100 shrink-0">
+<<<<<<< HEAD
           <a href="/dashboard" className="flex items-center gap-3">
             <div className="p-1 rounded-lg shrink-0">
               <img src="/icon_kndi.svg" alt="Logo KNDI" className="w-8 h-8 object-contain" />
@@ -116,6 +139,18 @@ export default function Sidebar({ isOpen = false, setIsOpen }: SidebarProps) {
               KNDI Learning
             </span>
           </a>
+=======
+          <div>
+            <a href="/dashboard" className="flex items-center gap-3">
+              <div className="p-1 rounded-lg shrink-0">
+                <img src="/icon_kndi.svg" alt="Logo KNDI" className="w-8 h-8 object-contain" />
+              </div>
+              <span className="text-xl font-bold bg-linear-to-r from-indigo-600 to-indigo-800 bg-clip-text text-transparent">
+                KNDI Learning
+              </span>
+            </a>
+          </div>
+>>>>>>> origin/main
           <button
             onClick={closeMenu}
             className="md:hidden p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"
@@ -125,6 +160,7 @@ export default function Sidebar({ isOpen = false, setIsOpen }: SidebarProps) {
           </button>
         </div>
 
+<<<<<<< HEAD
         <div className="flex-1 py-6 px-4 overflow-y-auto space-y-6">
           {sections.map((section) => (
             <div key={section.label}>
@@ -132,6 +168,12 @@ export default function Sidebar({ isOpen = false, setIsOpen }: SidebarProps) {
                 {section.label}
               </div>
               <div className="space-y-1">
+=======
+        <div className="flex-1 py-6 px-4 overflow-y-auto">
+          {sections.map((section) => (
+            <div key={section.label}>
+              <div className="space-y-2">
+>>>>>>> origin/main
                 {section.items.map((item) => (
                   <NavLink key={item.href} item={item} onClick={closeMenu} />
                 ))}
