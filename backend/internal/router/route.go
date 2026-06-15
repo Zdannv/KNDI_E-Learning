@@ -85,7 +85,7 @@ func Route(
 
 		r.Group(func(r chi.Router) {
 			r.Use(appMiddleware.Authentication(authSvc))
-			r.Use(appMiddleware.RequireRole("student"))
+			r.Use(appMiddleware.RequireRole("student", "sensei"))
 
 			r.Post("/assignments", assignmentHandler.Start)
 			r.Post("/assignments/{id}/submit", assignmentHandler.Submit)
