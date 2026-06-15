@@ -24,12 +24,12 @@ func UploadFile(r *http.Request, formKey, destFolder string) (*string, error) {
 	if ext != ".pdf" && ext != ".pptx" {
 		return nil, fmt.Errorf("File must be pdf or pptx!")
 	}
- 
-	const maxSize = 10 << 20
+
+	const maxSize = 50 << 20
 	if header.Size > maxSize {
 		return nil, fmt.Errorf("File size must not exceed 10MB")
 	}
- 
+
 	if err := os.MkdirAll(destFolder, 0755); err != nil {
 		return nil, fmt.Errorf("Failed to create storage directory: %w", err)
 	}
