@@ -19,7 +19,7 @@ const ITEMS_PER_PAGE = 10;
 
 export default function QuizListView(props: QuizListViewProps) {
     const [searchQuery, setSearchQuery] = useState("");
-    const [sortBy, setSortBy]           = useState<"latest" | "oldest">("latest");
+    const [sortBy,      setSortBy]      = useState<"latest" | "oldest">("latest");
     const [currentPage, setCurrentPage] = useState(1);
 
     const filtered = props.quizzes.filter((quiz) => {
