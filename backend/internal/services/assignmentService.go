@@ -348,7 +348,7 @@ func (s *assignmentService) buildHistoryResponse(assignments []domains.Assignmen
 			scoreEarned = *a.ScoreEarned
 		}
 		if a.TotalPoint != nil {
-			scoreEarned = *a.TotalPoint
+			totalPoint = *a.TotalPoint
 		}
 
 		if totalPoint == 0 {
