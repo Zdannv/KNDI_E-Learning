@@ -11,8 +11,9 @@ import (
 
 type QuizService interface {
 	Create(ctx context.Context, senseiID string, req dto.CreateQuizRequest) (*domains.Quiz, error)
-	FindAll(ctx context.Context, role, senseiID string) ([]domains.Quiz, error)
+	FindAll(ctx context.Context) ([]domains.Quiz, error)
 	FindByID(ctx context.Context, id int, withQuestions bool) (*domains.Quiz, error)
+	FindAllBySensei(ctx context.Context, senseiID string) ([]domains.Quiz, error)
 	Update(ctx context.Context, id int, senseiID string, req dto.UpdateQuizRequest) (*domains.Quiz, error)
 	Delete(ctx context.Context, id int, senseiID string) error
 	AddQuestion(ctx context.Context, quizID int, senseiID string, req dto.CreateQuestionRequest) (*domains.Question, error)
@@ -45,6 +46,13 @@ func (s *quizService) Create(ctx context.Context, senseiID string, req dto.Creat
 	return q, nil
 }
 
+<<<<<<< HEAD
+func (s *quizService) FindAll(ctx context.Context) ([]domains.Quiz, error) {
+	quizzes, err := s.repo.FindByIsPublished(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("QuizService.FindAll fetch list: %w", err)
+	}
+=======
 func (s *quizService) FindAll(ctx context.Context, role, senseiID string) ([]domains.Quiz, error) {
 	var quizzes []domains.Quiz
 	var err error
@@ -57,6 +65,7 @@ func (s *quizService) FindAll(ctx context.Context, role, senseiID string) ([]dom
 	if err != nil {
 		return nil, fmt.Errorf("QuizService.FindAll fetch list: %w", err)
 	}
+>>>>>>> origin/main
 
 	if len(quizzes) == 0 {
 		return quizzes, nil
@@ -101,6 +110,38 @@ func (s *quizService) FindByID(ctx context.Context, id int, withQuestions bool) 
 	}
 	return q, nil
 }
+
+func (s *quizService) FindAllBySensei(ctx context.Context, senseiID string) ([]domains.Quiz, error) {
+	quizzes, err := s.repo.FindBySenseiID(ctx, senseiID)
+	if err != nil {
+		return nil, fmt.Errorf("QuizService.FindAllBySensei: %w", err)
+	}
+
+	if len(quizzes) == 0 {
+		return quizzes, nil
+	}
+
+	quizIDs := make([]int, len(quizzes))
+	for i, q := range quizzes {
+		quizIDs[i] = q.ID
+	}
+
+	questionsByQuizID, err := s.repo.LoadQuestionsForQuizzes(ctx, quizIDs)
+	if err != nil {
+		return nil, fmt.Errorf("QuizService.FindAllBySensei load questions: %w", err)
+	}
+
+	for i := range quizzes {
+		if qs, ok := questionsByQuizID[quizzes[i].ID]; ok {
+			quizzes[i].Question = qs
+		} else {
+			quizzes[i].Question = []domains.Question{}
+		}
+	}
+
+	return quizzes, nil
+}
+
 
 func (s *quizService) Update(ctx context.Context, id int, senseiID string, req dto.UpdateQuizRequest) (*domains.Quiz, error) {
 	if req.Title == "" {

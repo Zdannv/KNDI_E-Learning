@@ -10,8 +10,6 @@ import {
 import Link from "next/link";
 import { useCallback, useState } from "react";
 
-// ─── Skeletons ────────────────────────────────────────────────────────────────
-
 function CardSkeleton() {
   return (
     <div className="bg-white rounded-2xl p-6 border border-slate-200 animate-pulse h-52">
@@ -41,8 +39,6 @@ function TableSkeleton() {
   );
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function getWeightLabel(maxPoint: number): string {
   if (maxPoint >= 3) return "Tinggi";
   if (maxPoint >= 2) return "Sedang";
@@ -55,14 +51,11 @@ function getWeightColor(maxPoint: number): string {
   return "bg-blue-100 text-blue-700";
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
 export default function AdminQuizzesPage() {
   const [activeTab, setActiveTab] = useState<"kuis" | "penilaian">("kuis");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // ── Quiz list ──
-  const fetchQuizzes = useCallback(() => quizApi.list(), []);
+  const fetchQuizzes = useCallback(() => quizApi.listAll(), []);
   const {
     data: quizzes,
     isLoading: quizzesLoading,
@@ -70,7 +63,6 @@ export default function AdminQuizzesPage() {
     refetch: refetchQuizzes,
   } = useAsync<Quiz[]>(fetchQuizzes);
 
-  // ── Pending essays ──
   const fetchEssays = useCallback(() => assignmentApi.getPendingEssays(), []);
   const {
     data: pendingEssays,
@@ -79,7 +71,6 @@ export default function AdminQuizzesPage() {
     refetch: refetchEssays,
   } = useAsync<EssayPendingItem[]>(fetchEssays);
 
-  // ── Grading modal state ──
   const [selectedEssay, setSelectedEssay] = useState<EssayPendingItem | null>(null);
   const [grade,         setGrade]         = useState("");
   const [feedback,      setFeedback]      = useState("");
@@ -90,8 +81,6 @@ export default function AdminQuizzesPage() {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
-
-  // ── Quiz handlers ──
 
   const handleTogglePublish = async (quiz: Quiz) => {
     try {
@@ -121,8 +110,6 @@ export default function AdminQuizzesPage() {
       showToast(err instanceof ClientApiError ? err.message : "Gagal menghapus kuis");
     }
   };
-
-  // ── Essay grading handlers ──
 
   const handleOpenGrading = (essay: EssayPendingItem) => {
     setSelectedEssay(essay);
@@ -549,7 +536,7 @@ export default function AdminQuizzesPage() {
 
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed bottom-8 right-8 z-[60] animate-in slide-in-from-bottom-5">
+        <div className="fixed bottom-8 right-8 z-60 animate-in slide-in-from-bottom-5">
           <div className="bg-slate-800 shadow-xl border border-slate-700 rounded-xl px-5 py-4 flex items-center space-x-3">
             <CheckCircle2 className="h-5 w-5 text-green-400" />
             <span className="font-medium text-sm text-white">{toastMessage}</span>

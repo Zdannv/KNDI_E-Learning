@@ -5,8 +5,8 @@ import { useAsync } from "@/hooks/useAsync"
 import { AlertCircle, CheckCircle2, Edit2, FileIcon, List, Loader2, RefreshCw, Trash2, UploadCloud, X } from "lucide-react"
 import { ChangeEvent, DragEvent ,FormEvent, useCallback, useRef, useState } from "react"
 
-const MAX_FILE_SIZE_MB = 10
-const MAX_FILE_SIZE_BYTE = 10 * 1024 * 1024
+const MAX_FILE_SIZE_MB = 50
+const MAX_FILE_SIZE_BYTE = 50 * 1024 * 1024
 const ALLOWED_EXTENSIONS = [".pdf", ".pptx"]
 
 interface MateriFormState {
@@ -14,7 +14,6 @@ interface MateriFormState {
   description: string
   file: File | null
 }
- 
 const EMPTY_FORM: MateriFormState = { name: "", description: "", file: null };
 
 function isPdf(filepath: string | null | undefined): boolean {
