@@ -11,7 +11,7 @@ export async function GET() {
   }
   
   try {
-    const res = await fetch(`${backendUrl.replace(/\/$/, "")}/health`, {
+    const res = await fetch(`${backendUrl.replace(/\/api$/, "")}/health`, {
       signal: AbortSignal.timeout(5000)
     })
 
