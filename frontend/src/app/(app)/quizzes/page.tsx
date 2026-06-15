@@ -166,6 +166,8 @@ function QuizzesPageContent() {
     refetchQuizzes();
   };
 
+  // ── Loading / error ──────────────────────────────────────────────────────────
+
   if (quizzesLoading || historyLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] flex-col gap-4">
@@ -187,6 +189,8 @@ function QuizzesPageContent() {
   }
 
   if (result) return <ResultView result={result} onReset={handleReset} />;
+
+  // ── Quiz list ────────────────────────────────────────────────────────────────
 
   // ── Quiz list ────────────────────────────────────────────────────────────────
 
@@ -233,6 +237,7 @@ function QuizzesPageContent() {
         </div>
       </div>
 
+      {/* Question card — locked after checked */}
       {currentQuestion && (
         <div className={isChecked ? "opacity-90 pointer-events-none select-none" : ""}>
           <QuestionCard question={currentQuestion} index={currentIndex} total={questions.length} answer={currentAnswer} onAnswer={handleAnswer} />

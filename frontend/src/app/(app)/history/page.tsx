@@ -32,6 +32,8 @@ function scoreLabel(pct: number) {
   return "Remedial";
 }
 
+// ── Skeleton ──────────────────────────────────────────────────────────────────
+
 function HistorySkeleton() {
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
@@ -49,6 +51,8 @@ function HistorySkeleton() {
     </div>
   );
 }
+
+// ── Stat card ─────────────────────────────────────────────────────────────────
 
 function StatCard({
   label, value, icon: Icon, color,
@@ -84,6 +88,24 @@ export default function HistoryPage() {
   const [sortBy,      setSortBy]      = useState<"latest" | "oldest">("latest");
   const [currentPage, setCurrentPage] = useState(1);
 
+export default function HistoryPage() {
+  const { user, isLoading: authLoading } = useAuth();
+  const isSensei = user?.role === "sensei";
+
+  const fetchHistory = useCallback((): Promise<HistoryListItem[]> => {
+    if (authLoading || !user) return Promise.resolve([]);
+    return isSensei ? assignmentApi.getAllHistory() : assignmentApi.getHistory();
+  }, [isSensei, authLoading, user]);
+
+  const { data: history, isLoading: dataLoading, error } = useAsync<HistoryListItem[]>(fetchHistory);
+  const isLoading = authLoading || dataLoading;
+
+  // ── Search / sort / pagination state ──────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy,      setSortBy]      = useState<"latest" | "oldest">("latest");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // ── Stats (derived from full list, before filter) ─────────────────────────
   const stats = useMemo(() => {
     const list = history ?? [];
     const total        = list.length;
@@ -128,9 +150,7 @@ export default function HistoryPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">
-            Score History
-          </h1>
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">Riwayat Nilai</h1>
           <p className="text-slate-600">
             {isSensei
               ? "Rekap nilai seluruh siswa yang telah menyelesaikan kuis."
@@ -369,84 +389,6 @@ export default function HistoryPage() {
           </button>
         </div>
       )}
-    </div>
-  )
-}
-
-function HistoryRow({
-  item,
-  index,
-  isSensei,
-}: {
-  item: HistoryListItem;
-  index: number;
-  isSensei: boolean;
-}) {
-  const passed = item.score_percent >= 60;
- 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-12 items-center px-6 py-4 hover:bg-slate-50/60 transition-colors gap-3 md:gap-0">
-
-      <div className={`${isSensei ? "md:col-span-3" : "md:col-span-5"} flex items-center gap-3`}>
-        <div
-          className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
-            passed ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
-          }`}
-        >
-          {index + 1}
-        </div>
-        <div className="min-w-0">
-          <p className="font-bold text-slate-800 line-clamp-1">
-            {item.quiz_title}
-          </p>
-        </div>
-      </div>
- 
-      {isSensei && (
-        <div className="md:col-span-2 flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
-            <span className="text-xs font-bold text-violet-600">
-              {(item.student_name ?? "?").charAt(0).toUpperCase()}
-            </span>
-          </div>
-          <span className="text-sm font-medium text-slate-700 truncate">
-            {item.student_name ?? "—"}
-          </span>
-        </div>
-      )}
-
-      <div className="md:col-span-3 flex items-center gap-2 md:justify-center text-slate-500">
-        <CalendarClock className="w-4 h-4 text-slate-400 shrink-0" />
-        <div className="text-sm">
-          <span className="font-medium text-slate-700">{item.date_str}</span>
-        </div>
-      </div>
-
-      <div className="md:col-span-2 flex md:justify-center">
-        <div className="text-center">
-          <span
-            className={`text-2xl font-black ${scoreColorClass(item.score_percent)}`}
-          >
-            {item.score_percent.toFixed(0)}
-          </span>
-        </div>
-      </div>
-
-      {/* ── Status badge ── */}
-      <div className="md:col-span-2 flex md:justify-center">
-        <span
-          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${scoreBadgeClass(
-            item.score_percent
-          )}`}
-        >
-          {passed ? (
-            <CheckCircle2 className="w-3.5 h-3.5" />
-          ) : (
-            <XCircle className="w-3.5 h-3.5" />
-          )}
-          {scoreLabel(item.score_percent)}
-        </span>
-      </div>
     </div>
   );
 }
