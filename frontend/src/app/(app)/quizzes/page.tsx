@@ -17,16 +17,11 @@ type AnswerMap = Record<number, StudentAnswer>;
 function isAnswered(answer: StudentAnswer | undefined, question: Question): boolean {
   if (!answer) return false;
   switch (question.question_type) {
-    case 1:
-      return answer.selectedOptionId !== undefined;
-    case 2:
-      return (answer.answerText ?? "").trim() !== "";
+    case 1: return answer.selectedOptionId !== undefined;
+    case 2: return (answer.answerText ?? "").trim() !== "";
     case 3: {
       const totalPairs = (question.matching_card ?? []).length;
-      return (
-        totalPairs > 0 &&
-        Object.keys(answer.matchedPairs ?? {}).length === totalPairs
-      );
+      return totalPairs > 0 && Object.keys(answer.matchedPairs ?? {}).length === totalPairs;
     }
     case 4: return (answer.answerText ?? "").trim() !== "";
     default: return false;
@@ -166,8 +161,6 @@ function QuizzesPageContent() {
     refetchQuizzes();
   };
 
-  // ── Loading / error ──────────────────────────────────────────────────────────
-
   if (quizzesLoading || historyLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] flex-col gap-4">
@@ -189,10 +182,6 @@ function QuizzesPageContent() {
   }
 
   if (result) return <ResultView result={result} onReset={handleReset} />;
-
-  // ── Quiz list ────────────────────────────────────────────────────────────────
-
-  // ── Quiz list ────────────────────────────────────────────────────────────────
 
   if (!activeQuiz) {
     return (
@@ -237,7 +226,6 @@ function QuizzesPageContent() {
         </div>
       </div>
 
-      {/* Question card — locked after checked */}
       {currentQuestion && (
         <div className={isChecked ? "opacity-90 pointer-events-none select-none" : ""}>
           <QuestionCard question={currentQuestion} index={currentIndex} total={questions.length} answer={currentAnswer} onAnswer={handleAnswer} />
@@ -258,7 +246,6 @@ function QuizzesPageContent() {
         </div>
       )}
 
-      {/* Navigation */}
       <div className="mt-6 flex items-center justify-between gap-4">
         {currentIndex > 0 ? (
           <button onClick={() => setCurrentIndex((i) => i - 1)} className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition-all">
