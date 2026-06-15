@@ -66,6 +66,7 @@ func Route(
 			r.Put("/materials/{id}", materialHandler.Update)
 			r.Delete("/materials/{id}", materialHandler.Delete)
 
+			r.Get("/admin/quizzes", quizHandler.FindAllBySensei)
 			r.Post("/quizzes", quizHandler.Create)
 			r.Put("/quizzes/{id}", quizHandler.Update)
 			r.Delete("/quizzes/{id}", quizHandler.Delete)

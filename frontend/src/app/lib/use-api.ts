@@ -14,10 +14,10 @@ export class ClientApiError extends Error {
   }
 }
 
-const TOKEN_KEY      = "app_token";
-const USER_KEY       = "app_token_user";
+const TOKEN_KEY = "app_token";
+const USER_KEY = "app_token_user";
 const COOKIE_SESSION = "app_session";
-const COOKIE_ROLE    = "app_role";
+const COOKIE_ROLE = "app_role";
 
 export const tokenStorage = {
   get(): string | null {
@@ -232,6 +232,9 @@ export interface UpdateQuestionPayload {
 export const quizApi = {
   list: (): Promise<Quiz[]> =>
     apiFetch<Quiz[]>("/api/quizzes"),
+
+  listAll: (): Promise<Quiz[]> =>
+    apiFetch<Quiz[]>("/api/admin/quizzes"),
 
   getById: (id: number): Promise<Quiz> =>
     apiFetch<Quiz>(`/api/quizzes/${id}`),

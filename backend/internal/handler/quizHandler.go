@@ -19,16 +19,16 @@ func NewQuizHandler(service services.QuizService) *QuizHandler {
 }
 
 func (h *QuizHandler) FindAll(w http.ResponseWriter, r *http.Request) {
-	role   := middleware.GetRole(r)
-	userID := middleware.GetUserID(r)
-	quizzes, err := h.service.FindAll(r.Context(), role, userID)
+	quizzes, err := h.service.FindAll(r.Context())
 	if err != nil {
 		log.Printf("[Quiz] FindAll: %v", err)
 		response.InternalError(w)
 		return
 	}
+
 	response.Success(w, http.StatusOK, quizzes)
 }
+
 
 func (h *QuizHandler) FindByID(w http.ResponseWriter, r *http.Request) {
 	id, err := parseIntParam(r, "id")
@@ -44,6 +44,18 @@ func (h *QuizHandler) FindByID(w http.ResponseWriter, r *http.Request) {
 	}
 	response.Success(w, http.StatusOK, quiz)
 }
+
+func (h *QuizHandler) FindAllBySensei(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
+	quizzes, err := h.service.FindAllBySensei(r.Context(), userID)
+	if err != nil {
+		log.Printf("[Quiz] FindAllBySensei: %v", err)
+		response.InternalError(w)
+		return
+	}
+	response.Success(w, http.StatusOK, quizzes)
+}
+
 
 func (h *QuizHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateQuizRequest
