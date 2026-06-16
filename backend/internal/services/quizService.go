@@ -11,7 +11,7 @@ import (
 
 type QuizService interface {
 	Create(ctx context.Context, senseiID string, req dto.CreateQuizRequest) (*domains.Quiz, error)
-	FindAll(ctx context.Context) ([]domains.Quiz, error)
+	FindAll(ctx context.Context, role, senseiID string) ([]domains.Quiz, error)
 	FindByID(ctx context.Context, id int, withQuestions bool) (*domains.Quiz, error)
 	FindAllBySensei(ctx context.Context, senseiID string) ([]domains.Quiz, error)
 	Update(ctx context.Context, id int, senseiID string, req dto.UpdateQuizRequest) (*domains.Quiz, error)
