@@ -129,7 +129,7 @@ function MatchingSide({ label, content, isSubmitting, onUpdateField, onFileUploa
       />
 
       {content.imageUrl !== undefined && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <input
             type="file"
             accept="image/*"
@@ -139,16 +139,34 @@ function MatchingSide({ label, content, isSubmitting, onUpdateField, onFileUploa
           {content.imageUrl && (
             <img src={content.imageUrl} alt={label} className="w-8 h-8 rounded shrink-0 object-cover border border-slate-200" />
           )}
+          <button
+            type="button"
+            onClick={() => onUpdateField("imageUrl", undefined)}
+            className="p-1.5 text-slate-500 hover:text-red-650 hover:bg-red-50 rounded border border-slate-200 bg-white shrink-0 transition-colors"
+            title="Hapus Gambar"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 
       {content.audioUrl !== undefined && (
-        <input
-          type="file"
-          accept="audio/*"
-          onChange={(e) => onFileUpload(e, (b64) => onUpdateField("audioUrl", b64))}
-          className="w-full text-xs px-2 py-1.5 rounded bg-white border border-slate-200 cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700"
-        />
+        <div className="flex gap-2 items-center">
+          <input
+            type="file"
+            accept="audio/*"
+            onChange={(e) => onFileUpload(e, (b64) => onUpdateField("audioUrl", b64))}
+            className="flex-1 text-xs px-2 py-1.5 rounded bg-white border border-slate-200 cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700"
+          />
+          <button
+            type="button"
+            onClick={() => onUpdateField("audioUrl", undefined)}
+            className="p-1.5 text-slate-500 hover:text-red-650 hover:bg-red-50 rounded border border-slate-200 bg-white shrink-0 transition-colors"
+            title="Hapus Audio"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
       )}
       {content.audioUrl && content.audioUrl.length > 0 && (
         <audio controls src={content.audioUrl} className="h-8 w-full" />

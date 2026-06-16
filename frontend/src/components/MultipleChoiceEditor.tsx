@@ -1,6 +1,6 @@
 "use client";
 
-import { Image as ImageIcon, Music } from "lucide-react";
+import { Image as ImageIcon, Music, Trash2 } from "lucide-react";
 import { MultipleChoiceQuestion, MultipleChoiceOption } from "@/types/quiz-type";
 
 interface MultipleChoiceEditorProps {
@@ -87,6 +87,14 @@ export default function MultipleChoiceEditor({
                 {opt.imageUrl && (
                   <img src={opt.imageUrl} alt="Thumb" className="w-8 h-8 object-cover rounded border border-slate-200 shrink-0" />
                 )}
+                <button
+                  type="button"
+                  onClick={() => onUpdateOption(optIdx, "imageUrl", undefined)}
+                  className="p-1.5 text-slate-500 hover:text-red-650 hover:bg-red-50 rounded border border-slate-200 bg-white shrink-0 transition-colors"
+                  title="Hapus Gambar"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
             )}
 
@@ -99,6 +107,14 @@ export default function MultipleChoiceEditor({
                   className="flex-1 text-xs px-2 py-1.5 rounded bg-white border border-slate-200 cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700"
                 />
                 {opt.audioUrl && <audio controls src={opt.audioUrl} className="h-8 w-full" />}
+                <button
+                  type="button"
+                  onClick={() => onUpdateOption(optIdx, "audioUrl", undefined)}
+                  className="p-1.5 text-slate-500 hover:text-red-650 hover:bg-red-50 rounded border border-slate-200 bg-white shrink-0 transition-colors"
+                  title="Hapus Audio"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
             )}
           </div>

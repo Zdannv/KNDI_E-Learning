@@ -168,13 +168,6 @@ function LoginForm() {
           </button>
         </form>
       </div>
-
-      {/* Back to Home Link */}
-      <p className="text-center text-xs text-slate-400 mt-6">
-        <a href="/" className="hover:text-indigo-600 hover:underline transition-colors font-medium">
-          ← Kembali ke Halaman Utama
-        </a>
-      </p>
     </div>
   );
 }
