@@ -1,6 +1,9 @@
 # Stage 1: Build
 FROM golang:1.26-alpine AS builder
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2be6e01 (new)
 WORKDIR /app
 
 COPY go.mod go.sum ./

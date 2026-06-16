@@ -69,7 +69,9 @@ func (h *AuthHandler) CreateStudent(w http.ResponseWriter, r *http.Request) {
 		response.BadRequest(w, "Invalid request body")
 		return
 	}
-	req.Role = "student" // Force role to student
+	if req.Role == "" {
+		req.Role = "student" // Default to student
+	}
 	resp, err := h.service.Register(r.Context(), req)
 	if err != nil {
 		handleServiceError(w, err)

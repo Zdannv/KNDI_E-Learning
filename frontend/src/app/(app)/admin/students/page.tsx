@@ -28,6 +28,7 @@ export default function StudentsManagementPage() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"student" | "sensei">("student");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
@@ -86,18 +87,20 @@ export default function StudentsManagementPage() {
         username: username.trim(),
         email: email.trim(),
         password: password,
+        role: role,
       });
 
       // Reset Form & Close Modal
       setUsername("");
       setEmail("");
       setPassword("");
+      setRole("student");
       setIsAddModalOpen(false);
       
       // Reload Students
       await loadStudents();
     } catch (err: any) {
-      setModalError(err?.message || "Gagal menambahkan akun siswa baru.");
+      setModalError(err?.message || "Gagal menambahkan akun baru.");
     } finally {
       setIsSubmitting(false);
     }
@@ -113,7 +116,7 @@ export default function StudentsManagementPage() {
       setStudentToDelete(null);
       await loadStudents();
     } catch (err: any) {
-      alert(err?.message || "Gagal menghapus siswa.");
+      alert(err?.message || "Gagal menghapus akun.");
     } finally {
       setIsDeleting(false);
     }
@@ -137,9 +140,9 @@ export default function StudentsManagementPage() {
       {/* Header & Button */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Kelola Akun Siswa</h1>
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">Kelola Akun Pengguna</h1>
           <p className="text-slate-600">
-            Daftarkan akun siswa baru, monitoring daftar kelas, dan hapus akun siswa yang telah lulus.
+            Daftarkan akun siswa atau sensei baru, monitoring daftar kelas, dan hapus akun.
           </p>
         </div>
         <button
@@ -150,7 +153,7 @@ export default function StudentsManagementPage() {
           className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-5 rounded-xl transition-all shadow-sm shadow-indigo-100 shrink-0"
         >
           <UserPlus className="w-5 h-5" />
-          Tambah Siswa Baru
+          Tambah Akun Baru
         </button>
       </div>
 
@@ -169,7 +172,7 @@ export default function StudentsManagementPage() {
           />
         </div>
         <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-          Total Terdaftar: <span className="text-indigo-600 text-sm font-black">{filteredStudents.length} siswa</span>
+          Total Terdaftar: <span className="text-indigo-600 text-sm font-black">{filteredStudents.length} pengguna</span>
         </div>
       </div>
 
@@ -178,7 +181,7 @@ export default function StudentsManagementPage() {
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
           <div className="p-12 flex flex-col items-center justify-center gap-4 text-center">
             <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-            <p className="text-slate-500 font-semibold text-sm">Memuat data siswa...</p>
+            <p className="text-slate-500 font-semibold text-sm">Memuat data pengguna...</p>
           </div>
         </div>
       ) : error ? (
@@ -195,9 +198,9 @@ export default function StudentsManagementPage() {
             <div className="bg-slate-50 p-5 rounded-full border border-slate-100 mb-4">
               <Users className="w-10 h-10 text-slate-355" />
             </div>
-            <h3 className="font-bold text-lg text-slate-800 mb-1">Siswa Tidak Ditemukan</h3>
+            <h3 className="font-bold text-lg text-slate-800 mb-1">Pengguna Tidak Ditemukan</h3>
             <p className="text-sm text-slate-400">
-              {searchQuery ? "Coba kata kunci pencarian yang lain atau daftarkan siswa baru." : "Belum ada siswa yang terdaftar di kelas. Klik tombol Tambah Siswa Baru untuk memulai."}
+              {searchQuery ? "Coba kata kunci pencarian yang lain atau daftarkan akun baru." : "Belum ada akun terdaftar. Klik tombol Tambah Akun Baru untuk memulai."}
             </p>
           </div>
         </div>
@@ -207,7 +210,7 @@ export default function StudentsManagementPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200/60 text-slate-400 text-xs uppercase tracking-wider">
-                  <th className="px-6 py-4 font-semibold">Nama Siswa</th>
+                  <th className="px-6 py-4 font-semibold">Nama Pengguna</th>
                   <th className="px-6 py-4 font-semibold">Alamat Email</th>
                   <th className="px-6 py-4 font-semibold">Tanggal Terdaftar</th>
                   <th className="px-6 py-4 font-semibold text-right">Aksi</th>
@@ -223,7 +226,9 @@ export default function StudentsManagementPage() {
                         </div>
                         <div>
                           <p className="font-bold text-slate-800 text-sm leading-snug">{student.username}</p>
-                          <span className="text-[10px] font-bold tracking-wider text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase">{student.role}</span>
+                          <span className={`text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded uppercase ${
+                            student.role === "sensei" ? "text-indigo-650 bg-indigo-50 border border-indigo-100" : "text-slate-500 bg-slate-100"
+                          }`}>{student.role}</span>
                         </div>
                       </div>
                     </td>
@@ -243,7 +248,7 @@ export default function StudentsManagementPage() {
                       <button
                         onClick={() => setStudentToDelete(student)}
                         className="inline-flex items-center justify-center p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
-                        title="Hapus Akun Siswa"
+                        title="Hapus Akun"
                       >
                         <Trash2 className="w-5 h-5" />
                       </button>
@@ -268,7 +273,7 @@ export default function StudentsManagementPage() {
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-indigo-500" />
-                Tambah Siswa
+                Tambah Akun
               </h3>
               <button
                 onClick={() => setIsAddModalOpen(false)}
@@ -352,6 +357,22 @@ export default function StudentsManagementPage() {
                 </div>
               </div>
 
+              {/* Role Select */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  Role Akun
+                </label>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as "student" | "sensei")}
+                  disabled={isSubmitting}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm font-medium"
+                >
+                  <option value="student">Siswa (Student)</option>
+                  <option value="sensei">Sensei (Teacher)</option>
+                </select>
+              </div>
+
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4 border-t border-slate-100 mt-6">
                 <button
@@ -373,7 +394,7 @@ export default function StudentsManagementPage() {
                       <span>Menyimpan...</span>
                     </>
                   ) : (
-                    "Daftarkan Siswa"
+                    "Daftarkan Akun"
                   )}
                 </button>
               </div>
@@ -385,8 +406,8 @@ export default function StudentsManagementPage() {
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         isOpen={studentToDelete !== null}
-        title="Hapus Akun Siswa?"
-        description={`Anda yakin ingin menghapus akun siswa "${studentToDelete?.username}"? Aksi ini akan menghapus permanen semua histori nilai kuis dan riwayat pengerjaan mereka.`}
+        title="Hapus Akun Pengguna?"
+        description={`Anda yakin ingin menghapus akun "${studentToDelete?.username}"? Aksi ini akan menghapus permanen semua histori nilai kuis dan riwayat pengerjaan mereka.`}
         confirmLabel="Hapus Permanen"
         cancelLabel="Batal"
         variant="danger"
