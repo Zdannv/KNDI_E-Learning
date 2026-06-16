@@ -210,7 +210,7 @@ export default function HistoryPage() {
       )}
       {/* ── Empty state ── */}
       {!isLoading && !error && (!history || history.length === 0) && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-12 text-center">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-12 text-center items-center">
           <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <ClipboardList className="w-8 h-8 text-indigo-400" />
           </div>
@@ -219,13 +219,13 @@ export default function HistoryPage() {
               ? "Data Tidak Ditemukan"
               : isSensei ? "Belum Ada Siswa yang Mengerjakan Kuis" : "Belum Ada Riwayat Nilai"}
           </h3>
-          <p className="text-slate-500 max-w-md leading-relaxed mb-6">
+          {/* <p className="text-slate-500 max-w-md leading-relaxed mb-6">
             {searchQuery
               ? "Tidak ditemukan riwayat yang sesuai dengan pencarian Anda."
               : isSensei
                 ? "Siswa yang telah menyelesaikan kuis akan muncul di sini."
                 : "Segera kerjakan kuis untuk melihat nilai Anda di sini!"}
-          </p>
+          </p> */}
           {!isSensei && !searchQuery && (
             <Link href="/quizzes" className="inline-flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700 font-bold">
               <span>Pergi ke Daftar Kuis</span>
