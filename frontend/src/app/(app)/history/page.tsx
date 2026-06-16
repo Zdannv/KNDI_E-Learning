@@ -14,19 +14,22 @@ import { useAuth } from "@/context/AuthContext";
 
 const ITEMS_PER_PAGE = 10;
 
-function scoreColorClass(pct: number) {
+function scoreColorClass(pct: number, hasUngraded?: boolean) {
+  if (hasUngraded) return "text-blue-600";
   if (pct >= 80) return "text-green-600";
   if (pct >= 60) return "text-amber-500";
   return "text-red-500";
 }
 
-function scoreBadgeClass(pct: number) {
+function scoreBadgeClass(pct: number, hasUngraded?: boolean) {
+  if (hasUngraded) return "bg-blue-50 text-blue-700 border border-blue-200";
   if (pct >= 80) return "bg-green-100 text-green-700";
   if (pct >= 60) return "bg-amber-100 text-amber-700";
   return "bg-red-100 text-red-700";
 }
 
-function scoreLabel(pct: number) {
+function scoreLabel(pct: number, hasUngraded?: boolean) {
+  if (hasUngraded) return "Menunggu Penilaian";
   if (pct >= 80) return "Lulus Baik";
   if (pct >= 60) return "Lulus";
   return "Remedial";
@@ -288,22 +291,24 @@ export default function HistoryPage() {
 
                       {/* Score */}
                       <td className="px-6 py-5 text-center">
-                        <span className={`font-bold text-lg ${scoreColorClass(item.score_percent)}`}>
-                          {Math.round(item.score_percent)}%
+                        <span className={`font-bold text-lg ${scoreColorClass(item.score_percent, item.has_ungraded_essay)}`}>
+                          {item.has_ungraded_essay ? "—" : `${Math.round(item.score_percent)}%`}
                         </span>
                       </td>
 
                       {/* Status badge */}
                       <td className="px-6 py-5 text-center">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${scoreBadgeClass(item.score_percent)}`}>
-                          {scoreLabel(item.score_percent)}
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${scoreBadgeClass(item.score_percent, item.has_ungraded_essay)}`}>
+                          {scoreLabel(item.score_percent, item.has_ungraded_essay)}
                         </span>
                       </td>
 
                       {/* Retry action — student only */}
                       {!isSensei && (
                         <td className="px-6 py-5 text-center">
-                          {isRemedial ? (
+                          {item.has_ungraded_essay ? (
+                            <span className="text-xs font-semibold text-slate-400">Menunggu Grading</span>
+                          ) : isRemedial ? (
                             <Link
                               href={`/quizzes?start=${item.quiz_id}`}
                               className="inline-flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-rose-100"

@@ -50,6 +50,7 @@ type HistoryListResponse struct {
 	DateStr      		string  		`json:"date_str"`
 	TimeStr      		string  		`json:"time_str"`
 	CompletedAt  		*string 		`json:"completed_at"`
+	HasUngradedEssay    bool            `json:"has_ungraded_essay"`
 }
 
 type GradeEssayRequest struct {

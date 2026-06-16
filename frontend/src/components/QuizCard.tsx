@@ -9,6 +9,7 @@ interface QuizCardProps {
   isStarted: boolean;
   isCompleted: boolean;
   isPassed: boolean;
+  isPending?: boolean;
   accentIndex: number;
 }
 
@@ -21,7 +22,7 @@ const ACCENTS = [
   { stripe: "bg-emerald-500",badge: "bg-emerald-50",icon: "text-emerald-600",btn: "bg-emerald-600 hover:bg-emerald-700",ring: "ring-emerald-100"},
 ] as const;
 
-export default function QuizCard({ quiz, onStart, isStarted, isCompleted, isPassed, accentIndex }: QuizCardProps) {
+export default function QuizCard({ quiz, onStart, isStarted, isCompleted, isPassed, isPending, accentIndex }: QuizCardProps) {
   const accent = ACCENTS[accentIndex % ACCENTS.length];
   const questionCount = quiz.question?.length ?? 0;
   const isDone = isCompleted;
@@ -42,10 +43,16 @@ export default function QuizCard({ quiz, onStart, isStarted, isCompleted, isPass
               Lulus
             </span>
           )}
-          {isDone && !isPassed && (
+          {isDone && !isPassed && !isPending && (
             <span className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 text-xs font-bold px-3 py-1 rounded-full border border-rose-100">
               <RefreshCw className="w-3.5 h-3.5" />
               Remedial
+            </span>
+          )}
+          {isPending && (
+            <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-full border border-blue-100 animate-pulse">
+              <Clock className="w-3.5 h-3.5" />
+              Menunggu Penilaian
             </span>
           )}
         </div>
@@ -71,7 +78,12 @@ export default function QuizCard({ quiz, onStart, isStarted, isCompleted, isPass
           </div>
 
           {/* Action button */}
-          {isDone && isPassed ? (
+          {isPending ? (
+            <div className="flex items-center gap-1.5 text-xs font-bold bg-blue-50 text-blue-600 border border-blue-100 px-4 py-2 rounded-lg cursor-not-allowed select-none">
+              <Clock className="w-3.5 h-3.5" />
+              Menunggu Penilaian
+            </div>
+          ) : isDone && isPassed ? (
             <div className="flex items-center gap-1.5 text-xs font-bold bg-green-50 text-green-600 border border-green-100 px-4 py-2 rounded-lg cursor-not-allowed select-none">
               <CheckCircle2 className="w-3.5 h-3.5" />
               Selesai
