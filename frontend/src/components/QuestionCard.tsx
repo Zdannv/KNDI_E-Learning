@@ -92,12 +92,22 @@ export default function QuestionCard(props : QuestionCardProps) {
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   Gambar Pertanyaan (Opsional)
                 </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => props.onFileUpload(e, (b64) => props.onUpdateQuestion({ imageUrl: b64 }))}
-                  className="w-full text-sm px-3 py-2 rounded-md border border-slate-200 bg-white cursor-pointer file:mr-4 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                />
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => props.onFileUpload(e, (b64) => props.onUpdateQuestion({ imageUrl: b64 }))}
+                    className="w-full text-sm px-3 py-2 rounded-md border border-slate-200 bg-white cursor-pointer file:mr-4 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => props.onUpdateQuestion({ imageUrl: undefined })}
+                    className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-100 rounded-md border border-slate-200 bg-white shadow-sm transition-colors"
+                    title="Batal / Hapus Gambar"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
               {q.imageUrl && (
                 <img src={q.imageUrl} alt="Preview" className="w-20 h-20 object-cover rounded-md border border-slate-200" />
@@ -110,12 +120,22 @@ export default function QuestionCard(props : QuestionCardProps) {
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                 Audio Pertanyaan (Opsional)
               </label>
-              <input
-                type="file"
-                accept="audio/*"
-                onChange={(e) => props.onFileUpload(e, (b64) => props.onUpdateQuestion({ audioUrl: b64 }))}
-                className="w-full text-sm px-3 py-2 rounded-md border border-slate-200 bg-white cursor-pointer file:mr-4 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-              />
+              <div className="flex gap-2 items-center">
+                <input
+                  type="file"
+                  accept="audio/*"
+                  onChange={(e) => props.onFileUpload(e, (b64) => props.onUpdateQuestion({ audioUrl: b64 }))}
+                  className="w-full text-sm px-3 py-2 rounded-md border border-slate-200 bg-white cursor-pointer file:mr-4 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                />
+                <button
+                  type="button"
+                  onClick={() => props.onUpdateQuestion({ audioUrl: undefined })}
+                  className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-100 rounded-md border border-slate-200 bg-white shadow-sm transition-colors"
+                  title="Batal / Hapus Audio"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
               {q.audioUrl && <audio controls src={q.audioUrl} className="h-10 w-full" />}
             </div>
           )}

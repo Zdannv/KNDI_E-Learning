@@ -45,7 +45,7 @@ const (
 		JOIN assignment_status s ON s.id = a.status
 		JOIN quizzes q ON q.id = a.quiz_id
 		JOIN users u ON u.id = a.student_id
-		WHERE a.status = $1
+		WHERE a.status = $1 AND u.role = 'student'
 		ORDER BY a.completed_at DESC`
 
 	finaliseAssignment = `
@@ -98,6 +98,7 @@ const (
 		JOIN quizzes qz ON qz.id = a.quiz_id
 		WHERE q.question_type = 4
 			AND ah.is_graded    = FALSE
+			AND u.role          = 'student'
 		ORDER BY ah.created_at ASC`
 
 	updateEssayScore = `

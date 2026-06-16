@@ -266,6 +266,10 @@ func (s *assignmentService) GetResult(ctx context.Context, studentID string, ass
 // ─── History ──────────────────────────────────────────────────────────────────
 
 func (s *assignmentService) GetHistory(ctx context.Context, studentID string) ([]dto.HistoryListResponse, error) {
+	if role, _ := ctx.Value(ContextKeyRole).(string); role == "sensei" {
+		return []dto.HistoryListResponse{}, nil
+	}
+
 	assignments, err := s.assignmentRepo.FindHistoryByStudentID(ctx, studentID)
 	if err != nil {
 		return nil, fmt.Errorf("AssignmentService.GetHistory: %w", err)

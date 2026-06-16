@@ -173,7 +173,7 @@ func (s *quizService) AddQuestion(ctx context.Context, quizID int, senseiID stri
 		return nil, ErrorForbidden
 	}
 
-	if err := validateQuestionRequest(req.QuestionText, req.QuestionType); err != nil {
+	if err := validateQuestionRequest(req); err != nil {
 		return nil, err
 	}
 
@@ -202,9 +202,7 @@ func (s *quizService) UpdateQuestion(ctx context.Context, questionID int, sensei
 		return nil, fmt.Errorf("QuizService.UpdateQuestion find: %w", err)
 	}
 
-	if req.QuestionText == "" {
-		return nil, fmt.Errorf("Question text is required")
-	}
+
 	if req.Point < 0 {
 		req.Point = 1
 	}
@@ -264,25 +262,39 @@ func (s *quizService) DeleteQuestion(ctx context.Context, questionID int) error 
 	return nil
 }
 
-func validateQuestionRequest(text string, qType int) error {
-	if text == "" {
-		return fmt.Errorf("Question text is required")
-	}
-	if qType < 1 || qType > 4 {
-		return fmt.Errorf("Question type must be 1 (multiple_choice), 2 (short_answer), or 3 (matching_card)")
+func validateQuestionRequest(req dto.CreateQuestionRequest) error {
+	if req.QuestionType < 1 || req.QuestionType > 4 {
+		return fmt.Errorf("Question type must be between 1 and 4")
 	}
 	return nil
 }
 
 func validateQuestionChildren(q *domains.Question) error {
+	if q.QuestionText == "" && (q.ImageURL == nil || *q.ImageURL == "") && (q.AudioURL == nil || *q.AudioURL == "") {
+		return fmt.Errorf("Question must have at least one of text, image, or audio")
+	}
+
 	switch q.QuestionType {
 	case domains.QuestionTypeMultipleChoice:
 		if len(q.Options) < 2 {
 			return fmt.Errorf("Multiple choice requires at least 2 options")
 		}
+		for i, opt := range q.Options {
+			if opt.OptionText == "" && (opt.ImageURL == nil || *opt.ImageURL == "") && (opt.AudioURL == nil || *opt.AudioURL == "") {
+				return fmt.Errorf("Option %d must have at least one of text, image, or audio", i+1)
+			}
+		}
 	case domains.QuestionTypeMatchingCard:
 		if len(q.MatchingCards) < 2 {
 			return fmt.Errorf("Matching card requires at least 2 pairs")
+		}
+		for i, card := range q.MatchingCards {
+			if card.LeftText == "" && (card.LeftImageURL == nil || *card.LeftImageURL == "") && (card.LeftAudioURL == nil || *card.LeftAudioURL == "") {
+				return fmt.Errorf("Matching card %d left side must have at least one of text, image, or audio", i+1)
+			}
+			if card.RightText == "" && (card.RightImageURL == nil || *card.RightImageURL == "") && (card.RightAudioURL == nil || *card.RightAudioURL == "") {
+				return fmt.Errorf("Matching card %d right side must have at least one of text, image, or audio", i+1)
+			}
 		}
 	case domains.QuestionTypeShortAnswer:
 		if q.CorrectAnswer == nil || *q.CorrectAnswer == "" {
