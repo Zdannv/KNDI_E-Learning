@@ -373,7 +373,7 @@ export interface StudentUser {
   id: string;
   username: string;
   email: string;
-  role: "student";
+  role: "student" | "sensei";
   created_at: string;
   updated_at: string;
 }
@@ -382,7 +382,7 @@ export const studentApi = {
   list: (): Promise<StudentUser[]> =>
     apiFetch<StudentUser[]>("/api/students"),
 
-  create: (payload: { username: string; email: string; password: string }): Promise<StudentUser> =>
+  create: (payload: { username: string; email: string; password: string; role?: "student" | "sensei" }): Promise<StudentUser> =>
     apiFetch<StudentUser>("/api/students", { method: "POST", body: payload }),
 
   delete: (id: string): Promise<void> =>

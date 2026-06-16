@@ -70,7 +70,6 @@ const (
 		WHERE ah.assignment_id = $1
 		ORDER BY ah.id ASC`
 
-<<<<<<< HEAD
 	selectQuizPassedByStudentID = `
 		SELECT EXISTS (
 			SELECT 1
@@ -81,16 +80,6 @@ const (
 				AND total_point > 0
 				AND (score_earned / total_point) >= 0.6
 			)`
-=======
-	selectQuizCompletedAssignmentByUserID = `
-		SELECT EXISTS (
-			SELECT 1
-			FROM assignments
-			WHERE student_id = $1
-				AND quiz_id = $2
-				AND status = $3
-		)`
->>>>>>> origin/main
 
 	selectPendingEssays = `
 		SELECT
@@ -137,11 +126,7 @@ type AssignmentRepository interface {
 	FindHistoryByAssignmentID(ctx context.Context, assignmentID int) ([]domains.AssignmentHistory, error)
 	FindHistoryByStudentID(ctx context.Context, studentID string) ([]domains.Assignment, error)
 	FindAllHistory(ctx context.Context) ([]domains.Assignment, error)
-<<<<<<< HEAD
 	QuizPassedByStudentID(ctx context.Context, studentID string, quizID int) (bool, error)
-=======
-	QuizCompletedByStudentID(ctx context.Context, studentID string, quizID int) (bool, error)
->>>>>>> origin/main
 	FindPendingEssays(ctx context.Context) ([]domains.PendingEssay, error)
 	UpdateEssayScore(ctx context.Context, historyID, assignmentID int, score float64) error
 	RecalcAssignmentScore(ctx context.Context, assignmentID int) error
@@ -310,7 +295,6 @@ func (r *assignmentRepository) FindAllHistory(ctx context.Context) ([]domains.As
 	return assignments, rows.Err()
 }
 
-<<<<<<< HEAD
 func (r *assignmentRepository) QuizPassedByStudentID(ctx context.Context, studentID string, quizID int) (bool, error) {
 	var passed bool
 	err := r.pool.QueryRow(
@@ -322,19 +306,6 @@ func (r *assignmentRepository) QuizPassedByStudentID(ctx context.Context, studen
 	}
 
 	return passed, nil
-=======
-func (r *assignmentRepository) QuizCompletedByStudentID(ctx context.Context, studentID string, quizID int) (bool, error) {
-	var exist bool
-	err := r.pool.QueryRow(
-		ctx, selectQuizCompletedAssignmentByUserID, studentID, quizID, domains.StatusCompleted,
-	).Scan(&exist)
-
-	if err != nil {
-		return false, fmt.Errorf("AssignmentRepo.QuizCompleted: %w", err)
-	}
-
-	return exist, nil
->>>>>>> origin/main
 }
 
 func (r *assignmentRepository) FindPendingEssays(ctx context.Context) ([]domains.PendingEssay, error) {

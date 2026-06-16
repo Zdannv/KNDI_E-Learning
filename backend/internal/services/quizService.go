@@ -46,13 +46,6 @@ func (s *quizService) Create(ctx context.Context, senseiID string, req dto.Creat
 	return q, nil
 }
 
-<<<<<<< HEAD
-func (s *quizService) FindAll(ctx context.Context) ([]domains.Quiz, error) {
-	quizzes, err := s.repo.FindByIsPublished(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("QuizService.FindAll fetch list: %w", err)
-	}
-=======
 func (s *quizService) FindAll(ctx context.Context, role, senseiID string) ([]domains.Quiz, error) {
 	var quizzes []domains.Quiz
 	var err error
@@ -65,7 +58,6 @@ func (s *quizService) FindAll(ctx context.Context, role, senseiID string) ([]dom
 	if err != nil {
 		return nil, fmt.Errorf("QuizService.FindAll fetch list: %w", err)
 	}
->>>>>>> origin/main
 
 	if len(quizzes) == 0 {
 		return quizzes, nil

@@ -105,7 +105,7 @@ func (r *userRepository) EmailExists(ctx context.Context, email string) (bool, e
 }
 
 func (r *userRepository) FindAllStudents(ctx context.Context) ([]*domains.User, error) {
-	rows, err := r.pool.Query(ctx, "SELECT id, username, email, password, role, created_at, updated_at FROM users WHERE role = 'student' ORDER BY username ASC")
+	rows, err := r.pool.Query(ctx, "SELECT id, username, email, password, role, created_at, updated_at FROM users WHERE role = 'student' OR role = 'sensei' ORDER BY username ASC")
 	if err != nil {
 		return nil, fmt.Errorf("UserRepo.FindAllStudents: %w", err)
 	}
@@ -124,7 +124,7 @@ func (r *userRepository) FindAllStudents(ctx context.Context) ([]*domains.User, 
 }
 
 func (r *userRepository) Delete(ctx context.Context, id string) error {
-	commandTag, err := r.pool.Exec(ctx, "DELETE FROM users WHERE id = $1 AND role = 'student'", id)
+	commandTag, err := r.pool.Exec(ctx, "DELETE FROM users WHERE id = $1 AND (role = 'student' OR role = 'sensei')", id)
 	if err != nil {
 		return fmt.Errorf("UserRepo.Delete: %w", err)
 	}
