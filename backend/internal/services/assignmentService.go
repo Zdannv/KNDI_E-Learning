@@ -392,56 +392,56 @@ func (s *assignmentService) buildHistoryResponse(assignments []domains.Assignmen
 	return result
 }
 
-func (s *assignmentService) GetAllHistory(ctx context.Context) ([]dto.HistoryListResponse, error) {
-	assignments, err := s.assignmentRepo.FindAllHistory(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("AssignmentService.GetAllHistory: %w", err)
-	}
+// func (s *assignmentService) GetAllHistory(ctx context.Context) ([]dto.HistoryListResponse, error) {
+// 	assignments, err := s.assignmentRepo.FindAllHistory(ctx)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("AssignmentService.GetAllHistory: %w", err)
+// 	}
 	
-	return s.buildHistoryResponse(assignments), nil
-}
+// 	return s.buildHistoryResponse(assignments), nil
+// }
 
-func (s *assignmentService) buildHistoryResponse(assignments []domains.Assignment) []dto.HistoryListResponse {
-	result := make([]dto.HistoryListResponse, 0, len(assignments))
-	for _, a := range assignments {
-		scoreEarned := 0.0
-		totalPoint  := 0.0
-		if a.ScoreEarned != nil {
-			scoreEarned = *a.ScoreEarned
-		}
-		if a.TotalPoint != nil {
-			totalPoint = *a.TotalPoint
-		}
+// func (s *assignmentService) buildHistoryResponse(assignments []domains.Assignment) []dto.HistoryListResponse {
+// 	result := make([]dto.HistoryListResponse, 0, len(assignments))
+// 	for _, a := range assignments {
+// 		scoreEarned := 0.0
+// 		totalPoint  := 0.0
+// 		if a.ScoreEarned != nil {
+// 			scoreEarned = *a.ScoreEarned
+// 		}
+// 		if a.TotalPoint != nil {
+// 			totalPoint = *a.TotalPoint
+// 		}
 
-		scorePct := 0.0
-		if totalPoint > 0 {
-			scorePct = scoreEarned / totalPoint * 100
-		}
+// 		scorePct := 0.0
+// 		if totalPoint > 0 {
+// 			scorePct = scoreEarned / totalPoint * 100
+// 		}
 
-		dateStr, timeStr := "", ""
-		var completedAtStr *string
-		if a.CompletedAt != nil {
-			dateStr = a.CompletedAt.Format("02 January 2006")
-			timeStr = a.CompletedAt.Format("15:04")
-			rfc     := a.CompletedAt.Format(time.RFC3339)
-			completedAtStr = &rfc
-		}
+// 		dateStr, timeStr := "", ""
+// 		var completedAtStr *string
+// 		if a.CompletedAt != nil {
+// 			dateStr = a.CompletedAt.Format("02 January 2006")
+// 			timeStr = a.CompletedAt.Format("15:04")
+// 			rfc     := a.CompletedAt.Format(time.RFC3339)
+// 			completedAtStr = &rfc
+// 		}
 
-		result = append(result, dto.HistoryListResponse{
-			AssignmentID: a.ID,
-			QuizTitle:    a.Quiz.Title,
-			ScoreEarned:  scoreEarned,
-			TotalPoint:   totalPoint,
-			ScorePct:     scorePct,
-			Status:       a.StatusName,
-			DateStr:      dateStr,
-			TimeStr:      timeStr,
-			CompletedAt:  completedAtStr,
-		})
-	}
+// 		result = append(result, dto.HistoryListResponse{
+// 			AssignmentID: a.ID,
+// 			QuizTitle:    a.Quiz.Title,
+// 			ScoreEarned:  scoreEarned,
+// 			TotalPoint:   totalPoint,
+// 			ScorePct:     scorePct,
+// 			Status:       a.StatusName,
+// 			DateStr:      dateStr,
+// 			TimeStr:      timeStr,
+// 			CompletedAt:  completedAtStr,
+// 		})
+// 	}
 
-	return result
-}
+// 	return result
+// }
 
 func gradeMultipleChoice(options []domains.QuestionOptions, selectedID int, point float64) float64 {
 	for _, opt := range options {
