@@ -32,8 +32,6 @@ function scoreLabel(pct: number) {
   return "Remedial";
 }
 
-// ── Skeleton ──────────────────────────────────────────────────────────────────
-
 function HistorySkeleton() {
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
@@ -51,8 +49,6 @@ function HistorySkeleton() {
     </div>
   );
 }
-
-// ── Stat card ─────────────────────────────────────────────────────────────────
 
 function StatCard({
   label, value, icon: Icon, color,
@@ -88,24 +84,6 @@ export default function HistoryPage() {
   const [sortBy,      setSortBy]      = useState<"latest" | "oldest">("latest");
   const [currentPage, setCurrentPage] = useState(1);
 
-export default function HistoryPage() {
-  const { user, isLoading: authLoading } = useAuth();
-  const isSensei = user?.role === "sensei";
-
-  const fetchHistory = useCallback((): Promise<HistoryListItem[]> => {
-    if (authLoading || !user) return Promise.resolve([]);
-    return isSensei ? assignmentApi.getAllHistory() : assignmentApi.getHistory();
-  }, [isSensei, authLoading, user]);
-
-  const { data: history, isLoading: dataLoading, error } = useAsync<HistoryListItem[]>(fetchHistory);
-  const isLoading = authLoading || dataLoading;
-
-  // ── Search / sort / pagination state ──────────────────────────────────────
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy,      setSortBy]      = useState<"latest" | "oldest">("latest");
-  const [currentPage, setCurrentPage] = useState(1);
-
-  // ── Stats (derived from full list, before filter) ─────────────────────────
   const stats = useMemo(() => {
     const list = history ?? [];
     const total        = list.length;
