@@ -37,11 +37,13 @@ function QuizzesPageContent() {
   const { data: historyList, isLoading: historyLoading,                       refetch: refetchHistory } = useAsync<HistoryListItem[]>(fetchHistory);
   const [passedQuizId,   setPassedQuizId]   = useState<Set<number>>(new Set());
   const [remedialQuizId, setRemedialQuizId] = useState<Set<number>>(new Set());
+  const [pendingQuizId,  setPendingQuizId]  = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (!historyList) return;
-    setPassedQuizId(new Set(historyList.filter((h) => h.score_percent >= 60).map((h) => h.quiz_id)));
-    setRemedialQuizId(new Set(historyList.filter((h) => h.score_percent < 60).map((h) => h.quiz_id)));
+    setPassedQuizId(new Set(historyList.filter((h) => h.score_percent >= 60 && !h.has_ungraded_essay).map((h) => h.quiz_id)));
+    setRemedialQuizId(new Set(historyList.filter((h) => h.score_percent < 60 && !h.has_ungraded_essay).map((h) => h.quiz_id)));
+    setPendingQuizId(new Set(historyList.filter((h) => h.has_ungraded_essay).map((h) => h.quiz_id)));
   }, [historyList]);
 
   const [activeQuiz,   setActiveQuiz]   = useState<Quiz | null>(null);
@@ -194,6 +196,7 @@ function QuizzesPageContent() {
         startError={startError}
         isCompetedQuizId={passedQuizId}
         remedialQuizId={remedialQuizId}
+        pendingQuizId={pendingQuizId}
       />
     );
   }

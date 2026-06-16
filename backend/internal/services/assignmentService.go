@@ -387,6 +387,7 @@ func (s *assignmentService) buildHistoryResponse(assignments []domains.Assignmen
 			DateStr:      dateStr,
 			TimeStr:      timeStr,
 			CompletedAt:  completedAtStr,
+			HasUngradedEssay: a.HasUngradedEssay,
 		})
 	}
 	return result

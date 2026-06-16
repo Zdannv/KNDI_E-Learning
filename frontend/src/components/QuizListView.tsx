@@ -13,6 +13,7 @@ interface QuizListViewProps {
     startError:       string | null;
     isCompetedQuizId: Set<number>;
     remedialQuizId?:  Set<number>;
+    pendingQuizId?:   Set<number>;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -114,6 +115,7 @@ export default function QuizListView(props: QuizListViewProps) {
                     {paginated.map((quiz, index) => {
                         const isPassed = props.isCompetedQuizId.has(quiz.id);
                         const isRemedial = props.remedialQuizId?.has(quiz.id) ?? false;
+                        const isPending = props.pendingQuizId?.has(quiz.id) ?? false;
                         const isDone = isPassed || isRemedial;
 
                         return (
@@ -124,6 +126,7 @@ export default function QuizListView(props: QuizListViewProps) {
                                 isStarted={props.isStarting}
                                 isCompleted={isDone}
                                 isPassed={isPassed}
+                                isPending={isPending}
                                 accentIndex={(safePage - 1) * ITEMS_PER_PAGE + index}
                             />
                         );

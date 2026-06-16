@@ -24,6 +24,7 @@ type Assignment struct {
 	StatusName		string					`json:"status_name"`
 	StartedAt		time.Time				`json:"started_at"`
 	CompletedAt		*time.Time				`json:"completed_at"`
+	HasUngradedEssay bool					`json:"has_ungraded_essay"`
 
 	History			[]AssignmentHistory		`json:"history,omitempty"`
 	Quiz			*Quiz					`json:"quiz,omitempty"`

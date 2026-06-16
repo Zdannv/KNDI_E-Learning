@@ -312,6 +312,7 @@ export interface HistoryListItem {
   date_str: string;
   time_str: string;
   completed_at: string | null;
+  has_ungraded_essay?: boolean;
 }
 
 export interface SubmitAnswer {

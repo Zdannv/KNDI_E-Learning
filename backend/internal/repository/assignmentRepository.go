@@ -29,7 +29,8 @@ const (
 	selectHistoryByStudentID = `
 		SELECT a.id, a.student_id, a.quiz_id, a.total_point, a.score_earned, a.status,
 			s.name AS status_name, a.started_at, a.completed_at,
-			q.title AS quiz_title
+			q.title AS quiz_title,
+			EXISTS (SELECT 1 FROM assignment_history WHERE assignment_id = a.id AND is_graded = FALSE) AS has_ungraded_essay
 		FROM assignments a
 		JOIN assignment_status s ON s.id = a.status
 		JOIN quizzes q ON q.id = a.quiz_id
@@ -40,7 +41,8 @@ const (
 		SELECT a.id, a.student_id, a.quiz_id, a.total_point, a.score_earned, a.status,
 			s.name AS status_name, a.started_at, a.completed_at,
 			q.title AS quiz_title,
-			u.username AS student_name
+			u.username AS student_name,
+			EXISTS (SELECT 1 FROM assignment_history WHERE assignment_id = a.id AND is_graded = FALSE) AS has_ungraded_essay
 		FROM assignments a
 		JOIN assignment_status s ON s.id = a.status
 		JOIN quizzes q ON q.id = a.quiz_id
@@ -257,7 +259,7 @@ func (r *assignmentRepository) FindHistoryByStudentID(ctx context.Context, stude
 		var quizTitle string
 		if err := rows.Scan(
 			&a.ID, &a.StudentID, &a.QuizID, &a.TotalPoint, &a.ScoreEarned, &a.Status,
-			&a.StatusName, &a.StartedAt, &a.CompletedAt, &quizTitle,
+			&a.StatusName, &a.StartedAt, &a.CompletedAt, &quizTitle, &a.HasUngradedEssay,
 		); err != nil {
 			return nil, fmt.Errorf("AssignmentRepo.FindHistoryStudent scan: %w", err)
 		}
@@ -283,7 +285,7 @@ func (r *assignmentRepository) FindAllHistory(ctx context.Context) ([]domains.As
 		if err := rows.Scan(
 			&a.ID, &a.StudentID, &a.QuizID, &a.TotalPoint, &a.ScoreEarned, &a.Status,
 			&a.StatusName, &a.StartedAt, &a.CompletedAt,
-			&quizTitle, &studentName,
+			&quizTitle, &studentName, &a.HasUngradedEssay,
 		); err != nil {
 			return nil, fmt.Errorf("AssignmentRepo.FindAllHistory scan: %w", err)
 		}
