@@ -47,8 +47,8 @@ export async function PUT(
 
         const body: UpdateQuestionBody = await req.json()
 
-        if (!body.question_text?.trim()) {
-            return badRequest("Question text is required!")
+        if (!body.question_text?.trim() && !body.image_url && !body.audio_url) {
+            return badRequest("Question text, image, or audio is required!")
         }
 
         const data = await apiRequest(`/questions/${questionId}`, {
@@ -79,15 +79,8 @@ export async function DELETE(
             return badRequest("Invalid question id!")
         }
 
-        const body: UpdateQuestionBody = await req.json()
-
-        if (!body.question_text?.trim()) {
-            return badRequest("Question text is required!")
-        }
-
         const data = await apiRequest(`/questions/${questionId}`, {
-            method: "PUT",
-            body,
+            method: "DELETE",
             token,
         })
 

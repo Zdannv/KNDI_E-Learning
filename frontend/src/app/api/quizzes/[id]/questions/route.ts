@@ -4,14 +4,17 @@ import { NextRequest } from "next/server"
 
 interface MatchingCardBody {
     left_text: string
-    left_url?: string
+    left_image_url?: string
+    left_audio_url?: string
     right_text: string
-    right_url?: string
+    right_image_url?: string
+    right_audio_url?: string
 }
 
 interface OptionsBody {
     option_text: string
-    url?: string
+    image_url?: string
+    audio_url?: string
     is_correct: boolean
 }
 
@@ -19,11 +22,12 @@ interface QuestionRequestBody {
     question_text: string
     question_type: 1 | 2 | 3 | 4
     correct_answer?: string
-    url?: string
+    image_url?: string
+    audio_url?: string
     point: number
     order_number: number
     options?: OptionsBody[]
-    matching_card?: MatchingCardBody[]
+    matching_cards?: MatchingCardBody[]
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -46,8 +50,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
         for (let i = 0; i < body.length; i++) {
             const q = body[i]
-            if (!q.question_text?.trim()) {
-                return badRequest(`Question text is required at question ${i}`)
+            if (!q.question_text?.trim() && !q.image_url && !q.audio_url) {
+                return badRequest(`Question text, image, or audio is required at question ${i}`)
             }
 
             if (![1, 2, 3, 4].includes(q.question_type)) {

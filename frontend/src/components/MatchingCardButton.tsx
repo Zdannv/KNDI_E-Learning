@@ -11,8 +11,6 @@ interface MatchingCardButtonProps {
     isSelected: boolean
     isFlashing: boolean
     onClick:    () => void
-    hasImagePlaceholders?: boolean
-    hasAudioPlaceholders?: boolean
 }
 
 export default function MatchingCardButton(props: MatchingCardButtonProps) {
@@ -30,9 +28,9 @@ export default function MatchingCardButton(props: MatchingCardButtonProps) {
         stateClass = "border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 cursor-pointer"
     }
 
-    // Determine min-height based on media presence
-    const hasMedia = props.hasImagePlaceholders || props.hasAudioPlaceholders || props.imageUrl || props.audioUrl
-    const minHeightClass = hasMedia ? "min-h-[14rem]" : "min-h-[5rem]"
+    // Determine min-height based on media presence on this specific card
+    const hasMedia = props.imageUrl || props.audioUrl
+    const minHeightClass = hasMedia ? "min-h-[10rem]" : "min-h-[3.5rem]"
 
     return (
         <button
@@ -41,42 +39,17 @@ export default function MatchingCardButton(props: MatchingCardButtonProps) {
             disabled={props.isMatched || props.isWrong}
             className={`w-full ${minHeightClass} p-4 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-between gap-3 text-sm font-bold text-center shadow-xs hover:shadow-md ${stateClass}`}
         >
-            {props.hasImagePlaceholders ? (
-                props.imageUrl ? (
-                    <img src={props.imageUrl} className="w-full h-24 object-cover rounded-xl border border-slate-100" alt="" />
-                ) : (
-                    <div className="w-full h-24 rounded-xl bg-slate-50/50 border border-dashed border-slate-200 flex items-center justify-center text-slate-300 text-xs select-none">
-                        (Tidak Ada Gambar)
-                    </div>
-                )
-            ) : (
-                props.imageUrl && (
-                    <img src={props.imageUrl} className="w-full h-24 object-cover rounded-xl border border-slate-100" alt="" />
-                )
+            {props.imageUrl && (
+                <img src={props.imageUrl} className="w-full h-24 object-cover rounded-xl border border-slate-100" alt="" />
             )}
 
-            {props.hasAudioPlaceholders ? (
-                props.audioUrl ? (
-                    <audio
-                        controls
-                        src={props.audioUrl}
-                        className="w-full scale-[0.9] origin-center"
-                        onClick={(e) => e.stopPropagation()}
-                    />
-                ) : (
-                    <div className="w-full h-9 rounded-xl bg-slate-50/50 border border-dashed border-slate-200 flex items-center justify-center text-slate-350 text-xs select-none scale-[0.9] origin-center">
-                        (Tidak Ada Audio)
-                    </div>
-                )
-            ) : (
-                props.audioUrl && (
-                    <audio
-                        controls
-                        src={props.audioUrl}
-                        className="w-full scale-[0.9] origin-center"
-                        onClick={(e) => e.stopPropagation()}
-                    />
-                )
+            {props.audioUrl && (
+                <audio
+                    controls
+                    src={props.audioUrl}
+                    className="w-full scale-[0.9] origin-center"
+                    onClick={(e) => e.stopPropagation()}
+                />
             )}
 
             <span className="grow flex items-center justify-center min-h-[1.5rem] break-words w-full">{props.text}</span>
