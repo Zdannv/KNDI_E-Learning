@@ -4,6 +4,7 @@ import (
 	"KNDI_E-LEARNING/internal/domains"
 	"KNDI_E-LEARNING/internal/dto"
 	"KNDI_E-LEARNING/internal/repository"
+	"KNDI_E-LEARNING/package/utils"
 	"context"
 	"errors"
 	"fmt"
@@ -177,6 +178,8 @@ func (s *quizService) AddQuestion(ctx context.Context, quizID int, senseiID stri
 		return nil, err
 	}
 
+	processCreateQuestionRequestFiles(&req)
+
 	if req.Point < 0 {
 		req.Point = 1
 	}
@@ -202,6 +205,7 @@ func (s *quizService) UpdateQuestion(ctx context.Context, questionID int, sensei
 		return nil, fmt.Errorf("QuizService.UpdateQuestion find: %w", err)
 	}
 
+	processUpdateQuestionRequestFiles(&req)
 
 	if req.Point < 0 {
 		req.Point = 1
@@ -250,6 +254,100 @@ func (s *quizService) UpdateQuestion(ctx context.Context, questionID int, sensei
 		return nil, fmt.Errorf("QuizService.UpdateQuestion: %w", err)
 	}
 	return q, nil
+}
+
+func processCreateQuestionRequestFiles(req *dto.CreateQuestionRequest) {
+	if req.ImageURL != nil && *req.ImageURL != "" {
+		if path, err := utils.SaveBase64File(*req.ImageURL, false); err == nil {
+			req.ImageURL = &path
+		}
+	}
+	if req.AudioURL != nil && *req.AudioURL != "" {
+		if path, err := utils.SaveBase64File(*req.AudioURL, true); err == nil {
+			req.AudioURL = &path
+		}
+	}
+	for i := range req.Options {
+		if req.Options[i].ImageURL != nil && *req.Options[i].ImageURL != "" {
+			if path, err := utils.SaveBase64File(*req.Options[i].ImageURL, false); err == nil {
+				req.Options[i].ImageURL = &path
+			}
+		}
+		if req.Options[i].AudioURL != nil && *req.Options[i].AudioURL != "" {
+			if path, err := utils.SaveBase64File(*req.Options[i].AudioURL, true); err == nil {
+				req.Options[i].AudioURL = &path
+			}
+		}
+	}
+	for i := range req.MatchingCards {
+		if req.MatchingCards[i].LeftImageURL != nil && *req.MatchingCards[i].LeftImageURL != "" {
+			if path, err := utils.SaveBase64File(*req.MatchingCards[i].LeftImageURL, false); err == nil {
+				req.MatchingCards[i].LeftImageURL = &path
+			}
+		}
+		if req.MatchingCards[i].LeftAudioURL != nil && *req.MatchingCards[i].LeftAudioURL != "" {
+			if path, err := utils.SaveBase64File(*req.MatchingCards[i].LeftAudioURL, true); err == nil {
+				req.MatchingCards[i].LeftAudioURL = &path
+			}
+		}
+		if req.MatchingCards[i].RightImageURL != nil && *req.MatchingCards[i].RightImageURL != "" {
+			if path, err := utils.SaveBase64File(*req.MatchingCards[i].RightImageURL, false); err == nil {
+				req.MatchingCards[i].RightImageURL = &path
+			}
+		}
+		if req.MatchingCards[i].RightAudioURL != nil && *req.MatchingCards[i].RightAudioURL != "" {
+			if path, err := utils.SaveBase64File(*req.MatchingCards[i].RightAudioURL, true); err == nil {
+				req.MatchingCards[i].RightAudioURL = &path
+			}
+		}
+	}
+}
+
+func processUpdateQuestionRequestFiles(req *dto.UpdateQuestionRequest) {
+	if req.ImageURL != nil && *req.ImageURL != "" {
+		if path, err := utils.SaveBase64File(*req.ImageURL, false); err == nil {
+			req.ImageURL = &path
+		}
+	}
+	if req.AudioURL != nil && *req.AudioURL != "" {
+		if path, err := utils.SaveBase64File(*req.AudioURL, true); err == nil {
+			req.AudioURL = &path
+		}
+	}
+	for i := range req.Options {
+		if req.Options[i].ImageURL != nil && *req.Options[i].ImageURL != "" {
+			if path, err := utils.SaveBase64File(*req.Options[i].ImageURL, false); err == nil {
+				req.Options[i].ImageURL = &path
+			}
+		}
+		if req.Options[i].AudioURL != nil && *req.Options[i].AudioURL != "" {
+			if path, err := utils.SaveBase64File(*req.Options[i].AudioURL, true); err == nil {
+				req.Options[i].AudioURL = &path
+			}
+		}
+	}
+	for i := range req.MatchingCards {
+		if req.MatchingCards[i].LeftImageURL != nil && *req.MatchingCards[i].LeftImageURL != "" {
+			if path, err := utils.SaveBase64File(*req.MatchingCards[i].LeftImageURL, false); err == nil {
+				req.MatchingCards[i].LeftImageURL = &path
+			}
+		}
+		if req.MatchingCards[i].LeftAudioURL != nil && *req.MatchingCards[i].LeftAudioURL != "" {
+			if path, err := utils.SaveBase64File(*req.MatchingCards[i].LeftAudioURL, true); err == nil {
+				req.MatchingCards[i].LeftAudioURL = &path
+			}
+		}
+		if req.MatchingCards[i].RightImageURL != nil && *req.MatchingCards[i].RightImageURL != "" {
+			if path, err := utils.SaveBase64File(*req.MatchingCards[i].RightImageURL, false); err == nil {
+				req.MatchingCards[i].RightImageURL = &path
+			}
+		}
+		if req.MatchingCards[i].RightAudioURL != nil && *req.MatchingCards[i].RightAudioURL != "" {
+			if path, err := utils.SaveBase64File(*req.MatchingCards[i].RightAudioURL, true); err == nil {
+				req.MatchingCards[i].RightAudioURL = &path
+			}
+		}
+	}
 }
 
 func (s *quizService) DeleteQuestion(ctx context.Context, questionID int) error {
