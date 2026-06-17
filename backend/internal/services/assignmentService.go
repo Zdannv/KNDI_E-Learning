@@ -236,13 +236,24 @@ func (s *assignmentService) GetResult(ctx context.Context, studentID string, ass
 		return nil, fmt.Errorf("AssignmentService.GetResult find: %w", err)
 	}
 
-	if a.StudentID != studentID {
+	role, _ := ctx.Value(ContextKeyRole).(string)
+	if a.StudentID != studentID && role != "sensei" {
 		return nil, ErrorForbidden
 	}
 
 	history, err := s.assignmentRepo.FindHistoryByAssignmentID(ctx, assignmentID)
 	if err != nil {
 		return nil, fmt.Errorf("AssignmentService.GetResult history: %w", err)
+	}
+
+	questions, err := s.quizRepo.LoadQuestionForQuiz(ctx, a.QuizID)
+	if err != nil {
+		return nil, fmt.Errorf("AssignmentService.GetResult load questions: %w", err)
+	}
+
+	qMap := make(map[int]domains.Question, len(questions))
+	for _, question := range questions {
+		qMap[question.ID] = question
 	}
 
 	totalEarned := 0.0
@@ -260,7 +271,7 @@ func (s *assignmentService) GetResult(ctx context.Context, studentID string, ass
 		totalPossible = *a.TotalPoint
 	}
 
-	return buildResultResponse(assignmentID, a.Quiz.Title, totalEarned, totalPossible, history, map[int]domains.Question{}, completedAt), nil
+	return buildResultResponse(assignmentID, a.Quiz.Title, totalEarned, totalPossible, history, qMap, completedAt), nil
 }
 
 // ─── History ──────────────────────────────────────────────────────────────────
