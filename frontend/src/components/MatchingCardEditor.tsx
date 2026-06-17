@@ -169,7 +169,7 @@ function MatchingSide({ label, content, isSubmitting, onUpdateField, onFileUploa
         </div>
       )}
       {content.audioUrl && content.audioUrl.length > 0 && (
-        <audio controls src={content.audioUrl} className="h-8 w-full" />
+        <audio controls src={content.audioUrl} className="h-10 w-full" />
       )}
     </div>
   );
