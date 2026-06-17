@@ -17,16 +17,6 @@ export default function MatchingCardQuestion(props: MatchingCardProps) {
         [props.cards.map((c) => c.id).join(",")]
     )
 
-    const hasAnyImage = useMemo(
-        () => props.cards.some((c) => c.left_image_url || c.right_image_url),
-        [props.cards]
-    )
-
-    const hasAnyAudio = useMemo(
-        () => props.cards.some((c) => c.left_audio_url || c.right_audio_url),
-        [props.cards]
-    )
-
     const [selectedLeft,  setSelectedLeft]  = useState<number | null>(null)
     const [selectedRight, setSelectedRight] = useState<number | null>(null)
 
@@ -97,8 +87,6 @@ export default function MatchingCardQuestion(props: MatchingCardProps) {
                                 isSelected={selectedLeft === card.id}
                                 isFlashing={false}
                                 onClick={() => handleLeftClick(card.id)}
-                                hasImagePlaceholders={hasAnyImage}
-                                hasAudioPlaceholders={hasAnyAudio}
                             />
                         )
                     })}
@@ -125,8 +113,6 @@ export default function MatchingCardQuestion(props: MatchingCardProps) {
                                 isSelected={selectedRight === card.id}
                                 isFlashing={false}
                                 onClick={() => handleRightClick(card.id)}
-                                hasImagePlaceholders={hasAnyImage}
-                                hasAudioPlaceholders={hasAnyAudio}
                             />
                         )
                     })}
