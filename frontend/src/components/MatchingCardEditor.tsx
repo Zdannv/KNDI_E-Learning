@@ -44,7 +44,7 @@ export default function MatchingEditor({
       {question.pairs.map((pair) => (
         <div
           key={pair.id}
-          className="relative bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row items-center gap-4 shadow-sm"
+          className="relative bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row items-stretch gap-4 shadow-sm"
         >
           <MatchingSide
             label="Kiri"
@@ -54,7 +54,7 @@ export default function MatchingEditor({
             onFileUpload={onFileUpload}
           />
 
-          <div className="shrink-0 flex items-center justify-center p-2 rounded-full bg-indigo-50 text-indigo-500 shadow-sm border border-indigo-100">
+          <div className="self-center shrink-0 flex items-center justify-center p-2 rounded-full bg-indigo-50 text-indigo-500 shadow-sm border border-indigo-100">
             <ArrowRight className="w-5 h-5 md:rotate-0 rotate-90" />
           </div>
 
@@ -90,7 +90,7 @@ interface MatchingSideProps {
 
 function MatchingSide({ label, content, isSubmitting, onUpdateField, onFileUpload }: MatchingSideProps) {
   return (
-    <div className="flex-1 w-full bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
+    <div className="flex-1 min-w-0 w-full bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</span>
         <div className="flex space-x-1">
