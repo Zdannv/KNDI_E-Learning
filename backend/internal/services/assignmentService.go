@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 )
@@ -413,9 +414,24 @@ func gradeMultipleChoice(options []domains.QuestionOptions, selectedID int, poin
 	return 0
 }
 
+func cleanAnswer(s string) string {
+	s = strings.ReplaceAll(s, "\r", "")
+	s = strings.ReplaceAll(s, "\n", "")
+	return strings.ToLower(strings.TrimSpace(s))
+}
+
 func gradeShortAnswer(answerKey, studentAnswer string, point float64) float64 {
-	if strings.EqualFold(strings.TrimSpace(answerKey), strings.TrimSpace(studentAnswer)) {
-		return point
+	cleanStudent := cleanAnswer(studentAnswer)
+	alternatives := strings.FieldsFunc(answerKey, func(r rune) bool {
+		return r == ';' || r == ','
+	})
+	if len(alternatives) == 0 {
+		alternatives = []string{answerKey}
+	}
+	for _, alt := range alternatives {
+		if cleanAnswer(alt) == cleanStudent {
+			return point
+		}
 	}
 	return 0
 }
@@ -449,26 +465,121 @@ func buildResultResponse(
 	}
 
 	completedAtStr := completedAt.Format(time.RFC3339)
+	letters := []string{"A", "B", "C", "D", "E", "F", "G"}
 
 	answers := make([]dto.AssignmentHistoryResponse, 0, len(history))
 	for _, h := range history {
 		yourAnswer := ""
+		correctAnswer := ""
+		isCorrect := h.IsCorrect
+
+		var qImg, qAud string
+		var yourImg, yourAud string
+		var correctImg, correctAud string
+		var totalPairs int
+		var correctPairs int
+
 		if h.AnswerText != nil {
 			yourAnswer = *h.AnswerText
 		}
 
+		if q, ok := qMap[h.QuestionID]; ok {
+			if q.ImageURL != nil {
+				qImg = *q.ImageURL
+			}
+			if q.AudioURL != nil {
+				qAud = *q.AudioURL
+			}
+
+			if q.QuestionType == domains.QuestionTypeMultipleChoice {
+				if h.QuestionOptionID != nil {
+					for idx, opt := range q.Options {
+						if opt.ID == *h.QuestionOptionID {
+							letter := "A"
+							if idx < len(letters) {
+								letter = letters[idx]
+							}
+							yourAnswer = fmt.Sprintf("%s. %s", letter, opt.OptionText)
+							if opt.ImageURL != nil {
+								yourImg = *opt.ImageURL
+							}
+							if opt.AudioURL != nil {
+								yourAud = *opt.AudioURL
+							}
+							break
+						}
+					}
+				}
+
+				for idx, opt := range q.Options {
+					if opt.IsCorrect {
+						letter := "A"
+						if idx < len(letters) {
+							letter = letters[idx]
+						}
+						correctAnswer = fmt.Sprintf("%s. %s", letter, opt.OptionText)
+						if opt.ImageURL != nil {
+							correctImg = *opt.ImageURL
+						}
+						if opt.AudioURL != nil {
+							correctAud = *opt.AudioURL
+						}
+						break
+					}
+				}
+
+				if h.QuestionOptionID != nil {
+					isCorrect = false
+					for _, opt := range q.Options {
+						if opt.ID == *h.QuestionOptionID && opt.IsCorrect {
+							isCorrect = true
+							break
+						}
+					}
+				} else {
+					isCorrect = false
+				}
+
+			} else if q.QuestionType == domains.QuestionTypeShortAnswer {
+				if q.CorrectAnswer != nil {
+					correctAnswer = *q.CorrectAnswer
+				}
+				if h.AnswerText != nil && q.CorrectAnswer != nil {
+					isCorrect = gradeShortAnswer(*q.CorrectAnswer, *h.AnswerText, 1.0) > 0
+				} else {
+					isCorrect = false
+				}
+			} else if q.QuestionType == domains.QuestionTypeMatchingCard {
+				isCorrect = h.ScoreEarned >= q.Point
+				totalPairs = len(q.MatchingCards)
+				if q.Point > 0 {
+					correctPairs = int(math.Round((h.ScoreEarned / q.Point) * float64(totalPairs)))
+				} else if isCorrect {
+					correctPairs = totalPairs
+				}
+			} else if q.QuestionType == domains.QuestionTypeEssay {
+				isCorrect = h.ScoreEarned > 0
+			}
+		}
+
 		item := dto.AssignmentHistoryResponse{
-			QuestionText: h.QuestionText,
-			YourAnswer:   yourAnswer,
-			IsCorrect:    h.IsCorrect,
-			ScoreEarned:  h.ScoreEarned,
+			QuestionText:          h.QuestionText,
+			YourAnswer:            yourAnswer,
+			CorrectAnswer:         correctAnswer,
+			IsCorrect:             isCorrect,
+			ScoreEarned:           h.ScoreEarned,
+			TotalPairs:            totalPairs,
+			CorrectPairs:          correctPairs,
+			QuestionImageURL:      qImg,
+			QuestionAudioURL:      qAud,
+			YourAnswerImageURL:    yourImg,
+			YourAnswerAudioURL:    yourAud,
+			CorrectAnswerImageURL: correctImg,
+			CorrectAnswerAudioURL: correctAud,
 		}
 
 		if q, ok := qMap[h.QuestionID]; ok {
 			item.QuestionType = q.QuestionType
-			if q.QuestionType == domains.QuestionTypeMatchingCard {
-				item.TotalPairs = len(q.MatchingCards)
-			}
 			if q.QuestionType == domains.QuestionTypeEssay {
 				item.PendingGrade = !h.IsGraded
 			}

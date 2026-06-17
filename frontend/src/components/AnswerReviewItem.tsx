@@ -9,13 +9,13 @@ interface AnswerReviewItemProps {
 }
 
 interface MatchingCardResultProps {
-    scoreEarned: number
+    correctPairs: number
     totalPairs:  number
     isCorrect:   boolean
 }
 
-function MatchingCardResult({ scoreEarned, totalPairs, isCorrect }: MatchingCardResultProps) {
-    const correct = Math.round(scoreEarned * totalPairs)
+function MatchingCardResult({ correctPairs, totalPairs, isCorrect }: MatchingCardResultProps) {
+    const correct = correctPairs
     const wrong   = totalPairs - correct
 
     return (
@@ -105,9 +105,21 @@ export default function AnswerReviewItem({ answer, index }: AnswerReviewItemProp
 
             <div className="flex-1 min-w-0 space-y-1">
                 {/* Question text */}
-                <p className="text-sm font-semibold text-slate-700">
+                <p className="text-sm font-semibold text-slate-700 whitespace-pre-wrap">
                     {answer.question_text}
                 </p>
+
+                {/* Question Media */}
+                {answer.question_image_url && (
+                    <div className="mt-2 max-w-xs rounded-lg overflow-hidden border border-slate-100">
+                        <img src={answer.question_image_url} alt="Soal Gambar" className="w-full h-auto object-cover" />
+                    </div>
+                )}
+                {answer.question_audio_url && (
+                    <div className="mt-2">
+                        <audio src={answer.question_audio_url} controls className="w-full max-w-xs h-10" />
+                    </div>
+                )}
 
                 {/* Answer body per type */}
                 {isEssay ? (
@@ -136,15 +148,42 @@ export default function AnswerReviewItem({ answer, index }: AnswerReviewItemProp
                     )
                 ) : isMatchingCard ? (
                     <MatchingCardResult
-                        scoreEarned={answer.score_earned}
+                        correctPairs={answer.correct_pairs ?? 0}
                         totalPairs={answer.total_pairs ?? 0}
                         isCorrect={answer.is_correct}
                     />
                 ) : (
-                    <p className={`text-sm ${answer.is_correct ? "text-green-700" : "text-red-700"}`}>
-                        Jawaban kamu:{" "}
-                        <span className="font-medium">{answer.your_answer || "—"}</span>
-                    </p>
+                    <div className="space-y-2">
+                        <div className={`text-sm ${answer.is_correct ? "text-green-700" : "text-red-700"}`}>
+                            <span>Jawaban kamu: </span>
+                            <span className="font-bold">{answer.your_answer || "—"}</span>
+                            {answer.your_answer_image_url && (
+                                <div className="mt-1.5 max-w-xs rounded-lg overflow-hidden border border-slate-200 shadow-sm">
+                                    <img src={answer.your_answer_image_url} alt="Jawaban Gambar" className="w-full h-auto object-cover rounded" />
+                                </div>
+                            )}
+                            {answer.your_answer_audio_url && (
+                                <div className="mt-1.5">
+                                    <audio src={answer.your_answer_audio_url} controls className="w-full max-w-xs h-10" />
+                                </div>
+                            )}
+                        </div>
+                        {!answer.is_correct && answer.correct_answer && (
+                            <div className="text-xs text-green-700 font-semibold bg-green-50 border border-green-200/60 rounded-lg px-2.5 py-1.5 inline-block space-y-1.5">
+                                <div>Jawaban yang benar: <span className="font-bold">{answer.correct_answer}</span></div>
+                                {answer.correct_answer_image_url && (
+                                    <div className="max-w-xs rounded-lg overflow-hidden border border-slate-200 shadow-sm">
+                                        <img src={answer.correct_answer_image_url} alt="Kunci Jawaban Gambar" className="w-full h-auto object-cover rounded" />
+                                    </div>
+                                )}
+                                {answer.correct_answer_audio_url && (
+                                    <div>
+                                        <audio src={answer.correct_answer_audio_url} controls className="w-full max-w-xs h-10" />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 )}
             </div>
         </div>

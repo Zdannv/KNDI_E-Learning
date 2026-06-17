@@ -61,7 +61,7 @@ export default function QuestionCardStudent({
       )}
 
       {/* Question text */}
-      <p className="text-lg font-semibold text-slate-800 leading-relaxed">
+      <p className="text-lg font-semibold text-slate-800 leading-relaxed whitespace-pre-wrap">
         {question.question_text}
       </p>
 

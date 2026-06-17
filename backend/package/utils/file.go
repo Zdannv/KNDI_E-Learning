@@ -109,7 +109,8 @@ func UploadFile(r *http.Request, formKey, destFolder string) (*string, error) {
 		return nil, fmt.Errorf("Failed to create storage directory: %w", err)
 	}
 
-	fileName := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
+	safeName := sanitizeFilename(header.Filename)
+	fileName := fmt.Sprintf("%d_%s", time.Now().UnixNano(), safeName)
 	filePath := filepath.Join(destFolder, fileName)
 
 	dst, err := os.Create(filePath)
@@ -123,6 +124,18 @@ func UploadFile(r *http.Request, formKey, destFolder string) (*string, error) {
 	}
 
 	return &filePath, nil
+}
+
+func sanitizeFilename(filename string) string {
+	var result strings.Builder
+	for _, r := range filename {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '.' || r == '-' || r == '_' {
+			result.WriteRune(r)
+		} else if r == ' ' {
+			result.WriteRune('_')
+		}
+	}
+	return result.String()
 }
 
 func DeleteFile(filePath string) error {
