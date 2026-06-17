@@ -3,9 +3,9 @@
 import { ClientApiError, EssayPendingItem, Quiz, assignmentApi, quizApi } from "@/app/lib/use-api";
 import { useAsync } from "@/hooks/useAsync";
 import {
-  AlertCircle, Award, BookOpen, Calendar, CheckCircle2,
-  ClipboardList, Edit2, Eye, EyeOff, Loader2, Plus,
-  RefreshCw, Trash2, User, X,
+  AlertCircle, ArrowUpDown, Award, BookOpen, Calendar, CheckCircle2,
+  ChevronLeft, ChevronRight, ClipboardList, Edit2, Eye, EyeOff, Loader2, Plus,
+  RefreshCw, Search, Trash2, User, X,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
@@ -57,9 +57,15 @@ function getWeightColor(maxPoint: number): string {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+const ITEMS_PER_PAGE = 12;
+
 export default function AdminQuizzesPage() {
   const [activeTab, setActiveTab] = useState<"kuis" | "penilaian">("kuis");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"latest" | "oldest">("latest");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchQuizzes = useCallback(() => quizApi.listAll(), []);
   const {
@@ -68,6 +74,26 @@ export default function AdminQuizzesPage() {
     error: quizzesError,
     refetch: refetchQuizzes,
   } = useAsync<Quiz[]>(fetchQuizzes);
+
+  const filteredQuizzes = (quizzes ?? []).filter((quiz) => {
+    const q = searchQuery.toLowerCase();
+    return (
+      quiz.title.toLowerCase().includes(q) ||
+      (quiz.description ?? "").toLowerCase().includes(q)
+    );
+  });
+
+  const sortedQuizzes = [...filteredQuizzes].sort((a, b) => {
+    const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return sortBy === "latest" ? -diff : diff;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(sortedQuizzes.length / ITEMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedQuizzes = sortedQuizzes.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE);
+
+  const handleSearch = (v: string) => { setSearchQuery(v); setCurrentPage(1); };
+  const handleSort = (v: "latest" | "oldest") => { setSortBy(v); setCurrentPage(1); };
 
   const fetchEssays = useCallback(() => assignmentApi.getPendingEssays(), []);
   const {
@@ -249,78 +275,181 @@ export default function AdminQuizzesPage() {
             </div>
           )}
 
-          {!quizzesLoading && !quizzesError && (!quizzes || quizzes.length === 0) && (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-16 flex flex-col items-center justify-center text-center">
-              <div className="bg-slate-50 border border-slate-100 p-5 rounded-full mb-5">
-                <ClipboardList className="w-10 h-10 text-slate-400" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-800 mb-2">Belum Ada Kuis</h3>
-              <p className="text-slate-500 max-w-md pb-6 leading-relaxed">
-                Belum ada kuis yang dibuat. Mulai dengan membuat kuis pertama Anda.
-              </p>
-              <Link
-                href="/admin/quizzes/create"
-                className="inline-flex items-center text-blue-600 hover:text-blue-700 font-semibold"
-              >
-                <span>Klik di sini untuk membuat kuis pertama Anda</span>
-                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-            </div>
-          )}
-
-          {!quizzesLoading && !quizzesError && quizzes && quizzes.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {quizzes.map((quiz) => (
-                <div
-                  key={quiz.id}
-                  className="group bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex flex-col relative h-full"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="bg-blue-50 text-blue-600 p-3 rounded-xl">
-                      <ClipboardList className="w-6 h-6" />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleTogglePublish(quiz)}
-                        title={quiz.is_published ? "Unpublish kuis" : "Publish kuis"}
-                        className={`p-2 rounded-lg transition-colors border text-xs font-bold flex items-center gap-1 ${
-                          quiz.is_published
-                            ? "bg-green-50 text-green-600 border-green-200 hover:bg-green-100"
-                            : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"
-                        }`}
-                      >
-                        {quiz.is_published ? (
-                          <><Eye className="w-4 h-4" /><span className="hidden sm:inline">Publish</span></>
-                        ) : (
-                          <><EyeOff className="w-4 h-4" /><span className="hidden sm:inline">Draft</span></>
-                        )}
-                      </button>
-                      <Link
-                        href={`/admin/quizzes/create?edit=${quiz.id}`}
-                        className="p-2 bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors border border-slate-100"
-                        title="Edit Kuis"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(quiz)}
-                        className="p-2 bg-slate-50 text-slate-500 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors border border-slate-100"
-                        title="Hapus Kuis"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+          {!quizzesLoading && !quizzesError && quizzes && (
+            <>
+              {quizzes.length > 0 && (
+                <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6">
+                  {/* Search */}
+                  <div className="grow flex items-center bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:bg-white focus-within:border-indigo-400 transition-all">
+                    <Search className="w-4 h-4 text-slate-400 mr-2 shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="Cari kuis berdasarkan judul atau deskripsi..."
+                      value={searchQuery}
+                      onChange={(e) => handleSearch(e.target.value)}
+                      className="bg-transparent border-none outline-none text-sm w-full text-slate-700 placeholder:text-slate-400"
+                    />
                   </div>
 
-                  <h3 className="text-lg font-bold text-slate-800 mb-2 line-clamp-2">{quiz.title}</h3>
-                  <p className="text-slate-500 text-sm mb-5 line-clamp-2 grow">
-                    {quiz.description ?? "Tidak ada deskripsi."}
-                  </p>
+                  <div className="flex items-center gap-3">
+                    {/* Sort */}
+                    <div className="flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-2 bg-slate-50">
+                      <ArrowUpDown className="w-4 h-4 text-slate-400 shrink-0" />
+                      <select
+                        value={sortBy}
+                        onChange={(e) => handleSort(e.target.value as "latest" | "oldest")}
+                        className="bg-transparent border-none outline-none text-sm text-slate-700 font-medium cursor-pointer"
+                      >
+                        <option value="latest">Tanggal Dibuat: Terbaru</option>
+                        <option value="oldest">Tanggal Dibuat: Terlama</option>
+                      </select>
+                    </div>
 
-                  <div className="flex items-center justify-between text-xs font-semibold text-slate-500 mt-auto pt-4 border-t border-slate-100">
-                    <div className="flex items-center bg-slate-50 px-3 py-1.5 rounded-md">
+                    {/* Count */}
+                    <div className="text-sm text-slate-500 font-medium self-center px-1">
+                      Total: <span className="font-bold text-slate-800">{sortedQuizzes.length}</span> kuis
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Empty state */}
+              {sortedQuizzes.length === 0 ? (
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-16 flex flex-col items-center justify-center text-center">
+                  <div className="bg-slate-50 border border-slate-100 p-5 rounded-full mb-5">
+                    <ClipboardList className="w-10 h-10 text-slate-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800 mb-2">
+                    {searchQuery ? "Kuis Tidak Ditemukan" : "Belum Ada Kuis"}
+                  </h3>
+                  <p className="text-slate-500 max-w-md pb-6 leading-relaxed">
+                    {searchQuery
+                      ? "Tidak ditemukan kuis yang sesuai dengan kata kunci Anda. Silakan coba kata kunci lain."
+                      : "Belum ada kuis yang dibuat. Mulai dengan membuat kuis pertama Anda."}
+                  </p>
+                  {!searchQuery && (
+                    <Link
+                      href="/admin/quizzes/create"
+                      className="inline-flex items-center text-blue-600 hover:text-blue-700 font-semibold"
+                    >
+                      <span>Klik di sini untuk membuat kuis pertama Anda</span>
+                      <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {paginatedQuizzes.map((quiz) => (
+                      <div
+                        key={quiz.id}
+                        className="group bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex flex-col relative h-full"
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="bg-blue-50 text-blue-600 p-3 rounded-xl">
+                            <ClipboardList className="w-6 h-6" />
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => handleTogglePublish(quiz)}
+                              title={quiz.is_published ? "Unpublish kuis" : "Publish kuis"}
+                              className={`p-2 rounded-lg transition-colors border text-xs font-bold flex items-center gap-1 ${
+                                quiz.is_published
+                                  ? "bg-green-50 text-green-600 border-green-200 hover:bg-green-100"
+                                  : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"
+                              }`}
+                            >
+                              {quiz.is_published ? (
+                                <><Eye className="w-4 h-4" /><span className="hidden sm:inline">Publish</span></>
+                              ) : (
+                                <><EyeOff className="w-4 h-4" /><span className="hidden sm:inline">Draft</span></>
+                              )}
+                            </button>
+                            <Link
+                              href={`/admin/quizzes/create?edit=${quiz.id}`}
+                              className="p-2 bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors border border-slate-100"
+                              title="Edit Kuis"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </Link>
+                            <button
+                              onClick={() => handleDelete(quiz)}
+                              className="p-2 bg-slate-50 text-slate-500 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors border border-slate-100"
+                              title="Hapus Kuis"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <h3 className="text-lg font-bold text-slate-800 mb-2 line-clamp-2">{quiz.title}</h3>
+                        <p className="text-slate-500 text-sm mb-5 line-clamp-2 grow">
+                          {quiz.description ?? "Tidak ada deskripsi."}
+                        </p>
+
+                        <div className="flex items-center justify-between text-xs font-semibold text-slate-500 mt-auto pt-4 border-t border-slate-100">
+                          <div className="flex items-center bg-slate-50 px-3 py-1.5 rounded-md">
+                            <BookOpen className="w-4 h-4 mr-2 text-slate-400" />
+                            <span>{quiz.question?.length ?? 0} Soal</span>
+                          </div>
+                          <span className="text-xs text-slate-400">ID #{quiz.id}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between border-t border-slate-100 pt-6 mt-8">
+                      <button
+                        onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                        disabled={safePage === 1}
+                        className="flex items-center gap-1 px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        Sebelumnya
+                      </button>
+
+                      {/* Page numbers — desktop */}
+                      <div className="hidden sm:flex items-center gap-1.5">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`w-9 h-9 rounded-lg text-sm font-bold transition-all ${
+                              safePage === page
+                                ? "bg-blue-600 text-white shadow-sm"
+                                : "text-slate-600 hover:bg-slate-50 border border-transparent hover:border-slate-100"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Mobile label */}
+                      <span className="sm:hidden text-sm font-semibold text-slate-500">
+                        Halaman {safePage} dari {totalPages}
+                      </span>
+
+                      <button
+                        onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                        disabled={safePage === totalPages}
+                        className="flex items-center gap-1 px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                      >
+                        Selanjutnya
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </>
+      )}ex items-center bg-slate-50 px-3 py-1.5 rounded-md">
                       <BookOpen className="w-4 h-4 mr-2 text-slate-400" />
                       <span>{quiz.question?.length ?? 0} Soal</span>
                     </div>
