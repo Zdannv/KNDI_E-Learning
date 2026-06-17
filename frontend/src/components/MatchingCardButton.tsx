@@ -32,12 +32,26 @@ export default function MatchingCardButton(props: MatchingCardButtonProps) {
     const hasMedia = props.imageUrl || props.audioUrl
     const minHeightClass = hasMedia ? "min-h-[10rem]" : "min-h-[3.5rem]"
 
+    const isDisabled = props.isMatched || props.isWrong
+
+    const handleClick = () => {
+        if (!isDisabled) {
+            props.onClick()
+        }
+    }
+
     return (
-        <button
-            type="button"
-            onClick={props.onClick}
-            disabled={props.isMatched || props.isWrong}
-            className={`w-full ${minHeightClass} p-4 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-between gap-3 text-sm font-bold text-center shadow-xs hover:shadow-md ${stateClass}`}
+        <div
+            role="button"
+            tabIndex={isDisabled ? -1 : 0}
+            onClick={handleClick}
+            onKeyDown={(e) => {
+                if (!isDisabled && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault()
+                    handleClick()
+                }
+            }}
+            className={`w-full ${minHeightClass} p-4 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-between gap-3 text-sm font-bold text-center shadow-xs hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${stateClass}`}
         >
             {props.imageUrl && (
                 <img src={props.imageUrl} className="w-full h-24 object-cover rounded-xl border border-slate-100" alt="" />
@@ -58,6 +72,6 @@ export default function MatchingCardButton(props: MatchingCardButtonProps) {
                 {props.isMatched && <CheckCircle2 className="w-4 h-4 text-green-500" />}
                 {props.isWrong   && <XCircle      className="w-4 h-4 text-red-500" />}
             </div>
-        </button>
+        </div>
     )
 }
