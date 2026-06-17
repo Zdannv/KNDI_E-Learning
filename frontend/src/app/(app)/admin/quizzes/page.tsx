@@ -449,17 +449,6 @@ export default function AdminQuizzesPage() {
             </>
           )}
         </>
-      )}ex items-center bg-slate-50 px-3 py-1.5 rounded-md">
-                      <BookOpen className="w-4 h-4 mr-2 text-slate-400" />
-                      <span>{quiz.question?.length ?? 0} Soal</span>
-                    </div>
-                    <span className="text-xs text-slate-400">ID #{quiz.id}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
       )}
 
       {/* ── Tab: Penilaian Manual ── */}
