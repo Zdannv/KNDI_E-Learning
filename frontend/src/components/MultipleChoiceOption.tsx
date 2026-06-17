@@ -13,10 +13,17 @@ export default function MultipleChoiceOption(props: MultipleChoiceProps) {
     const letter = String.fromCharCode(65 + props.index)
 
     return (
-        <button
-            type="button"
+        <div
+            role="button"
+            tabIndex={0}
             onClick={props.onSelect}
-            className={`flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all
+            onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    props.onSelect()
+                }
+            }}
+            className={`flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
                 ${ props.isSelected
                     ? "border-indigo-500 bg-indigo-50 ring-2 ring-indigo-100"
                     : "border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50"
@@ -56,6 +63,6 @@ export default function MultipleChoiceOption(props: MultipleChoiceProps) {
                     {props.option.option_text}
                 </span>
             </div>
-        </button>
+        </div>
     )
 }
