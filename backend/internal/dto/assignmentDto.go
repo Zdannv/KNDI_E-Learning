@@ -32,10 +32,18 @@ type AssignmentHistoryResponse struct {
 	QuestionText		string			`json:"question_text"`
 	QuestionType		int				`json:"question_type"`
 	YourAnswer			string			`json:"your_answer"`
+	CorrectAnswer		string			`json:"correct_answer,omitempty"`
 	IsCorrect			bool			`json:"is_correct"`
 	ScoreEarned			float64			`json:"score_earned"`
 	TotalPairs			int				`json:"total_pairs,omitempty"`
+	CorrectPairs		int				`json:"correct_pairs,omitempty"`
 	PendingGrade		bool			`json:"pending_grade,omitempty"`
+	QuestionImageURL    string          `json:"question_image_url,omitempty"`
+	QuestionAudioURL    string          `json:"question_audio_url,omitempty"`
+	YourAnswerImageURL  string          `json:"your_answer_image_url,omitempty"`
+	YourAnswerAudioURL  string          `json:"your_answer_audio_url,omitempty"`
+	CorrectAnswerImageURL string        `json:"correct_answer_image_url,omitempty"`
+	CorrectAnswerAudioURL string        `json:"correct_answer_audio_url,omitempty"`
 }
 
 type HistoryListResponse struct {

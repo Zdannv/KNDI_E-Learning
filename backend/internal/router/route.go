@@ -50,6 +50,7 @@ func Route(
 			r.Use(appMiddleware.Authentication(authSvc))
 			r.Get("/materials", materialHandler.FindAll)
 			r.Get("/materials/{id}", materialHandler.FindByID)
+			r.Get("/materials/{id}/download", materialHandler.Download)
 
 			r.Get("/quizzes", quizHandler.FindAll)
 			r.Get("/quizzes/{id}", quizHandler.FindByID)

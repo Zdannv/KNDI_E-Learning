@@ -1,6 +1,6 @@
 "use client"
 
-import { Material, materialApi } from "@/app/lib/use-api"
+import { Material, materialApi, tokenStorage } from "@/app/lib/use-api"
 import { useAsync } from "@/hooks/useAsync"
 import {
   AlertCircle, ArrowUpDown, Calendar, CheckCircle2,
@@ -67,17 +67,17 @@ export default function MaterialPage() {
   }
 
   const handleDownload = (materi: Material) => {
-    const url = buildFileUrl(materi.file_path)
-    if (!url) { showToast("File is not available!"); return }
+    const token = tokenStorage.get()
+    if (!token) { showToast("Silakan login untuk mengunduh!"); return }
 
+    const url = `/api/materials/${materi.id}/download?token=${token}`
     const link = document.createElement("a")
     link.href = url
-    link.download = fileName(materi.file_path)
     link.target = "_blank"
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-    showToast(`Download: ${materi.name}`)
+    showToast(`Unduh: ${materi.name}`)
   }
 
   const filtered = (materials ?? []).filter((m) => {

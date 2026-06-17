@@ -282,10 +282,18 @@ export interface AssignmentHistoryAnswer {
   question_text: string;
   question_type: 1 | 2 | 3 | 4
   your_answer: string;
+  correct_answer?: string;
   is_correct: boolean;
   score_earned: number;
-  total_pairs?: number
-  pending_grade?: boolean
+  total_pairs?: number;
+  correct_pairs?: number;
+  pending_grade?: boolean;
+  question_image_url?: string;
+  question_audio_url?: string;
+  your_answer_image_url?: string;
+  your_answer_audio_url?: string;
+  correct_answer_image_url?: string;
+  correct_answer_audio_url?: string;
 }
 
 export interface AssignmentResult {

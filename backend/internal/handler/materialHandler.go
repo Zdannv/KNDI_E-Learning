@@ -6,8 +6,12 @@ import (
 	"KNDI_E-LEARNING/internal/services"
 	"KNDI_E-LEARNING/package/response"
 	"KNDI_E-LEARNING/package/utils"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 type MaterialHandler struct {
@@ -141,4 +145,72 @@ func (h *MaterialHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.Success(w, http.StatusOK, map[string]string{"message": "Material deleted"})
+}
+
+func (h *MaterialHandler) Download(w http.ResponseWriter, r *http.Request) {
+	id, err := parseIntParam(r, "id")
+	if err != nil {
+		response.BadRequest(w, "Invalid material id")
+		return
+	}
+
+	m, err := h.service.FindByID(r.Context(), id)
+	if err != nil {
+		handleServiceError(w, err)
+		return
+	}
+
+	if m.FilePath == nil || *m.FilePath == "" {
+		response.BadRequest(w, "Material file is not available")
+		return
+	}
+
+	filePath := *m.FilePath
+
+	// Open the file to verify it exists
+	file, err := os.Open(filePath)
+	if err != nil {
+		response.NotFound(w, "File not found on server")
+		return
+	}
+	defer file.Close()
+
+	// Extract the original filename from path
+	// In UploadFile we stored it as time.Now().UnixNano() + "_" + safeOriginalFilename
+	// Or time.Now().UnixNano() + ext
+	baseName := filepath.Base(filePath)
+	originalName := baseName
+	if parts := strings.SplitN(baseName, "_", 2); len(parts) == 2 {
+		originalName = parts[1]
+	}
+
+	// We can also fallback to the material name with its extension if originalName is just a number
+	ext := filepath.Ext(filePath)
+	// Check if originalName consists only of numbers (which was the old format, UnixNano + ext)
+	isOnlyDigits := true
+	baseWithoutExt := strings.TrimSuffix(originalName, ext)
+	for _, char := range baseWithoutExt {
+		if char < '0' || char > '9' {
+			isOnlyDigits = false
+			break
+		}
+	}
+	if isOnlyDigits {
+		// Replace characters that are invalid in filenames
+		safeName := m.Name
+		safeName = strings.ReplaceAll(safeName, "/", "-")
+		safeName = strings.ReplaceAll(safeName, "\\", "-")
+		safeName = strings.ReplaceAll(safeName, " ", "_")
+		originalName = fmt.Sprintf("%s%s", safeName, ext)
+	}
+
+	// Set headers for download
+	w.Header().Set("Content-Description", "File Transfer")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", originalName))
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Expires", "0")
+	w.Header().Set("Cache-Control", "must-revalidate")
+	w.Header().Set("Pragma", "public")
+
+	http.ServeFile(w, r, filePath)
 }

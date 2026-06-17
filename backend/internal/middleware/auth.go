@@ -11,19 +11,24 @@ import (
 func Authentication(authSvc services.AuthService) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			token := ""
 			authHeader := r.Header.Get("Authorization")
-			if authHeader == "" {
-				response.Unauthorized(w, "Authorization header is required!")
+			if authHeader != "" {
+				parts := strings.SplitN(authHeader, " ", 2)
+				if len(parts) == 2 && strings.EqualFold(parts[0], "bearer") {
+					token = parts[1]
+				}
+			}
+			if token == "" {
+				token = r.URL.Query().Get("token")
+			}
+
+			if token == "" {
+				response.Unauthorized(w, "Authorization token is required!")
 				return 
 			}
 
-			parts := strings.SplitN(authHeader, " ", 2)
-			if len(parts) != 2 || !strings.EqualFold(parts[0], "bearer") {
-				response.Unauthorized(w, "Authorization header must be 'bearer <token>'!")
-				return 
-			}
-
-			claims, err := authSvc.ParseToken(parts[1])
+			claims, err := authSvc.ParseToken(token)
 			if err != nil {
 				response.Unauthorized(w, "Invalid or expired token!")
 				return

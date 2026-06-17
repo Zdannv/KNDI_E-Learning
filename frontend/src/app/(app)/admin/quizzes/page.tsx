@@ -563,7 +563,7 @@ export default function AdminQuizzesPage() {
                   Pertanyaan Esai
                 </label>
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                  <p className="text-slate-800 leading-relaxed">{selectedEssay.question_text}</p>
+                  <p className="text-slate-800 leading-relaxed whitespace-pre-wrap">{selectedEssay.question_text}</p>
                 </div>
                 <div className="mt-2">
                   <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${getWeightColor(selectedEssay.max_point)}`}>
