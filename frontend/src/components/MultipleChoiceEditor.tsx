@@ -106,7 +106,7 @@ export default function MultipleChoiceEditor({
                   onChange={(e) => onFileUpload(e, (b64) => onUpdateOption(optIdx, "audioUrl", b64))}
                   className="flex-1 text-xs px-2 py-1.5 rounded bg-white border border-slate-200 cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700"
                 />
-                {opt.audioUrl && <audio controls src={opt.audioUrl} className="h-8 w-full" />}
+                {opt.audioUrl && <audio controls src={opt.audioUrl} className="h-10 w-full" />}
                 <button
                   type="button"
                   onClick={() => onUpdateOption(optIdx, "audioUrl", undefined)}

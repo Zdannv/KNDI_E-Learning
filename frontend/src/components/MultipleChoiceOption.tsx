@@ -41,7 +41,7 @@ export default function MultipleChoiceOption(props: MultipleChoiceProps) {
                     <audio
                         controls
                         src={props.option.audio_url}
-                        className="mb-2 w-full h-8"
+                        className="mb-2 w-full h-10"
                         onClick={(e) => e.stopPropagation()}
                     />
                 )}

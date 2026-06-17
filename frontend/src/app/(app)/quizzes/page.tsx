@@ -211,7 +211,7 @@ function QuizzesPageContent() {
   const progressPct     = questions.length > 0 ? Math.round((answeredCount / questions.length) * 100) : 0;
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto h-full flex flex-col justify-center min-h-[80vh]">
+    <div className="p-4 md:p-6 max-w-3xl mx-auto h-full flex flex-col justify-start min-h-[80vh]">
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
           <div>
