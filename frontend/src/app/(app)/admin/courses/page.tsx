@@ -23,7 +23,8 @@ function isPdf(filepath: string | null | undefined): boolean {
 
 function getFileName(filepath: string | null | undefined): string {
   if (!filepath) return "-"
-  return filepath.split("/").pop() ?? filepath
+  const name = filepath.split("/").pop() ?? filepath
+  return name.replace(/^\d+_/, "")
 }
 
 function formatDate(iso: string): string {
