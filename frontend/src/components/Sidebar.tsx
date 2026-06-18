@@ -100,7 +100,7 @@ export default function Sidebar({ isOpen = false, setIsOpen }: SidebarProps) {
 
       <aside
         className={`
-          fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-slate-200
+          fixed inset-y-0 left-0 z-30 w-64 shrink-0 bg-white border-r border-slate-200
           h-screen flex flex-col shadow-sm
           transform transition-transform duration-300
           md:sticky md:top-0 md:translate-x-0
@@ -109,8 +109,8 @@ export default function Sidebar({ isOpen = false, setIsOpen }: SidebarProps) {
       >
         <div className="p-6 flex items-center justify-between gap-3 border-b border-slate-100 shrink-0">
           <a href="/dashboard" className="flex items-center gap-3">
-            <div className="p-1 rounded-lg shrink-0">
-              <img src="/icon_kndi.svg" alt="Logo KNDI" className="w-8 h-8 object-contain" />
+            <div className="shrink-0">
+              <img src="/icon_kndi.svg" alt="Logo KNDI" className="w-11 h-11 object-contain" />
             </div>
             <span className="text-xl font-bold bg-linear-to-r from-indigo-600 to-indigo-800 bg-clip-text text-transparent">
               KNDI Learning
