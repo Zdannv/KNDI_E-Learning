@@ -499,7 +499,7 @@ export default function AdminQuizzesPage() {
                 <table className="w-full">
                   <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Karyawan</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Siswa</th>
                       <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Kuis</th>
                       <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Bobot</th>
                       <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider hidden md:table-cell">Pertanyaan</th>
@@ -589,7 +589,7 @@ export default function AdminQuizzesPage() {
               {/* Student answer */}
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wider">
-                  Jawaban Karyawan
+                  Jawaban Siswa
                 </label>
                 <div className="bg-white border-2 border-slate-200 rounded-lg p-4 max-h-64 overflow-y-auto">
                   <p className="text-slate-800 leading-relaxed whitespace-pre-wrap">
@@ -618,23 +618,6 @@ export default function AdminQuizzesPage() {
                 <p className="text-xs text-slate-500 mt-2">
                   💡 Nilai ini merepresentasikan persentase ketepatan (0–100%). Nilai akan dikalikan dengan bobot soal dalam perhitungan akhir.
                 </p>
-              </div>
-
-              {/* Feedback */}
-              <div>
-                <label htmlFor="feedback" className="block text-sm font-bold text-slate-700 mb-2">
-                  Feedback / Catatan untuk Karyawan{" "}
-                  <span className="text-slate-400 font-normal">(Opsional)</span>
-                </label>
-                <textarea
-                  id="feedback"
-                  rows={4}
-                  value={feedback}
-                  onChange={(e) => setFeedback(e.target.value)}
-                  disabled={isGrading}
-                  placeholder="Berikan catatan atau saran untuk karyawan..."
-                  className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 bg-slate-50 focus:bg-white focus:border-indigo-600 focus:outline-none transition-all resize-none disabled:opacity-60"
-                />
               </div>
 
               {/* Error */}
