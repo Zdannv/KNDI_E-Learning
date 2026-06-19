@@ -185,6 +185,7 @@ export interface Quiz {
   title: string;
   description: string | null;
   is_published: boolean;
+  duration?: number;
   created_at: string;
   updated_at: string;
   question?: Question[];
@@ -239,12 +240,12 @@ export const quizApi = {
   getById: (id: number): Promise<Quiz> =>
     apiFetch<Quiz>(`/api/quizzes/${id}`),
 
-  create: (payload: { title: string; description?: string }): Promise<Quiz> =>
+  create: (payload: { title: string; description?: string; duration?: number }): Promise<Quiz> =>
     apiFetch<Quiz>("/api/quizzes", { method: "POST", body: payload }),
 
   update: (
     id: number,
-    payload: { title: string; description?: string; is_published: boolean }
+    payload: { title: string; description?: string; is_published: boolean; duration?: number }
   ): Promise<Quiz> =>
     apiFetch<Quiz>(`/api/quizzes/${id}`, { method: "PUT", body: payload }),
 

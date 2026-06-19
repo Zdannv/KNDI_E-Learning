@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS quizzes (
     title               VARCHAR(225)    NOT NULL,
     description         VARCHAR(225),
     is_published        BOOLEAN         DEFAULT FALSE,
+    duration            INTEGER         NOT NULL DEFAULT 0,
     created_at          TIMESTAMP       DEFAULT NOW(),
     updated_at          TIMESTAMP       DEFAULT NOW()
 );

@@ -77,6 +77,7 @@ export function useQuizForm(editId: string | null): UseQuizFormReturn {
           title: backendQuiz.title,
           description: backendQuiz.description ?? "",
           isPublished: backendQuiz.is_published,
+          duration: backendQuiz.duration ?? 0,
           questions: frontendQuestions,
         });
         setExistingQuestionIds(idMap);
@@ -255,6 +256,7 @@ export function useQuizForm(editId: string | null): UseQuizFormReturn {
           title:        formState.title,
           description:  formState.description || undefined,
           is_published: formState.isPublished,
+          duration:     formState.duration,
         });
 
         const currentIds = new Set(formState.questions.map((q) => q.id));
@@ -276,6 +278,7 @@ export function useQuizForm(editId: string | null): UseQuizFormReturn {
         const created = await quizApi.create({
           title:       formState.title,
           description: formState.description || undefined,
+          duration:    formState.duration,
         });
 
         if (formState.questions.length > 0) {
@@ -287,6 +290,7 @@ export function useQuizForm(editId: string | null): UseQuizFormReturn {
             title:        formState.title,
             description:  formState.description || undefined,
             is_published: true,
+            duration:     formState.duration,
           });
         }
       }

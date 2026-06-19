@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -32,6 +33,9 @@ func main() {
 	ctx 	:= context.Background()
 	pool 	:= database.NewPool(ctx, cfg)
 	defer pool.Close()
+
+	// Ensure quizzes has duration column
+	ensureDurationColumnExists(ctx, pool)
 
 	userRepo 		:= repository.NewUserRepository(pool)
 	materialRepo 	:= repository.NewMaterialRepository(pool)
@@ -111,3 +115,26 @@ func seedStarterAccount(ctx context.Context, repo repository.UserRepository) {
 		}
 	}
 }
+
+func ensureDurationColumnExists(ctx context.Context, pool *pgxpool.Pool) {
+	query := `
+		DO $$
+		BEGIN
+			IF NOT EXISTS (
+				SELECT 1
+				FROM information_schema.columns
+				WHERE table_name='quizzes' AND column_name='duration'
+			) THEN
+				ALTER TABLE quizzes ADD COLUMN duration INTEGER NOT NULL DEFAULT 0;
+			END IF;
+		END
+		$$;
+	`
+	_, err := pool.Exec(ctx, query)
+	if err != nil {
+		log.Printf("[DB] Error ensuring duration column exists: %v", err)
+	} else {
+		log.Printf("[DB] Column 'duration' in 'quizzes' verified/created successfully")
+	}
+}
+

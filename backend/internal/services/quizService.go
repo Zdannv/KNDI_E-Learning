@@ -39,6 +39,7 @@ func (s *quizService) Create(ctx context.Context, senseiID string, req dto.Creat
 		SenseiID:    senseiID,
 		Title:       req.Title,
 		Description: req.Description,
+		Duration:    req.Duration,
 	}
 
 	if err := s.repo.Create(ctx, q); err != nil {
@@ -140,6 +141,7 @@ func (s *quizService) Update(ctx context.Context, id int, senseiID string, req d
 		Title:       req.Title,
 		Description: req.Description,
 		IsPublished: req.IsPublished,
+		Duration:    req.Duration,
 	}
 
 	if err := s.repo.Update(ctx, q); err != nil {
