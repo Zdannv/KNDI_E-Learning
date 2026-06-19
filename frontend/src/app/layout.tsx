@@ -1,5 +1,6 @@
 import { AuthProvider } from "@/context/AuthContext";
 import { RoleProvider } from "@/context/RoleContext";
+import { QuizSessionProvider } from "@/context/QuizSessionContext";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -18,7 +19,9 @@ export default function RootLayout({
     <html lang="id">
       <body className={`${inter.className} antialiased bg-slate-50`}>
         <AuthProvider>
-          <RoleProvider>{children}</RoleProvider>
+          <RoleProvider>
+            <QuizSessionProvider>{children}</QuizSessionProvider>
+          </RoleProvider>
         </AuthProvider>
       </body>
     </html>

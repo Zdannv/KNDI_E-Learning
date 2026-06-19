@@ -57,10 +57,15 @@ export default function QuizMetaCard({ formState, isSubmitting, onChange }: Quiz
             id="quiz-duration"
             type="number"
             min={0}
-            value={formState.duration ?? 0}
+            value={formState.duration}
             onChange={(e) => {
-              const val = parseInt(e.target.value, 10);
-              onChange({ duration: isNaN(val) ? 0 : val });
+              const valStr = e.target.value;
+              if (valStr === "") {
+                onChange({ duration: "" });
+              } else {
+                const val = parseInt(valStr, 10);
+                onChange({ duration: isNaN(val) ? 0 : val });
+              }
             }}
             placeholder="Contoh: 15"
             disabled={isSubmitting}
