@@ -25,12 +25,14 @@ func (h *AssignmentHandler) Start(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	studentID := middleware.GetUserID(r)
-	a, err := h.service.Start(r.Context(), studentID, req)
+	userID := middleware.GetUserID(r)
+	role := middleware.GetRole(r)
+	a, err := h.service.Start(r.Context(), userID, role, req)
 	if err != nil {
 		handleServiceError(w, err)
 		return
 	}
+
 	response.Success(w, http.StatusOK, a)
 }
 

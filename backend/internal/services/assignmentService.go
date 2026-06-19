@@ -13,7 +13,7 @@ import (
 )
 
 type AssignmentService interface {
-	Start(ctx context.Context, studentID string, req dto.StartAssignment) (*domains.Assignment, error)
+	Start(ctx context.Context, studentID, role string, req dto.StartAssignment) (*domains.Assignment, error)
 	Submit(ctx context.Context, studentID string, assignmentID int, req dto.SubmitAssignmentRequest) (*dto.AssignmentResultResponse, error)
 	GetResult(ctx context.Context, studentID string, assignmentID int) (*dto.AssignmentResultResponse, error)
 	GetHistory(ctx context.Context, studentID string) ([]dto.HistoryListResponse, error)
@@ -42,7 +42,7 @@ type matchingPairEntry struct {
 	rightCardID int
 }
 
-func (s *assignmentService) Start(ctx context.Context, studentID string, req dto.StartAssignment) (*domains.Assignment, error) {
+func (s *assignmentService) Start(ctx context.Context, studentID, role string, req dto.StartAssignment) (*domains.Assignment, error) {
 	if req.QuizID == 0 {
 		return nil, fmt.Errorf("QuizID is required!")
 	}
@@ -59,12 +59,14 @@ func (s *assignmentService) Start(ctx context.Context, studentID string, req dto
 		return nil, fmt.Errorf("Quiz is not published yet!")
 	}
 
-	alreadyPassed, err := s.assignmentRepo.QuizPassedByStudentID(ctx, studentID, req.QuizID)
-	if err != nil {
-		return nil, fmt.Errorf("AssignmentService.Start check: %w", err)
-	}
-	if alreadyPassed {
-		return nil, ErrorAlreadyCompleted
+	if role != "sensei" {
+		alreadyPassed, err := s.assignmentRepo.QuizPassedByStudentID(ctx, studentID, req.QuizID)
+		if err != nil {
+			return nil, fmt.Errorf("AssignmentService.Start check: %w", err)
+		}
+		if alreadyPassed {
+			return nil, ErrorAlreadyCompleted
+		}
 	}
 
 	a := &domains.Assignment{StudentID: studentID, QuizID: req.QuizID}
