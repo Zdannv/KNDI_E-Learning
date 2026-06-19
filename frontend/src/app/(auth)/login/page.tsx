@@ -43,19 +43,14 @@ function LoginForm() {
     setIsSubmitting(true);
     try {
       await login(username.trim(), password);
-      const raw = localStorage.getItem("app_token_user");
-      if (raw) {
-        const loggedInUser: AuthUser = JSON.parse(raw);
-        const from = searchParams.get("from");
-        router.push(getDestination(from, loggedInUser));
-      }
+      // Redirection is handled automatically by the useEffect hook above
+      // once the user state is set in the AuthContext.
     } catch (err) {
       if (err instanceof AuthError) {
         setError(err.message === "Invalid username or password" ? "Username atau password salah!" : err.message);
       } else {
         setError("Terjadi kesalahan koneksi. Silakan coba lagi.");
       }
-    } finally {
       setIsSubmitting(false);
     }
   };
