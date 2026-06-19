@@ -47,7 +47,7 @@ export default function QuizMetaCard({ formState, isSubmitting, onChange }: Quiz
       {/* Timer / Duration */}
       <div className="space-y-2">
         <label htmlFor="quiz-duration" className="block text-sm font-semibold text-slate-700">
-          Batasan Waktu <span className="text-slate-400 font-normal">(dalam menit, 0 = Tanpa Batasan)</span>
+          Batasan Waktu <span className="text-slate-400 font-normal">(dalam menit, 0 = Tanpa Batasan, maks 24 jam)</span>
         </label>
         <div className="relative rounded-lg shadow-sm">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
@@ -57,6 +57,7 @@ export default function QuizMetaCard({ formState, isSubmitting, onChange }: Quiz
             id="quiz-duration"
             type="number"
             min={0}
+            max={1440}
             value={formState.duration}
             onChange={(e) => {
               const valStr = e.target.value;

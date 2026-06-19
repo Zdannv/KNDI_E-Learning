@@ -12,6 +12,7 @@ import QuizListView from "@/components/QuizListView";
 import QuestionCard, { StudentAnswer } from "@/components/QuestionCardStudent";
 import ResultView from "@/components/ResultView";
 import { useQuizSession } from "@/context/QuizSessionContext";
+import { formatCountdownTime } from "@/utils/duration";
 
 type AnswerMap = Record<number, StudentAnswer>;
 
@@ -67,11 +68,7 @@ function QuizzesPageContent() {
     setPendingQuizId(new Set(historyList.filter((h) => h.has_ungraded_essay).map((h) => h.quiz_id)));
   }, [historyList]);
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
+  const formatTime = (seconds: number) => formatCountdownTime(seconds);
 
   useEffect(() => {
     if (!startQuizId || !quizList || quizList.length === 0 || activeQuiz) return;
