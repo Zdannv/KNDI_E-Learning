@@ -5,6 +5,7 @@ import { useQuizSession } from "@/context/QuizSessionContext";
 import { usePathname } from "next/navigation";
 import { Clock, BarChart2, X, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { formatCountdownTime } from "@/utils/duration";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -16,11 +17,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const { activeQuiz, timeLeft, answers, cancelQuiz } = useQuizSession();
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
+  const formatTime = (seconds: number) => formatCountdownTime(seconds);
 
   const isQuizActive = activeQuiz !== null;
   const isNotQuizPage = pathname !== "/quizzes";

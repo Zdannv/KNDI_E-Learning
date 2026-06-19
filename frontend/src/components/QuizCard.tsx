@@ -2,6 +2,7 @@
 
 import { Quiz } from "@/app/lib/use-api";
 import { BookOpen, CheckCircle2, Clock, Loader2, Play, RefreshCw } from "lucide-react";
+import { formatQuizDuration } from "@/utils/duration";
 
 interface QuizCardProps {
   quiz: Quiz;
@@ -80,7 +81,7 @@ export default function QuizCard({ quiz, onStart, isStarted, isCompleted, isPass
             {quiz.duration && quiz.duration > 0 ? (
               <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-500">
                 <Clock className="w-3.5 h-3.5" />
-                <span>{quiz.duration} menit</span>
+                <span>{formatQuizDuration(quiz.duration)}</span>
               </div>
             ) : null}
           </div>

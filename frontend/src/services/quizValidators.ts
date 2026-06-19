@@ -5,6 +5,10 @@ export function validateQuizForm(formState: QuizFormState): string | null {
     return "Judul kuis tidak boleh kosong.";
   }
 
+  if (formState.duration !== "" && formState.duration > 1440) {
+    return "Batasan waktu maksimal adalah 24 jam (1440 menit).";
+  }
+
   if (formState.questions.length === 0) {
     return "Kuis harus memiliki minimal 1 soal.";
   }

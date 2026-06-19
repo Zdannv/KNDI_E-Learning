@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
+import { formatQuizDuration } from "@/utils/duration";
 
 // ─── Skeletons ────────────────────────────────────────────────────────────────
 
@@ -399,7 +400,7 @@ export default function AdminQuizzesPage() {
                             {quiz.duration && quiz.duration > 0 ? (
                               <div className="flex items-center bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-md">
                                 <Clock className="w-4 h-4 mr-1.5 text-indigo-500" />
-                                <span>{quiz.duration}m</span>
+                                <span>{formatQuizDuration(quiz.duration)}</span>
                               </div>
                             ) : (
                               <div className="flex items-center bg-slate-50 text-slate-400 px-3 py-1.5 rounded-md" title="Tanpa batasan waktu">
