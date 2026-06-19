@@ -256,7 +256,7 @@ export function useQuizForm(editId: string | null): UseQuizFormReturn {
           title:        formState.title,
           description:  formState.description || undefined,
           is_published: formState.isPublished,
-          duration:     formState.duration,
+          duration:     formState.duration === "" ? 0 : formState.duration,
         });
 
         const currentIds = new Set(formState.questions.map((q) => q.id));
@@ -278,7 +278,7 @@ export function useQuizForm(editId: string | null): UseQuizFormReturn {
         const created = await quizApi.create({
           title:       formState.title,
           description: formState.description || undefined,
-          duration:    formState.duration,
+          duration:    formState.duration === "" ? 0 : formState.duration,
         });
 
         if (formState.questions.length > 0) {
@@ -290,7 +290,7 @@ export function useQuizForm(editId: string | null): UseQuizFormReturn {
             title:        formState.title,
             description:  formState.description || undefined,
             is_published: true,
-            duration:     formState.duration,
+            duration:     formState.duration === "" ? 0 : formState.duration,
           });
         }
       }

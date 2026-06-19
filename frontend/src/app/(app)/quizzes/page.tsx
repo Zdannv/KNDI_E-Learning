@@ -11,6 +11,7 @@ import { useAsync } from "@/hooks/useAsync";
 import QuizListView from "@/components/QuizListView";
 import QuestionCard, { StudentAnswer } from "@/components/QuestionCardStudent";
 import ResultView from "@/components/ResultView";
+import { useQuizSession } from "@/context/QuizSessionContext";
 
 type AnswerMap = Record<number, StudentAnswer>;
 
@@ -39,25 +40,32 @@ function QuizzesPageContent() {
   const [remedialQuizId, setRemedialQuizId] = useState<Set<number>>(new Set());
   const [pendingQuizId,  setPendingQuizId]  = useState<Set<number>>(new Set());
 
+  const {
+    activeQuiz,
+    currentIndex,
+    answers,
+    checkedIds,
+    result,
+    isStarting,
+    isSubmitting,
+    startError,
+    submitError,
+    timeLeft,
+    startQuiz,
+    answerQuestion,
+    checkAnswer,
+    cancelQuiz,
+    submitQuiz,
+    resetSession,
+    setCurrentIndex,
+  } = useQuizSession();
+
   useEffect(() => {
     if (!historyList) return;
     setPassedQuizId(new Set(historyList.filter((h) => h.score_percent >= 60 && !h.has_ungraded_essay).map((h) => h.quiz_id)));
     setRemedialQuizId(new Set(historyList.filter((h) => h.score_percent < 60 && !h.has_ungraded_essay).map((h) => h.quiz_id)));
     setPendingQuizId(new Set(historyList.filter((h) => h.has_ungraded_essay).map((h) => h.quiz_id)));
   }, [historyList]);
-
-  const [activeQuiz,   setActiveQuiz]   = useState<Quiz | null>(null);
-  const [assignmentId, setAssignmentId] = useState<number | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers,      setAnswers]      = useState<AnswerMap>({});
-  const [checkedIds,   setCheckedIds]   = useState<Set<number>>(new Set());
-  const [result,       setResult]       = useState<AssignmentResult | null>(null);
-
-  const [isStarting,   setIsStarting]   = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [startError,   setStartError]   = useState<string | null>(null);
-  const [submitError,  setSubmitError]  = useState<string | null>(null);
-  const [timeLeft,     setTimeLeft]     = useState<number | null>(null);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -70,126 +78,39 @@ function QuizzesPageContent() {
     const numericId = parseInt(startQuizId, 10);
     if (isNaN(numericId)) return;
     handleStart(numericId);
-  }, [startQuizId, quizList]);
+  }, [startQuizId, quizList, activeQuiz]);
 
   const handleStart = async (quizId: number) => {
-    setStartError(null);
-    setIsStarting(true);
     try {
-      const [assignment, fullQuiz] = await Promise.all([
-        assignmentApi.start(quizId),
-        quizApi.getById(quizId),
-      ]);
-      setAssignmentId(assignment.id);
-      setActiveQuiz(fullQuiz);
-      setCurrentIndex(0);
-      setAnswers({});
-      setCheckedIds(new Set());
-      setResult(null);
-      setSubmitError(null);
+      await startQuiz(quizId);
     } catch (err) {
-      setStartError(err instanceof Error ? err.message : "Failed to start quiz, please try again");
-    } finally {
-      setIsStarting(false);
+      // Handled in context
     }
   };
 
   const handleAnswer = (answer: StudentAnswer) => {
-    if (checkedIds.has(answer.questionId)) return;
-    setAnswers((prev) => ({ ...prev, [answer.questionId]: answer }));
+    if (checkedIds.includes(answer.questionId)) return;
+    answerQuestion(answer);
   };
 
   const handleCheckAnswer = () => {
     if (!currentQuestion) return;
-    setCheckedIds((prev) => new Set(prev).add(currentQuestion.id));
+    checkAnswer(currentQuestion.id);
   };
 
   const handleCancelQuiz = () => {
-    if (confirm("Apakah Anda yakin ingin membatalkan kuis ini? Semua jawaban yang belum dikirim akan hilang.")) {
-      handleReset();
-    }
+    cancelQuiz(false);
   };
 
   const handleSubmit = async () => {
-    if (!activeQuiz || assignmentId === null) return;
-    setIsSubmitting(true);
-    setSubmitError(null);
-
-    try {
-      const questions = activeQuiz.question ?? [];
-      const payload: SubmitAnswer[] = [];
-
-      for (const q of questions) {
-        const a = answers[q.id];
-        if (q.question_type === 1) {
-          if (a?.selectedOptionId !== undefined)
-            payload.push({ question_id: q.id, question_option_id: a.selectedOptionId });
-        } else if (q.question_type === 2) {
-          payload.push({ question_id: q.id, answer_text: a?.answerText?.trim() ?? "" });
-        } else if (q.question_type === 3) {
-          const entries = Object.entries(a?.matchedPairs ?? {});
-          if (entries.length > 0) {
-            for (const [l, r] of entries)
-              payload.push({ question_id: q.id, question_card_id: Number(l), selected_card: Number(r) });
-          } else {
-            payload.push({ question_id: q.id });
-          }
-        } else if (q.question_type === 4) {
-          payload.push({ question_id: q.id, answer_text: a?.answerText?.trim() ?? "" });
-        }
-      }
-
-      const scored = await assignmentApi.submit(assignmentId, payload);
-
-      if (scored.score_percent >= 60) {
-        setPassedQuizId((prev) => new Set(prev).add(activeQuiz.id));
-        setRemedialQuizId((prev) => { const s = new Set(prev); s.delete(activeQuiz.id); return s; });
-      } else {
-        setRemedialQuizId((prev) => new Set(prev).add(activeQuiz.id));
-        setPassedQuizId((prev) => { const s = new Set(prev); s.delete(activeQuiz.id); return s; });
-      }
-
-      setResult(scored);
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Gagal mengirim jawaban. Coba lagi.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    await submitQuiz(false);
   };
 
   const handleReset = () => {
-    setActiveQuiz(null);
-    setAssignmentId(null);
-    setCurrentIndex(0);
-    setAnswers({});
-    setCheckedIds(new Set());
-    setResult(null);
-    setSubmitError(null);
-    setStartError(null);
-    setTimeLeft(null);
+    resetSession();
     refetchHistory();
     refetchQuizzes();
   };
-
-  useEffect(() => {
-    if (activeQuiz && activeQuiz.duration && activeQuiz.duration > 0) {
-      setTimeLeft(activeQuiz.duration * 60);
-    } else {
-      setTimeLeft(null);
-    }
-  }, [activeQuiz]);
-
-  useEffect(() => {
-    if (timeLeft === null) return;
-    if (timeLeft <= 0) {
-      handleSubmit();
-      return;
-    }
-    const timer = setTimeout(() => {
-      setTimeLeft((t) => (t !== null ? t - 1 : null));
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [timeLeft]);
 
   if (quizzesLoading || historyLoading) {
     return (
@@ -233,7 +154,7 @@ function QuizzesPageContent() {
   const currentQuestion = questions[currentIndex];
   const isLast          = currentIndex === questions.length - 1;
   const currentAnswer   = currentQuestion ? answers[currentQuestion.id] : undefined;
-  const isChecked       = currentQuestion ? checkedIds.has(currentQuestion.id) : false;
+  const isChecked       = currentQuestion ? checkedIds.includes(currentQuestion.id) : false;
   const canProceed      = currentQuestion ? isAnswered(currentAnswer, currentQuestion) : false;
   const answeredCount   = questions.filter((q) => isAnswered(answers[q.id], q)).length;
   const progressPct     = questions.length > 0 ? Math.round((answeredCount / questions.length) * 100) : 0;

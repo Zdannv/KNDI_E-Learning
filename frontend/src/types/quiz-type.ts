@@ -64,7 +64,7 @@ export interface QuizFormState {
   title: string;
   description: string;
   isPublished: boolean;
-  duration: number;
+  duration: number | "";
   questions: FormQuestion[];
 }
 
@@ -72,7 +72,7 @@ export const EMPTY_FORM: QuizFormState = {
   title: "",
   description: "",
   isPublished: false,
-  duration: 0,
+  duration: 5,
   questions: [],
 };
 
