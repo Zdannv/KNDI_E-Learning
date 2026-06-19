@@ -72,9 +72,17 @@ export default function QuizCard({ quiz, onStart, isStarted, isCompleted, isPass
         )}
 
         <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-          <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
-            <Clock className="w-3.5 h-3.5" />
-            {questionCount > 0 ? `${questionCount} soal` : "—"}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
+              <BookOpen className="w-3.5 h-3.5 text-slate-400" />
+              {questionCount > 0 ? `${questionCount} soal` : "—"}
+            </div>
+            {quiz.duration && quiz.duration > 0 ? (
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-500">
+                <Clock className="w-3.5 h-3.5" />
+                <span>{quiz.duration} menit</span>
+              </div>
+            ) : null}
           </div>
 
           {/* Action button */}

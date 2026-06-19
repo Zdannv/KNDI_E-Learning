@@ -8,6 +8,7 @@ type Quiz struct {
 	Title			string		`json:"title"`
 	Description		*string		`json:"description"`
 	IsPublished		bool		`json:"is_published"`
+	Duration		int			`json:"duration"`
 	CreatedAt		time.Time	`json:"created_at"`
 	UpdatedAt		time.Time	`json:"updated_at"`
 

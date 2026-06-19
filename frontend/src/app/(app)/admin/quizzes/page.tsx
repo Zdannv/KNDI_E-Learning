@@ -3,7 +3,7 @@
 import { ClientApiError, EssayPendingItem, Quiz, assignmentApi, quizApi } from "@/app/lib/use-api";
 import { useAsync } from "@/hooks/useAsync";
 import {
-  AlertCircle, ArrowUpDown, Award, BookOpen, Calendar, CheckCircle2,
+  AlertCircle, ArrowUpDown, Award, BookOpen, Calendar, CheckCircle2, Clock,
   ChevronLeft, ChevronRight, ClipboardList, Edit2, Eye, EyeOff, Loader2, Plus,
   RefreshCw, Search, Trash2, User, X,
 } from "lucide-react";
@@ -120,6 +120,7 @@ export default function AdminQuizzesPage() {
         title:        quiz.title,
         description:  quiz.description ?? undefined,
         is_published: !quiz.is_published,
+        duration:     quiz.duration,
       });
       showToast(
         quiz.is_published
@@ -390,9 +391,22 @@ export default function AdminQuizzesPage() {
                         </p>
 
                         <div className="flex items-center justify-between text-xs font-semibold text-slate-500 mt-auto pt-4 border-t border-slate-100">
-                          <div className="flex items-center bg-slate-50 px-3 py-1.5 rounded-md">
-                            <BookOpen className="w-4 h-4 mr-2 text-slate-400" />
-                            <span>{quiz.question?.length ?? 0} Soal</span>
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center bg-slate-50 px-3 py-1.5 rounded-md">
+                              <BookOpen className="w-4 h-4 mr-2 text-slate-400" />
+                              <span>{quiz.question?.length ?? 0} Soal</span>
+                            </div>
+                            {quiz.duration && quiz.duration > 0 ? (
+                              <div className="flex items-center bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-md">
+                                <Clock className="w-4 h-4 mr-1.5 text-indigo-500" />
+                                <span>{quiz.duration}m</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center bg-slate-50 text-slate-400 px-3 py-1.5 rounded-md" title="Tanpa batasan waktu">
+                                <Clock className="w-4 h-4 mr-1.5 text-slate-300" />
+                                <span>—</span>
+                              </div>
+                            )}
                           </div>
                           <span className="text-xs text-slate-400">ID #{quiz.id}</span>
                         </div>

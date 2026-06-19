@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, Loader2, X } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, Loader2, X, Clock } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
@@ -57,6 +57,13 @@ function QuizzesPageContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [startError,   setStartError]   = useState<string | null>(null);
   const [submitError,  setSubmitError]  = useState<string | null>(null);
+  const [timeLeft,     setTimeLeft]     = useState<number | null>(null);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   useEffect(() => {
     if (!startQuizId || !quizList || quizList.length === 0 || activeQuiz) return;
@@ -159,9 +166,30 @@ function QuizzesPageContent() {
     setResult(null);
     setSubmitError(null);
     setStartError(null);
+    setTimeLeft(null);
     refetchHistory();
     refetchQuizzes();
   };
+
+  useEffect(() => {
+    if (activeQuiz && activeQuiz.duration && activeQuiz.duration > 0) {
+      setTimeLeft(activeQuiz.duration * 60);
+    } else {
+      setTimeLeft(null);
+    }
+  }, [activeQuiz]);
+
+  useEffect(() => {
+    if (timeLeft === null) return;
+    if (timeLeft <= 0) {
+      handleSubmit();
+      return;
+    }
+    const timer = setTimeout(() => {
+      setTimeLeft((t) => (t !== null ? t - 1 : null));
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [timeLeft]);
 
   if (quizzesLoading || historyLoading) {
     return (
@@ -218,9 +246,23 @@ function QuizzesPageContent() {
             <h1 className="text-2xl font-bold text-slate-800">{activeQuiz.title}</h1>
             {activeQuiz.description && <p className="text-slate-500 text-sm mt-1">{activeQuiz.description}</p>}
           </div>
-          <button onClick={handleCancelQuiz} className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-bold transition-all border border-rose-100 shrink-0">
-            <X className="w-3.5 h-3.5" /> Batalkan Kuis
-          </button>
+          <div className="flex items-center gap-3 shrink-0">
+            {timeLeft !== null && (
+              <div className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-bold border transition-all duration-300 ${
+                timeLeft < 60
+                  ? "bg-rose-50 border-rose-200 text-rose-600 animate-pulse shadow-sm shadow-rose-100"
+                  : timeLeft < 180
+                  ? "bg-amber-50 border-amber-200 text-amber-600"
+                  : "bg-indigo-50 border-indigo-100 text-indigo-600"
+              }`}>
+                <Clock className="w-4 h-4 shrink-0" />
+                <span>{formatTime(timeLeft)}</span>
+              </div>
+            )}
+            <button onClick={handleCancelQuiz} className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-bold transition-all border border-rose-100">
+              <X className="w-3.5 h-3.5" /> Batalkan Kuis
+            </button>
+          </div>
         </div>
         <div className="flex items-center justify-between text-xs font-medium text-slate-500 mb-2">
           <span>Soal {currentIndex + 1} dari {questions.length}</span>

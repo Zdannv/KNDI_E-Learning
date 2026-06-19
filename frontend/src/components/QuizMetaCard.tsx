@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Clock } from "lucide-react";
 import { QuizFormState } from "@/types/quiz-type";
 
 interface QuizMetaCardProps {
@@ -42,6 +42,31 @@ export default function QuizMetaCard({ formState, isSubmitting, onChange }: Quiz
           disabled={isSubmitting}
           className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-400 resize-none disabled:opacity-60"
         />
+      </div>
+
+      {/* Timer / Duration */}
+      <div className="space-y-2">
+        <label htmlFor="quiz-duration" className="block text-sm font-semibold text-slate-700">
+          Batasan Waktu <span className="text-slate-400 font-normal">(dalam menit, 0 = Tanpa Batasan)</span>
+        </label>
+        <div className="relative rounded-lg shadow-sm">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+            <Clock className="h-4 w-4 text-slate-400" />
+          </div>
+          <input
+            id="quiz-duration"
+            type="number"
+            min={0}
+            value={formState.duration ?? 0}
+            onChange={(e) => {
+              const val = parseInt(e.target.value, 10);
+              onChange({ duration: isNaN(val) ? 0 : val });
+            }}
+            placeholder="Contoh: 15"
+            disabled={isSubmitting}
+            className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-400 disabled:opacity-60 font-medium text-slate-700"
+          />
+        </div>
       </div>
 
       {/* Publish toggle */}

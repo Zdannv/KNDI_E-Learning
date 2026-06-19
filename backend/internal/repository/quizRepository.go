@@ -12,29 +12,29 @@ import (
 
 const (
 	insertQuiz = `
-		INSERT INTO quizzes (sensei_id, title, description)
-		VALUES ($1, $2, $3)
+		INSERT INTO quizzes (sensei_id, title, description, duration)
+		VALUES ($1, $2, $3, $4)
 		RETURNING id, is_published, created_at, updated_at`
 
 	selectQuizByID = `
-		SELECT id, sensei_id, title, description, is_published, created_at, updated_at
+		SELECT id, sensei_id, title, description, is_published, created_at, updated_at, duration
 		FROM quizzes WHERE id = $1`
 
 	selectQuizzesBySenseiID = `
-		SELECT id, sensei_id, title, description, is_published, created_at, updated_at
+		SELECT id, sensei_id, title, description, is_published, created_at, updated_at, duration
 		FROM quizzes
 		WHERE sensei_id = $1
 		ORDER BY created_at DESC`
 
 	selectPublishedQuizzes = `
-		SELECT id, sensei_id, title, description, is_published, created_at, updated_at
+		SELECT id, sensei_id, title, description, is_published, created_at, updated_at, duration
 		FROM quizzes WHERE is_published = TRUE
 		ORDER BY created_at DESC`
 
 	updateQuiz = `
 		UPDATE quizzes
-		SET title = $1, description = $2, is_published = $3, updated_at = NOW()
-		WHERE id = $4 AND sensei_id = $5
+		SET title = $1, description = $2, is_published = $3, duration = $4, updated_at = NOW()
+		WHERE id = $5 AND sensei_id = $6
 		RETURNING updated_at`
 
 	deleteQuiz = `
@@ -147,14 +147,14 @@ func NewQuizRepository(pool *pgxpool.Pool) QuizRepository {
 }
 
 func (r *quizRepository) Create(ctx context.Context, q *domains.Quiz) error {
-	return r.pool.QueryRow(ctx, insertQuiz, q.SenseiID, q.Title, q.Description).
+	return r.pool.QueryRow(ctx, insertQuiz, q.SenseiID, q.Title, q.Description, q.Duration).
 		Scan(&q.ID, &q.IsPublished, &q.CreatedAt, &q.UpdatedAt)
 }
 
 func (r *quizRepository) FindByID(ctx context.Context, id int) (*domains.Quiz, error) {
 	q := &domains.Quiz{}
 	err := r.pool.QueryRow(ctx, selectQuizByID, id).
-		Scan(&q.ID, &q.SenseiID, &q.Title, &q.Description, &q.IsPublished, &q.CreatedAt, &q.UpdatedAt)
+		Scan(&q.ID, &q.SenseiID, &q.Title, &q.Description, &q.IsPublished, &q.CreatedAt, &q.UpdatedAt, &q.Duration)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrorNotFound
@@ -187,7 +187,7 @@ func (r *quizRepository) FindByIsPublished(ctx context.Context) ([]domains.Quiz,
 }
 
 func (r *quizRepository) Update(ctx context.Context, q *domains.Quiz) error {
-	err := r.pool.QueryRow(ctx, updateQuiz, q.Title, q.Description, q.IsPublished, q.ID, q.SenseiID).
+	err := r.pool.QueryRow(ctx, updateQuiz, q.Title, q.Description, q.IsPublished, q.Duration, q.ID, q.SenseiID).
 		Scan(&q.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -598,7 +598,7 @@ func (r *quizRepository) scanQuizzes(ctx context.Context, query string, args ...
 		var q domains.Quiz
 		if err := rows.Scan(
 			&q.ID, &q.SenseiID, &q.Title, &q.Description,
-			&q.IsPublished, &q.CreatedAt, &q.UpdatedAt,
+			&q.IsPublished, &q.CreatedAt, &q.UpdatedAt, &q.Duration,
 		); err != nil {
 			return nil, fmt.Errorf("QuizRepo.scanQuizzes scan: %w", err)
 		}

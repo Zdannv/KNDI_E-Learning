@@ -12,7 +12,7 @@ RUN npm ci
 
 COPY . .
 
-RUN npm run build
+RUN npm run dev
 
 # Stage 2: Runner
 FROM node:25-alpine AS runner
