@@ -19,6 +19,7 @@ export default function MatchingCardQuestion(props: MatchingCardProps) {
 
     const [selectedLeft,  setSelectedLeft]  = useState<number | null>(null)
     const [selectedRight, setSelectedRight] = useState<number | null>(null)
+    const [hoveredPairLeftId, setHoveredPairLeftId] = useState<number | null>(null)
 
     useEffect(() => {
         if (selectedLeft === null || selectedRight === null) return
@@ -42,18 +43,35 @@ export default function MatchingCardQuestion(props: MatchingCardProps) {
         setSelectedRight((prev) => (prev === id ? null : id))
     }
 
-    const isCorrectPair = (leftId: number): boolean => {
-        return props.matchedPairs[leftId] === leftId
+    const getLeftIdOfRightCard = (rightId: number): number | null => {
+        const leftIdStr = Object.keys(props.matchedPairs).find(
+            (k) => props.matchedPairs[Number(k)] === rightId
+        )
+        return leftIdStr ? Number(leftIdStr) : null
     }
 
-    const isRightCorrect = (rightId: number): boolean => {
-        const leftId = Number(
-            Object.keys(props.matchedPairs).find(
-                (k) => props.matchedPairs[Number(k)] === rightId
-            )
-        )
-        return leftId === rightId
+    const handleMouseEnter = (cardId: number, isRight: boolean) => {
+        if (isRight) {
+            const leftId = getLeftIdOfRightCard(cardId)
+            if (leftId !== null) {
+                setHoveredPairLeftId(leftId)
+            }
+        } else {
+            if (isLeftCommitted(cardId)) {
+                setHoveredPairLeftId(cardId)
+            }
+        }
     }
+
+    const handleMouseLeave = () => {
+        setHoveredPairLeftId(null)
+    }
+
+    const committedLeftIds = useMemo(() => {
+        return props.cards
+            .map((c) => c.id)
+            .filter((id) => props.matchedPairs[id] !== undefined)
+    }, [props.cards, props.matchedPairs])
 
     const totalCommitted = Object.keys(props.matchedPairs).length
     const totalCards     = props.cards.length
@@ -73,8 +91,8 @@ export default function MatchingCardQuestion(props: MatchingCardProps) {
 
                     {props.cards.map((card) => {
                         const committed = isLeftCommitted(card.id)
-                        const correct   = committed && isCorrectPair(card.id)
-                        const wrong     = committed && !correct
+                        const pairIndex = committed ? committedLeftIds.indexOf(card.id) + 1 : undefined
+                        const isHovered = hoveredPairLeftId === card.id
 
                         return (
                             <MatchingCardButton
@@ -82,11 +100,15 @@ export default function MatchingCardQuestion(props: MatchingCardProps) {
                                 imageUrl={card.left_image_url}
                                 audioUrl={card.left_audio_url}
                                 text={card.left_text}
-                                isMatched={correct}
-                                isWrong={wrong}
+                                isCommitted={committed}
+                                pairIndex={pairIndex}
+                                isRight={false}
+                                isHoveredPair={isHovered}
                                 isSelected={selectedLeft === card.id}
                                 isFlashing={false}
                                 onClick={() => handleLeftClick(card.id)}
+                                onMouseEnter={() => handleMouseEnter(card.id, false)}
+                                onMouseLeave={handleMouseLeave}
                             />
                         )
                     })}
@@ -99,8 +121,9 @@ export default function MatchingCardQuestion(props: MatchingCardProps) {
 
                     {shuffledRight.map((card) => {
                         const committed = isRightCommitted(card.id)
-                        const correct   = committed && isRightCorrect(card.id)
-                        const wrong     = committed && !correct
+                        const leftId = getLeftIdOfRightCard(card.id)
+                        const pairIndex = (committed && leftId !== null) ? committedLeftIds.indexOf(leftId) + 1 : undefined
+                        const isHovered = (committed && leftId !== null) ? hoveredPairLeftId === leftId : false
 
                         return (
                             <MatchingCardButton
@@ -108,11 +131,15 @@ export default function MatchingCardQuestion(props: MatchingCardProps) {
                                 imageUrl={card.right_image_url}
                                 audioUrl={card.right_audio_url}
                                 text={card.right_text}
-                                isMatched={correct}
-                                isWrong={wrong}
+                                isCommitted={committed}
+                                pairIndex={pairIndex}
+                                isRight={true}
+                                isHoveredPair={isHovered}
                                 isSelected={selectedRight === card.id}
                                 isFlashing={false}
                                 onClick={() => handleRightClick(card.id)}
+                                onMouseEnter={() => handleMouseEnter(card.id, true)}
+                                onMouseLeave={handleMouseLeave}
                             />
                         )
                     })}
